@@ -29,6 +29,7 @@ extern "C" {
 #include "celix_types.h"
 #include "celix_errno.h"
 #include <stdio.h>
+#include <sys/uio.h>
 
 typedef struct rsa_json_rpc_endpoint rsa_json_rpc_endpoint_t;
 
@@ -39,7 +40,10 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
 
 void rsaJsonRpcEndpoint_destroy(rsa_json_rpc_endpoint_t *endpoint);
 
-long rsaJsonRpcEndpoint_getRequestHandlerSvcId(rsa_json_rpc_endpoint_t *endpoint);
+long rsaJsonRpcEndpoint_getId(rsa_json_rpc_endpoint_t *endpoint);
+
+celix_status_t rsaJsonRpcEndpoint_handleRequest(rsa_json_rpc_endpoint_t *endpoint, celix_properties_t *metadata,
+                                                const struct iovec *request, struct iovec *responseOut);
 
 #ifdef __cplusplus
 }

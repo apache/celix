@@ -32,7 +32,8 @@ target_link_libraries(integration_test_rsa_shm PRIVATE
 
 celix_get_bundle_file(Celix::rsa_shm RSA_SHM_BUNDLE_FILE)
 target_compile_definitions(integration_test_rsa_shm PRIVATE -DRSA_SHM_BUNDLE="${RSA_SHM_BUNDLE_FILE}")
-
+celix_get_bundle_file(Celix::rsa_json_rpc RSA_JSON_RPC_BUNDLE_FILE)
+target_compile_definitions(integration_test_rsa_shm PRIVATE -DRSA_JSON_RPC_BUNDLE="${RSA_JSON_RPC_BUNDLE_FILE}")
 
 add_celix_bundle_dependencies(integration_test_rsa_shm Celix::rsa_shm)
 
@@ -68,6 +69,9 @@ if (EI_TESTS AND BUILD_RSA_JSON_RPC)
             Celix::log_helper_ei
             Celix::properties_ei
             Celix::long_hash_map_ei
+            Celix::string_hash_map_ei
+            Celix::dm_component_ei
+            Celix::asprintf_ei
             GTest::gtest
             GTest::gtest_main
             )

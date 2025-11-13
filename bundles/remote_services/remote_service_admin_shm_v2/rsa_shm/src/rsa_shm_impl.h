@@ -35,14 +35,13 @@ extern "C" {
 
 typedef struct rsa_shm rsa_shm_t;
 
-celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper,
-        rsa_shm_t **admin);
+celix_status_t rsaShm_create(celix_bundle_context_t *context, rsa_shm_t **admin);
 
 void rsaShm_destroy(rsa_shm_t *admin);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(rsa_shm_t, rsaShm_destroy)
 
-celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
+celix_status_t rsaShm_send(rsa_shm_t *admin, const endpoint_description_t *endpoint,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 
 celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
@@ -58,6 +57,10 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         import_registration_t **registration);
 
 celix_status_t rsaShm_removeImportedService(rsa_shm_t *admin, import_registration_t *registration);
+
+celix_status_t celix_rsaShm_addRpcFactorySvc(void* handle, void* svc, const celix_properties_t* props);
+
+celix_status_t celix_rsaShm_removeRpcFactorySvc(void* handle, void* svc, const celix_properties_t* props);
 
 #ifdef __cplusplus
 }

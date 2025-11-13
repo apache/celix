@@ -20,7 +20,7 @@
 #include "rsa_shm_constants.h"
 #include "RsaShmTestService.h"
 #include "remote_constants.h"
-#include "rsa_rpc_factory.h"
+#include "celix_rsa_rpc_factory.h"
 #include "endpoint_description.h"
 #include "celix_log_helper.h"
 #include "celix_bundle_context_ei.h"
@@ -36,9 +36,11 @@
 #define RSA_RPC_TYPE_FOR_TEST "celix.remote.admin.rpc_type.test"
 
 static celix_status_t expect_RpcFacCreateProxy_ret = CELIX_SUCCESS;
-static celix_status_t RpcFacCreateProxy(void *handle, const endpoint_description_t *endpointDesc, long requestSenderSvcId, long *proxySvcId) {
+static celix_status_t RpcFacCreateProxy(void *handle, const endpoint_description_t *endpointDesc,
+                                        celix_rsa_send_request_fp sendRequest, void *sendRequestHandle, long *proxyId) {
     (void)endpointDesc;//unused
-    (void)requestSenderSvcId;//unused
+    (void)sendRequest;//unused
+    (void)sendRequestHandle;//unused
     if (expect_RpcFacCreateProxy_ret != CELIX_SUCCESS) {
         return expect_RpcFacCreateProxy_ret;
     }
@@ -57,14 +59,24 @@ static celix_status_t RpcFacCreateProxy(void *handle, const endpoint_description
     celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
     auto calcSvcId = celix_bundleContext_registerServiceAsync(ctx, &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
     EXPECT_GE(calcSvcId, 0);
-    *proxySvcId = calcSvcId;
+    *proxyId = calcSvcId;
     return CELIX_SUCCESS;
 }
 
-static void RpcFacDestroyProxy(void *handle, long proxySvcId) {
+static void RpcFacDestroyProxy(void *handle, long proxyId) {
     celix_bundle_context_t *ctx = (celix_bundle_context_t *) handle;
-    celix_bundleContext_unregisterServiceAsync(ctx, proxySvcId, nullptr, nullptr);
+    celix_bundleContext_unregisterServiceAsync(ctx, proxyId, nullptr, nullptr);
     return;
+}
+
+static celix_status_t SendRequest(void *handle, const endpoint_description_t *endpointDescription,
+                        celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
+    (void) handle; //unused
+    (void) endpointDescription; //unused
+    (void) metadata; //unused
+    (void) request; //unused
+    (void) response; //unused
+    return CELIX_SUCCESS;
 }
 
 class RsaShmImportRegUnitTestSuite : public ::testing::Test {
@@ -80,7 +92,6 @@ public:
         auto* logHelperPtr = celix_logHelper_create(ctxPtr,"RsaShm");
         logHelper = std::shared_ptr<celix_log_helper_t>{logHelperPtr, [](auto*l){ celix_logHelper_destroy(l);}};
 
-        static rsa_rpc_factory_t rpcFactory{};
         rpcFactory.handle = ctx.get();
         rpcFactory.createProxy = RpcFacCreateProxy;
         rpcFactory.destroyProxy = RpcFacDestroyProxy;
@@ -128,14 +139,15 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<celix_log_helper_t> logHelper{};
     long rpcFactorySvcId{-1};
+    celix_rsa_rpc_factory_t rpcFactory{};
 };
 
 TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistration) {
     auto* endpoint = CreateEndpointDescription();
 
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest,
+                                            nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_NE(nullptr, importRegistration);
 
@@ -148,20 +160,22 @@ TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistrationWithInvalidParams) 
     auto* endpoint = CreateEndpointDescription();
 
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    auto status = importRegistration_create(nullptr, logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    auto status = importRegistration_create(nullptr, logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = importRegistration_create(ctx.get(), nullptr, endpoint, reqSenderSvcId, &importRegistration);
+    status = importRegistration_create(ctx.get(), nullptr, endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = importRegistration_create(ctx.get(), logHelper.get(), nullptr, reqSenderSvcId, &importRegistration);
+    status = importRegistration_create(ctx.get(), logHelper.get(), nullptr, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, -1, &importRegistration);
+    status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, nullptr, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, nullptr);
+    status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, nullptr, &importRegistration);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, nullptr);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     endpointDescription_destroy(endpoint);
@@ -171,9 +185,8 @@ TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistrationWithNoMemory) {
     auto* endpoint = CreateEndpointDescription();
 
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
     celix_ei_expect_calloc((void*)&importRegistration_create, 0, nullptr);
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     endpointDescription_destroy(endpoint);
@@ -183,48 +196,19 @@ TEST_F(RsaShmImportRegUnitTestSuite, FailedToCloneEndpointDescription) {
     auto* endpoint = CreateEndpointDescription();
 
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
     celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     endpointDescription_destroy(endpoint);
 }
-
-TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistrationWithoutRpcType) {
-    auto* endpoint = CreateEndpointDescription();
-
-    import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    celix_properties_unset(endpoint->properties, RSA_SHM_RPC_TYPE_KEY);
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
-
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaShmImportRegUnitTestSuite, FailedToTrackRpcFactory) {
-    auto* endpoint = CreateEndpointDescription();
-
-    import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&importRegistration_create, 0, -1);
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
-    EXPECT_EQ(CELIX_SERVICE_EXCEPTION, status);
-
-    importRegistration_destroy(importRegistration);
-
-    endpointDescription_destroy(endpoint);
-}
-
 
 TEST_F(RsaShmImportRegUnitTestSuite, RegisterMoreThanOneRpcFactory) {
     //Create export registration
     endpoint_description_t *endpoint = CreateEndpointDescription();
 
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     celix_bundleContext_waitForEvents(ctx.get());
 
@@ -248,17 +232,10 @@ TEST_F(RsaShmImportRegUnitTestSuite, FailedToCreateServiceProxy) {
     endpoint_description_t *endpoint = CreateEndpointDescription();
 
     expect_RpcFacCreateProxy_ret = CELIX_ENOMEM;
-
     import_registration_t *importRegistration = nullptr;
-    long reqSenderSvcId = 123;//set dummy service id
-    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    celix_bundleContext_waitForEvents(ctx.get());
-
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, SendRequest, nullptr, &rpcFactory, &importRegistration);
+    EXPECT_EQ(CELIX_ENOMEM, status);
     expect_RpcFacCreateProxy_ret = CELIX_SUCCESS;//reset error injection
-
-    //destroy import registration
-    importRegistration_destroy(importRegistration);
 
     endpointDescription_destroy(endpoint);
 }

@@ -40,7 +40,6 @@ if (EI_TESTS)
     ####unit test
     add_executable(unit_test_rsa_json_rpc
             src/RsaJsonRpcUnitTestSuite.cc
-            src/RsaRequestSenderTrackerUnitTestSuite.cc
             src/RsaJsonRpcActivatorUnitTestSuite.cc
             )
 

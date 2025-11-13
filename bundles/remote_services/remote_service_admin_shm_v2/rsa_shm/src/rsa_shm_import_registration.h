@@ -25,15 +25,15 @@ extern "C" {
 #endif
 #include "import_registration.h"
 #include "endpoint_description.h"
-#include "rsa_rpc_factory.h"
+#include "celix_rsa_rpc_factory.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
 #include "celix_errno.h"
 
 
-celix_status_t importRegistration_create(celix_bundle_context_t *context,
-        celix_log_helper_t *logHelper, endpoint_description_t *endpointDesc,
-        long reqSenderSvcId, import_registration_t **importRegOut);
+celix_status_t importRegistration_create(celix_bundle_context_t* context, celix_log_helper_t* logHelper,
+                endpoint_description_t* endpointDesc, celix_rsa_send_request_fp sendRequest, void* sendRequestHandle,
+                const celix_rsa_rpc_factory_t* rpcFac, import_registration_t** importRegOut);
 
 void importRegistration_destroy(import_registration_t *import);
 

@@ -18,12 +18,15 @@
  */
 
 #include "rsa_shm_impl.h"
+#include "rsa_shm_constants.h"
 #include "remote_service_admin.h"
 #include "celix_api.h"
-#include "celix_log_helper_ei.h"
 #include "celix_properties_ei.h"
 #include "celix_bundle_context_ei.h"
 #include "malloc_ei.h"
+#include "celix_dm_component_ei.h"
+#include "asprintf_ei.h"
+#include "celix_utils_ei.h"
 #include <gtest/gtest.h>
 
 class RsaShmActivatorUnitTestSuite : public ::testing::Test {
@@ -39,11 +42,17 @@ public:
     }
 
     ~RsaShmActivatorUnitTestSuite() {
-        celix_ei_expect_celix_logHelper_create(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
-        celix_ei_expect_celix_bundleContext_registerServiceAsync(nullptr, 0, 0);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_set(nullptr, 0, 0);
+        celix_ei_expect_celix_dmComponent_addInterface(nullptr, 0, 0);
+        celix_ei_expect_celix_dmServiceDependency_create(nullptr, 0, nullptr);
+        celix_ei_expect_asprintf(nullptr, 0, 0);
+        celix_ei_expect_celix_dmServiceDependency_setService(nullptr, 0, 0);
+        celix_ei_expect_celix_dmComponent_addServiceDependency(nullptr, 0, 0);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_celix_bundleContext_getDependencyManager(nullptr, 0, nullptr);
+        celix_ei_expect_celix_dependencyManager_addAsync(nullptr, 0, 0);
     }
 
 
@@ -67,13 +76,11 @@ TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStart) {
     EXPECT_EQ(status, CELIX_SUCCESS);
 }
 
-TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithLogHelperError) {
-    celix_ei_expect_celix_logHelper_create(nullptr, 0, nullptr);
-
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToCreateRSAComponent) {
     void *userData = nullptr;
     auto status = celix_bundleActivator_create(ctx.get(), &userData);
     EXPECT_EQ(status, CELIX_SUCCESS);
-    celix_ei_expect_celix_logHelper_create((void*)&celix_bundleActivator_start, 1, nullptr);
+    celix_ei_expect_celix_dmComponent_create((void*)&celix_bundleActivator_start, 1, nullptr);
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
 
@@ -117,14 +124,146 @@ TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithSettingServicePrope
     EXPECT_EQ(status, CELIX_SUCCESS);
 }
 
-TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithRegisteringRsaServiceError) {
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToAddRSAInterface) {
     void *userData = nullptr;
     auto status = celix_bundleActivator_create(ctx.get(), &userData);
     EXPECT_EQ(status, CELIX_SUCCESS);
-    celix_ei_expect_celix_bundleContext_registerServiceAsync((void*)&celix_bundleActivator_start, 1, -1);
+    celix_ei_expect_celix_dmComponent_addInterface((void*)&celix_bundleActivator_start, 1, CELIX_BUNDLE_EXCEPTION);
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
 
     status = celix_bundleActivator_destroy(userData, ctx.get());
     EXPECT_EQ(status, CELIX_SUCCESS);
 }
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToCreateRpcFactoryDependency) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_dmServiceDependency_create((void*)&celix_bundleActivator_start, 2, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToGenerateRpcFactoryFilterString) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_asprintf((void*)&celix_bundleActivator_start, 2, -1, 2);//first:rsaShm_create
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToSetServiceToRpcFactoryDependency) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_dmServiceDependency_setService((void*)&celix_bundleActivator_start, 2, ENOMEM);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToAddRpcFactoryDependency) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_dmComponent_addServiceDependency((void*)&celix_bundleActivator_start, 2, ENOMEM);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToGetDependencyManager) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_bundleContext_getDependencyManager((void*)&celix_bundleActivator_start, 1, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToAddComponentToDependencyManager) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_dependencyManager_addAsync((void*)&celix_bundleActivator_start, 1, CELIX_BUNDLE_EXCEPTION);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, StartWithMultiRpcType) {
+    setenv(CELIX_RSA_SHM_RPC_TYPES, "rpcType1, rpcType2", 1);
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    status = celix_bundleActivator_stop(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    unsetenv(CELIX_RSA_SHM_RPC_TYPES);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToDupRpcTypes) {
+    setenv(CELIX_RSA_SHM_RPC_TYPES, "rpcType1", 1);
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    celix_ei_expect_celix_utils_strdup((void*)&celix_bundleActivator_start, 1, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    unsetenv(CELIX_RSA_SHM_RPC_TYPES);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, StartWithEmptyRpcType) {
+    setenv(CELIX_RSA_SHM_RPC_TYPES, "", 1);
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    unsetenv(CELIX_RSA_SHM_RPC_TYPES);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, FailedToCreateRpcFactoryDependencyForCustomRpcType) {
+    setenv(CELIX_RSA_SHM_RPC_TYPES, "rpcType1", 1);
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_dmServiceDependency_create((void*)&celix_bundleActivator_start, 2, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    unsetenv(CELIX_RSA_SHM_RPC_TYPES);
+}
+

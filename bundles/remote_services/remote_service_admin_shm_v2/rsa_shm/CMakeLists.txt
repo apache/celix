@@ -37,7 +37,7 @@ set(RSA_SHM_DEPS
         )
 
 add_celix_bundle(rsa_shm
-    VERSION 1.0.0
+    VERSION 2.0.0
     SYMBOLIC_NAME "apache_celix_remote_service_admin_shm_v2"
     NAME "Apache Celix Remote Service Admin SHM V2"
     GROUP "Celix/RSA"

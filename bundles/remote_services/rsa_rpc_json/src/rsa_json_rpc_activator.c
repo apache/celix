@@ -19,7 +19,7 @@
 
 #include "rsa_json_rpc_impl.h"
 #include "celix_log_helper.h"
-#include "rsa_rpc_factory.h"
+#include "celix_rsa_rpc_factory.h"
 #include "celix_bundle_activator.h"
 #include <assert.h>
 
@@ -27,7 +27,7 @@
 typedef struct rsa_json_rpc_activator {
     celix_bundle_context_t *ctx;
     rsa_json_rpc_t *jsonRpc;
-    rsa_rpc_factory_t rpcFac;
+    celix_rsa_rpc_factory_t rpcFac;
     long rpcSvcId;
     celix_log_helper_t *logHelper;
 }rsa_json_rpc_activator_t;
@@ -61,6 +61,7 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     activator->rpcFac.destroyProxy = rsaJsonRpc_destroyProxy;
     activator->rpcFac.createEndpoint = rsaJsonRpc_createEndpoint;
     activator->rpcFac.destroyEndpoint = rsaJsonRpc_destroyEndpoint;
+    activator->rpcFac.handleRequest = celix_rsaJsonRpc_handleRequest;
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
     opts.serviceVersion = CELIX_RSA_RPC_FACTORY_VERSION;

@@ -291,8 +291,12 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
 
     while (server->revMsgThreadActive) {
         revBytes = recvfrom(server->sfd, &msgInfo, sizeof(msgInfo), 0, NULL, NULL);
-        if (revBytes <= 0) {
-            celix_logHelper_error(server->loghelper, "RsaShmServer: recv msg err(%d) or recv zero-length datagrams.", errno);
+        if (revBytes == 0) {
+            celix_logHelper_debug(server->loghelper, "RsaShmServer: recv zero-length datagrams or the socket is shutdown.");
+            continue;
+        }
+        if (revBytes < 0) {
+            celix_logHelper_error(server->loghelper, "RsaShmServer: recv msg err(%d).", errno);
             continue;
         }
         if (revBytes <= sizeof(msgInfo.size) || rsaShmServer_msgInvalid(server, &msgInfo)) {

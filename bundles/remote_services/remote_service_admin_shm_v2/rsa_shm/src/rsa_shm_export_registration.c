@@ -18,31 +18,20 @@
  */
 
 #include "rsa_shm_export_registration.h"
-#include "rsa_shm_constants.h"
-#include "rsa_request_handler_service.h"
-#include "rsa_rpc_factory.h"
+#include "celix_rsa_rpc_factory.h"
 #include "endpoint_description.h"
-#include "remote_constants.h"
 #include "celix_log_helper.h"
 #include "celix_ref.h"
-#include "celix_api.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_threads.h"
 #include "bundle_context.h"
 #include <string.h>
 #include <assert.h>
-#include <stdbool.h>
 
 struct export_reference {
     endpoint_description_t *endpoint;
     service_reference_pt reference;
 };
-
-typedef struct export_request_handler_service_entry {
-    struct celix_ref ref;
-    celix_thread_rwlock_t lock; //projects below
-    rsa_request_handler_service_t *reqHandlerSvc;
-}export_request_handler_service_entry_t;
 
 struct export_registration {
     struct celix_ref ref;
@@ -50,30 +39,19 @@ struct export_registration {
     celix_log_helper_t* logHelper;
     endpoint_description_t * endpointDesc;
     service_reference_pt reference;
-    long rpcSvcTrkId;
-    rsa_rpc_factory_t *rpcFac;
-    long reqHandlerSvcTrkId;
-    long reqHandlerSvcId;
-    export_request_handler_service_entry_t *reqHandlerSvcEntry;
+    celix_thread_rwlock_t rpcFacLock;
+    const celix_rsa_rpc_factory_t *rpcFac;
+    long endpointId;
 };
 
-static void exportRegistration_addRpcFac(void *handle, void *svc);
-static void exportRegistration_removeRpcFac(void *handle, void *svc);
-static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc);
-static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc);
 static void exportRegistration_destroy(export_registration_t *export);
-static export_request_handler_service_entry_t *exportRegistration_createReqHandlerSvcEntry(void);
-static void exportRegistration_retainReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry);
-static void exportRegistration_releaseReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry);
 
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(export_request_handler_service_entry_t, exportRegistration_releaseReqHandlerSvcEntry)
-
-celix_status_t exportRegistration_create(celix_bundle_context_t *context,
-        celix_log_helper_t *logHelper, service_reference_pt reference,
-        endpoint_description_t *endpointDesc, export_registration_t **exportOut) {
+celix_status_t exportRegistration_create(celix_bundle_context_t* context, celix_log_helper_t* logHelper,
+                                         service_reference_pt reference, endpoint_description_t* endpointDesc,
+                                         const celix_rsa_rpc_factory_t* rpcFac, export_registration_t** exportOut) {
     celix_status_t status = CELIX_SUCCESS;
     if (context == NULL || logHelper == NULL || reference == NULL
-            || endpointDescription_isInvalid(endpointDesc) || exportOut == NULL) {
+        || endpointDescription_isInvalid(endpointDesc) || exportOut == NULL || rpcFac == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_autofree export_registration_t *export = calloc(1, sizeof(*export));
@@ -85,6 +63,13 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     export->context = context;
     export->logHelper = logHelper;
 
+    status = celixThreadRwlock_create(&export->rpcFacLock, NULL);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(logHelper,"RSA export reg: Failed to create rpcFac lock. %d.", status);
+        return status;
+    }
+    celix_autoptr(celix_thread_rwlock_t) rpcFacLock = &export->rpcFacLock;
+
     celix_autoptr(endpoint_description_t) epDesc = endpointDescription_clone(endpointDesc);
     if (epDesc == NULL) {
         celix_logHelper_error(logHelper,"RSA export reg: Error cloning endpoint desc.");
@@ -92,10 +77,7 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     }
     export->endpointDesc = epDesc;
 
-    export->rpcFac = NULL;
-    export->reqHandlerSvcTrkId = -1;
-    export->reqHandlerSvcId = -1;
-    export->reqHandlerSvcEntry = NULL;
+    export->rpcFac = rpcFac;
     export->reference = reference;
     status = bundleContext_retainServiceReference(context, reference);
     if (status != CELIX_SUCCESS) {
@@ -103,44 +85,26 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
         return status;
     }
     celix_auto(celix_service_ref_guard_t) ref = celix_ServiceRefGuard_init(context, reference);
-    celix_autoptr(export_request_handler_service_entry_t) reqHandlerSvcEntry = exportRegistration_createReqHandlerSvcEntry();
-    if (reqHandlerSvcEntry == NULL) {
-        celix_logHelper_error(export->logHelper,"RSA export reg: Error creating endpoint svc entry.");
-        return CELIX_ENOMEM;
-    }
-    export->reqHandlerSvcEntry = reqHandlerSvcEntry;
 
-    const char *rsaShmRpcType = celix_properties_get(endpointDesc->properties, RSA_SHM_RPC_TYPE_KEY, NULL);
-    if (rsaShmRpcType == NULL) {
-        celix_logHelper_error(logHelper,"RSA export reg: %s property is not exist.", RSA_SHM_RPC_TYPE_KEY);
-        return CELIX_ILLEGAL_ARGUMENT;
+    status = rpcFac->createEndpoint(rpcFac->handle, epDesc, &export->endpointId);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(logHelper,"RSA export reg: Error creating %s endpoint. %d.", endpointDesc->serviceName, status);
+        return status;
     }
 
-    char filter[128] = {0};
-    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_RSA_RPC_TYPE_KEY, rsaShmRpcType);
-    if (bytes >= sizeof(filter)) {
-        celix_logHelper_error(logHelper, "RSA export reg: The value(%s) of %s is too long.", rsaShmRpcType, CELIX_RSA_RPC_TYPE_KEY);
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.filter = filter;
-    opts.filter.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
-    opts.filter.versionRange = CELIX_RSA_RPC_FACTORY_USE_RANGE;
-    opts.callbackHandle = export;
-    opts.add = exportRegistration_addRpcFac;
-    opts.remove = exportRegistration_removeRpcFac;
-    export->rpcSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(context, &opts);
-    if (export->rpcSvcTrkId < 0) {
-        celix_logHelper_error(logHelper, "RSA export reg: Error Tracking service for %s.", CELIX_RSA_RPC_FACTORY_NAME);
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
-    celix_steal_ptr(reqHandlerSvcEntry);
     celix_steal_ptr(ref.reference);
     celix_steal_ptr(epDesc);
+    celix_steal_ptr(rpcFacLock);
     *exportOut = celix_steal_ptr(export);
 
     return CELIX_SUCCESS;
+}
+
+void exportRegistration_stop(export_registration_t *export) {
+    assert(export != NULL);
+    celix_auto(celix_rwlock_wlock_guard_t) locker = celixRwlockWlockGuard_init(&export->rpcFacLock);
+    export->rpcFac->destroyEndpoint(export->rpcFac->handle, export->endpointId);
+    export->rpcFac = NULL;
 }
 
 void exportRegistration_addRef(export_registration_t *export) {
@@ -155,141 +119,13 @@ void exportRegistration_release(export_registration_t *export) {
     return ;
 }
 
-static void exportRegistration_destroyCallback(void* data) {
-    assert(data != NULL);
-    export_registration_t *export = (export_registration_t *)data;
-    exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
-    bundleContext_ungetServiceReference(export->context, export->reference);
-    endpointDescription_destroy(export->endpointDesc);
-    free(export);
-    return;
-}
-
 static void exportRegistration_destroy(export_registration_t *export) {
     assert(export != NULL);
-    celix_bundleContext_stopTrackerAsync(export->context, export->rpcSvcTrkId,
-            export, exportRegistration_destroyCallback);
+    bundleContext_ungetServiceReference(export->context, export->reference);
+    endpointDescription_destroy(export->endpointDesc);
+    celixThreadRwlock_destroy(&export->rpcFacLock);
+    free(export);
     return ;
-}
-
-static export_request_handler_service_entry_t *exportRegistration_createReqHandlerSvcEntry(void) {
-    celix_status_t status = CELIX_SUCCESS;
-    celix_autofree export_request_handler_service_entry_t *reqHandlerSvcEntry =
-            (export_request_handler_service_entry_t *)calloc(1, sizeof(*reqHandlerSvcEntry));
-    if (reqHandlerSvcEntry == NULL) {
-        return NULL;
-    }
-    celix_ref_init(&reqHandlerSvcEntry->ref);
-    status = celixThreadRwlock_create(&reqHandlerSvcEntry->lock, NULL);
-    if (status != CELIX_SUCCESS) {
-        return NULL;
-    }
-    reqHandlerSvcEntry->reqHandlerSvc = NULL;
-    return celix_steal_ptr(reqHandlerSvcEntry);
-}
-
-static void exportRegistration_retainReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry) {
-    celix_ref_get(&reqHandlerSvcEntry->ref);
-}
-
-static bool exportRegistration_destroyReqHandlerSvcEntry(struct celix_ref *ref) {
-    export_request_handler_service_entry_t *reqHandlerSvcEntry = (export_request_handler_service_entry_t *)ref;
-    celixThreadRwlock_destroy(&reqHandlerSvcEntry->lock);
-    free(reqHandlerSvcEntry);
-    return true;
-}
-
-static void exportRegistration_releaseReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry) {
-    (void)celix_ref_put(&reqHandlerSvcEntry->ref, exportRegistration_destroyReqHandlerSvcEntry);
-}
-
-static void exportRegistration_addRpcFac(void *handle, void *svc) {
-    assert(handle != NULL);
-    celix_status_t status = CELIX_SUCCESS;
-    export_registration_t *export = (export_registration_t *)handle;
-
-    if (export->rpcFac != NULL) {
-        celix_logHelper_info(export->logHelper,"RSA export reg: A endpoint supports only one rpc service.");
-        return;
-    }
-    celix_logHelper_info(export->logHelper,"RSA export reg: RSA rpc service add.");
-    rsa_rpc_factory_t *rpcFac = (rsa_rpc_factory_t *)svc;
-    long reqHandlerSvcId = -1;
-    status = rpcFac->createEndpoint(rpcFac->handle, export->endpointDesc,
-            &reqHandlerSvcId);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(export->logHelper,"RSA export reg: Error Installing %s endpoint. %d.",
-                export->endpointDesc->serviceName, status);
-        return;
-    }
-
-    char filter[32] = {0};// It is longer than the size of "service.id" + reqHandlerSvcId
-    (void)snprintf(filter, sizeof(filter), "(%s=%ld)", CELIX_FRAMEWORK_SERVICE_ID,
-            reqHandlerSvcId);
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.filter = filter;
-    opts.filter.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts.filter.versionRange = CELIX_RSA_REQUEST_HANDLER_SERVICE_USE_RANGE;
-    opts.callbackHandle = export->reqHandlerSvcEntry;
-    // exportRegistration_removeRequestHandlerSvc maybe occur after exportRegistration_destroyCallback. Therefore,Using refrence count here.
-    exportRegistration_retainReqHandlerSvcEntry(export->reqHandlerSvcEntry);
-    opts.add = exportRegistration_addRequestHandlerSvc;
-    opts.remove = exportRegistration_removeRequestHandlerSvc;
-    export->reqHandlerSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(export->context, &opts);
-    if (export->reqHandlerSvcTrkId < 0) {
-        celix_logHelper_error(export->logHelper, "RSA export reg: Error Tracking service for %s(%ld)", CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
-        exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
-        rpcFac->destroyEndpoint(rpcFac->handle, reqHandlerSvcId);
-        return;
-    }
-    export->reqHandlerSvcId = reqHandlerSvcId;
-    export->rpcFac = (rsa_rpc_factory_t *)svc;
-    return;
-}
-
-static void exportRegistration_removeRpcFac(void *handle, void *svc) {
-    assert(handle != NULL);
-    export_registration_t *export = (export_registration_t *)handle;
-
-    if (export->rpcFac != svc) {
-        celix_logHelper_info(export->logHelper,"RSA import reg: A endponit supports only one rpc service.");
-        return;
-    }
-
-    celix_logHelper_info(export->logHelper,"RSA import reg: RSA rpc service remove.");
-
-    rsa_rpc_factory_t *rpcFac = (rsa_rpc_factory_t *)svc;
-    if (rpcFac != NULL && export->reqHandlerSvcId >= 0) {
-        celix_bundleContext_stopTrackerAsync(export->context, export->reqHandlerSvcTrkId,
-                export->reqHandlerSvcEntry, (void*)exportRegistration_releaseReqHandlerSvcEntry);
-        rpcFac->destroyEndpoint(rpcFac->handle, export->reqHandlerSvcId);
-        export->reqHandlerSvcId = -1;
-        export->rpcFac = NULL;
-    }
-    return;
-}
-
-
-static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc) {
-    assert(handle != NULL);
-    assert(svc != NULL);
-    struct export_request_handler_service_entry *reqHandlerSvcEntry =
-            (struct export_request_handler_service_entry *)handle;
-    celix_auto(celix_rwlock_wlock_guard_t) locker = celixRwlockWlockGuard_init(&reqHandlerSvcEntry->lock);
-    reqHandlerSvcEntry->reqHandlerSvc = (rsa_request_handler_service_t *)svc;
-    return;
-}
-
-static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc) {
-    assert(handle != NULL);
-    assert(svc != NULL);
-    struct export_request_handler_service_entry *reqHandlerSvcEntry =
-            (struct export_request_handler_service_entry *)handle;
-    celix_auto(celix_rwlock_wlock_guard_t) locker = celixRwlockWlockGuard_init(&reqHandlerSvcEntry->lock);
-    if (svc == reqHandlerSvcEntry->reqHandlerSvc) {
-        reqHandlerSvcEntry->reqHandlerSvc = NULL;
-    }
-    return;
 }
 
 celix_status_t exportRegistration_call(export_registration_t *export, celix_properties_t *metadata,
@@ -298,14 +134,13 @@ celix_status_t exportRegistration_call(export_registration_t *export, celix_prop
     if (export == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    struct export_request_handler_service_entry *reqHandlerSvcEntry = export->reqHandlerSvcEntry;
-    assert(reqHandlerSvcEntry != NULL);
-    celix_auto(celix_rwlock_rlock_guard_t) locker = celixRwlockRlockGuard_init(&reqHandlerSvcEntry->lock);
-    if (reqHandlerSvcEntry->reqHandlerSvc != NULL) {
-        status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, metadata, request, response);
+
+    celix_auto(celix_rwlock_rlock_guard_t) locker = celixRwlockRlockGuard_init(&export->rpcFacLock);
+    if (export->rpcFac != NULL) {
+        status = export->rpcFac->handleRequest(export->rpcFac->handle, export->endpointId, metadata, request, response);
     } else {
         status = CELIX_ILLEGAL_STATE;
-        celix_logHelper_error(export->logHelper, "RSA export reg: Error Handling request. Please ensure rsa rpc servie is active.");
+        celix_logHelper_error(export->logHelper, "RSA export reg: Error Handling request. Maybe rsa rpc factory service is stopping.");
     }
 
     return status;

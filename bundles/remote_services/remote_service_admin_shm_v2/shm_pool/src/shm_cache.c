@@ -138,7 +138,7 @@ static void shmCache_destroyBlock(shm_cache_t *shmCache, shm_cache_block_t *shmB
 
 void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOffset) {
     void *ptr = NULL;
-    if (shmCache != NULL && shmId > 0 && memoryOffset > 0) {
+    if (shmCache != NULL && shmId >= 0 && memoryOffset > 0) {
         celixThreadMutex_lock(&shmCache->mutex);
         shm_cache_block_t *shmBlock = celix_longHashMap_get(shmCache->shmCacheBlocks, shmId);
         if (shmBlock != NULL) {
