@@ -35,7 +35,7 @@
 #define ETCD_JSON_DIR                   "dir"
 #define ETCD_JSON_MODIFIEDINDEX         "modifiedIndex"
 #define ETCD_JSON_INDEX                 "index"
-#define ETCD_JSON_ERRORCODE                "errorCode"
+#define ETCD_JSON_ERRORCODE             "errorCode"
 
 #define ETCD_HEADER_INDEX               "X-Etcd-Index: "
 
