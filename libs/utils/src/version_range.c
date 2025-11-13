@@ -38,7 +38,7 @@ celix_version_range_t* celix_versionRange_createVersionRange(celix_version_t* lo
 }
 
 
-celix_version_range_t* celix_versionRange_createInfiniteVersionRange() {
+celix_version_range_t* celix_versionRange_createInfiniteVersionRange(void) {
     return celix_versionRange_createVersionRange(celix_version_createEmptyVersion(), true, NULL, true);
 }
 

@@ -234,31 +234,31 @@ static celix_array_list_t* celix_arrayList_createTypedArray(celix_array_list_ele
     return celix_arrayList_createWithOptions(&opts);
 }
 
-celix_array_list_t* celix_arrayList_create() {
+celix_array_list_t* celix_arrayList_create(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
 }
 
-celix_array_list_t* celix_arrayList_createPointerArray() {
+celix_array_list_t* celix_arrayList_createPointerArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER);
 }
 
-celix_array_list_t* celix_arrayList_createStringArray() {
+celix_array_list_t* celix_arrayList_createStringArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
 }
 
-celix_array_list_t* celix_arrayList_createLongArray() {
+celix_array_list_t* celix_arrayList_createLongArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
 }
 
-celix_array_list_t* celix_arrayList_createDoubleArray() {
+celix_array_list_t* celix_arrayList_createDoubleArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
 }
 
-celix_array_list_t* celix_arrayList_createBoolArray() {
+celix_array_list_t* celix_arrayList_createBoolArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
 }
 
-celix_array_list_t* celix_arrayList_createVersionArray() {
+celix_array_list_t* celix_arrayList_createVersionArray(void) {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
 }
 

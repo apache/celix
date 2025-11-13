@@ -28,6 +28,7 @@
 #include "celix_utils_export.h"
 #include "celix_errno.h"
 #include "celix_cleanup.h"
+#include "celix_compiler.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,25 +37,32 @@ extern "C" {
 /**
  * Creates a new <code>celix_version_range_t*</code>.
  *
- * @param low Lower bound version
+ * @param low Lower-bound version
  * @param isLowInclusive True if lower bound should be included in the range
- * @param high Upper bound version
- * @param isHighInclusive True if upper bound should be included in the range
- * @param versionRange The created range
+ * @param high Upper-bound version
+ * @param isHighInclusive True if the upper-bound should be included in the range
  * @return The service range or NULL if the service range could not be created
  */
-CELIX_UTILS_EXPORT celix_version_range_t*
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(celix_version_range)
+CELIX_OWNERSHIP_HOLDS(celix_version, 1)
+CELIX_OWNERSHIP_HOLDS(celix_version, 3)
+celix_version_range_t*
 celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive, celix_version_t* high, bool isHighInclusive);
 
 /**
  * Creates an infinite version range using ::version_createEmptyVersion for the low version,
- *     NULL for the high version and high and low inclusive set to true.
+ *     NULL for the high version, and both bounds are inclusive.
  *
  * @return The created range
  */
-CELIX_UTILS_EXPORT celix_version_range_t* celix_versionRange_createInfiniteVersionRange();
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(celix_version_range)
+celix_version_range_t* celix_versionRange_createInfiniteVersionRange(void);
 
-CELIX_UTILS_EXPORT void celix_versionRange_destroy(celix_version_range_t* range);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_TAKES(celix_version_range, 1)
+void celix_versionRange_destroy(celix_version_range_t* range);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_version_range_t, celix_versionRange_destroy)
 
@@ -87,15 +95,15 @@ CELIX_UTILS_EXPORT bool celix_versionRange_isHighInclusive(const celix_version_r
  * Retrieves whether the lower bound version from the given range
  *
  * @param versionRange The range
- * @param The lower bound version.
+ * @return The lower-bound version.
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_versionRange_getLowVersion(const celix_version_range_t* versionRange);
 
 /**
- * Retrieves whether the upper bound version from the given range
+ * Retrieves whether the upper-bound version from the given range
  *
  * @param versionRange The range
- * @return The upper bound version.
+ * @return The upper-bound version.
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_versionRange_getHighVersion(const celix_version_range_t* versionRange);
 
@@ -121,17 +129,19 @@ CELIX_UTILS_EXPORT celix_version_t* celix_versionRange_getHighVersion(const celi
 CELIX_UTILS_EXPORT celix_version_range_t* celix_versionRange_parse(const char *rangeString);
 
 /**
- * Returns the LDAP filter for a version range. Caller is owner of the returned string.
+ * Returns the LDAP filter for a version range. Caller is the owner of the returned string.
  *
  * @param range                         The version range used as input for the LDAP filer
- * @param serviceVersionPropertyName    The service version name to be used in the filter (i.e. service.version)
+ * @param serviceVersionAttributeName   The service version name to be used in the filter (i.e., service.version)
  * @return LDAP filter string if valid, NULL otherwise
  */
-CELIX_UTILS_EXPORT char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, const char *serviceVersionAttributeName);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(malloc)
+char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, const char *serviceVersionAttributeName);
 
 /**
- * construct a LDAP filter for the provided version range.
- * The string will be created in the provided buffer, if the buffer is big enough.
+ * Construct an LDAP filter for the provided version range.
+ * The string will be created in the provided buffer if the buffer is big enough.
  *
  * @return True if parse successful, False otherwise.
  */

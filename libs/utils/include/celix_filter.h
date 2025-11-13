@@ -22,11 +22,11 @@
  * @brief Header file for the Celix Filter API.
  *
  * #Introduction
- * An Apache Celix filter is a based on LDAP filters, for more information about LDAP filters see:
+ * An Apache Celix filter is based on LDAP filters, for more information about LDAP filters see:
  *  - https://tools.ietf.org/html/rfc4515
  *  - https://tools.ietf.org/html/rfc1960
  *
- * In short an Apache Celix filter is a tree of filter nodes, parsed from a filter string.
+ * In short, an Apache Celix filter is a tree of filter nodes, parsed from a filter string.
  * Each node has an operand, an optional attribute string and an optional value string.
  * The operand can be one of the following:
  * - `=`: equal
@@ -41,40 +41,40 @@
  * - `&`: and
  * - `|`: or
  *
- The filter string is a list of filter node strings wrapped in parenthesis to group filter nodes.
+ The filter string is a list of filter node strings wrapped in parentheses to group filter nodes.
  * The following are valid filter strings:
- * - `(key=value)` # Matches if properties contains a entry with key "key" and value "value".
- * - `(key>=2)`# Matches if properties contains a entry with key "key" and value greater or equal to 2.
- * - `(key=*)` # Matches if properties contains a entry with key "key".
- * - `(!(key=value))` # Matches if properties does not contain a entry with key "key" and value "value".
- * - `(&(key1=value1)(key2=value2))` # Matches if properties contains a entry with key "key1" and value "value1" and
- *                                   # a entry with key "key2" and value "value2".
- * - `(|(key1=value1)(key2=value2))` # Matches if properties contains a entry with key "key1" and value "value1" or
- *                                   # a entry with key "key2" and value "value2".
+ * - `(key=value)` # Matches if the property set contains an entry with key "key" and value "value".
+ * - `(key>=2)`# Matches if the property set contains an entry with key "key" and value greater or equal to 2.
+ * - `(key=*)` # Matches if the property set contains an entry with key "key".
+ * - `(!(key=value))` # Matches if the property set does not contain an entry with key "key" and value "value".
+ * - `(&(key1=value1)(key2=value2))` # Matches if the property set contains an entry with key "key1" and value "value1" and
+ *                                   # an entry with key "key2" and value "value2".
+ * - `(|(key1=value1)(key2=value2))` # Matches if the property set contains an entry with key "key1" and value "value1" or
+ *                                   # an entry with key "key2" and value "value2".
  *
- * Apache Celix filters can be used to match a set of Apache Celix properties and such Apache Celix filters should be
+ * Apache Celix filters can be used to match a set of Apache Celix properties, and such Apache Celix filters should be
  * used together with a set of properties.
  *
  * #Filter matching and property value types
- * When matching a filter the attribute type of a filter node is used to determine the type of the property value and
+ * When matching a filter, the attribute type of the filter node is used to determine the type of the property value, and
  * this type is used to compare the property value with the filter attribute value.
  * If the property value is of a type that the filter attribute value can be parsed to, the filter attribute value the
  * comparison is done with the matching type. If the property value is not of a type that the filter attribute value
  * can be parsed to, the comparison is done with the string representation of the property value.
  *
- * Internally attribute values will be parsed to a long, double, boolean, Apache Celix version and array list of
+ * Internally, attribute values will be parsed to a long, double, boolean, Apache Celix version and array list of
  * longs, doubles, booleans, Apache Celix versions and string if possible during creation.
  * And these typed attribute values will be used in the to-be-matched property value.
  *
- * Example: The filter "(key>20)" and a property set with a long value 3 for key "key", will not match and the same
- * filter but with a property set which has a string value "3" for key "key", will match.
+ * Example: The filter "(key>20)" and a property set with a long value 3 for key "key" will not match, and the same
+ * filter but with a property set which has a string value "3" for key "key" will match.
  *
  * #Filter matching and property value arrays
  * If a filter matches a property set entry which has an array value (either a long, boolean, double, string or version
- * array) the filter match will check if the array contains a single entry which matches the filter attribute value using
+ * array), the filter match will check if the array contains a single entry which matches the filter attribute value using
  * the aforementioned "Filter matching and property value types" rules.
  *
- * Filter matching with array is supported for the following operands: "=" (including substring), ">=", "<=", ">", "<"
+ * Filter matching with an array is supported for the following operands: "=" (including substring), ">=", "<=", ">", "<"
  * and "~=".
  *
  * Example: The filter "(key=3)" will match the property set entry with key "key" and a long array list value of
@@ -85,15 +85,15 @@
  * value can contain a `*` to match any character sequence. The filter attribute value can also contain a `*` at the
  * start or end of the string to match any character sequence at the start or end of the string.
  *
- * A substring filter operand uses the string representation of the property value to match with the filter attribute
- * or if the property value is an string array the substring filter operand will match if any of the string array values.
+ * A substring filter operand uses the string representation of the property value to match with the filter attribute.
+ * If the property value is a string array, the substring filter operand will match if any of the string array values matches.
  *
  * Example: The filter "(key=*Smith)" will match the property set entry with key "key" and a string value "John Smith".
  *
  * #Approx filter operand
  * The approx filter operand is used to check if the filter attribute value is a substring of the property value.
- * A approx filter operand uses the string representation of the property value to match with the filter attribute or
- * if the property value is an string array the approx filter operand will match if any of the string array values.
+ * An approx filter operand uses the string representation of the property value to match with the filter attribute.
+ * If the property value is a string array, the approx filter operand will match if any of the string array values matches.
  *
  * Example: The filter "(key~=Smith)" will match the property set entry with key "key" and a string value "John Smith".
  */
@@ -156,12 +156,16 @@ struct celix_filter_struct {
  * @param filterStr The filter string. If NULL or "" a match-all "(|)" filter is created.
  * @return The created filter or NULL if the filter string is invalid.
  */
-CELIX_UTILS_EXPORT celix_filter_t* celix_filter_create(const char* filterStr);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(celix_filter)
+celix_filter_t* celix_filter_create(const char* filterStr);
 
 /**
  * @brief Destroy the provided filter. Ignores NULL values.
  */
-CELIX_UTILS_EXPORT void celix_filter_destroy(celix_filter_t* filter);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_TAKES(celix_filter, 1)
+void celix_filter_destroy(celix_filter_t* filter);
 
 /**
  * @brief Add support for `celix_autoptr`.
@@ -172,7 +176,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_filter_t, celix_filter_destroy)
  * @brief Check whether the provided filter matches the provided properties.
  * @param[in] filter The filter.
  * @param[in] props The properties.
- * @return True if the filter matches the properties, false otherwise. If filter is NULL always returns true and
+ * @return True if the filter matches the properties, false otherwise. If filter is NULL always returns true, and
  *         if props is NULL, the result is the same as if an empty properties set was provided.
  */
 CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* props);
@@ -180,7 +184,7 @@ CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t* filter, const c
 /**
  * @brief Check whether the 2 filters are equal.
  *
- * Note that the equals is done based on the parsed filter string and not on the provided filter strings.
+ * Note that the equality is done based on the parsed filter string and not on the provided filter strings.
  * So the filters parsed from the strings "(key=value)" and " (key=value)" are equal.
  *
  * @param[in] filter1 The first filter.
@@ -218,13 +222,13 @@ CELIX_UTILS_EXPORT const char* celix_filter_findAttribute(const celix_filter_t* 
  *
  * This function recursively examines a filter object to determine if it contains  an 'equals' attribute that matches
  * the specified attribute name. The function takes into account the logical operators AND, OR, and NOT in the
- * filter structure, and appropriately handles them to assess the presence and name of the attribute.
+ * filter structure and appropriately handles them to assess the presence and name of the attribute.
  *
  * Example:
- *   using this function for attribute key "key1" on filter "(key1=value1)" yields true.
- *   using this function for attribute key "key1" on filter "(!(key1=value1))" yields false.
- *   using this function for attribute key "key1" on filter "(key1>=value1)" yields false.
- *   using this function for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
+ *   Using this function for the attribute key "key1" on filter "(key1=value1)" yields true.
+ *   Using this function for the attribute key "key1" on filter "(!(key1=value1))" yields false.
+ *   Using this function for the attribute key "key1" on filter "(key1>=value1)" yields false.
+ *   Using this function for the attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
  *
  * @param[in] filter The filter.
  * @param[in] attribute The attribute to check.
@@ -238,13 +242,13 @@ CELIX_UTILS_EXPORT bool celix_filter_hasMandatoryEqualsValueAttribute(const celi
  *
  * This function recursively examines a filter object to determine if it contains a specification indicating the
  * mandatory absence of the specified attribute. It takes into account logical operators AND, OR, and NOT in the filter
- * structure, and appropriately handles them to assess the absence of the attribute.
+ * structure and appropriately handles them to assess the absence of the attribute.
  *
  * Examples:
- *   using this function for attribute key "key1" on filter "(!(key1=*))" yields true.
- *   using this function for attribute key "key1" on filter "(key1=*)" yields false.
- *   using this function for attribute key "key1" on filter "(key1=value)" yields false.
- *   using this function for attribute key "key1" on filter "(|(!(key1=*))(key2=value2))" yields false.
+ *   Using this function for the attribute key "key1" on filter "(!(key1=*))" yields true.
+ *   Using this function for the attribute key "key1" on filter "(key1=*)" yields false.
+ *   Using this function for the attribute key "key1" on filter "(key1=value)" yields false.
+ *   Using this function for the attribute key "key1" on filter "(|(!(key1=*))(key2=value2))" yields false.
  *
  * @param[in] filter The filter to examine.
  * @param[in] attribute The attribute to check for mandatory absence.
