@@ -24,6 +24,29 @@ mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
 
+function(celix_fix_linux_clang_asan_libpath)
+    # Fix a linux clang deficiency where the ASan runtime library is not found automatically
+    # Find the ASan runtime library path and set RPATH
+    execute_process(
+            COMMAND ${CMAKE_CXX_COMPILER} --print-file-name libclang_rt.asan-x86_64.so
+            OUTPUT_VARIABLE ASAN_LIB_PATH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            RESULT_VARIABLE ASAN_FIND_RESULT
+            ERROR_QUIET # Avoid printing errors if the command fails during configuration
+    )
+
+    if (ASAN_FIND_RESULT EQUAL 0 AND EXISTS "${ASAN_LIB_PATH}")
+        get_filename_component(ASAN_LIB_DIR ${ASAN_LIB_PATH} DIRECTORY)
+        message(STATUS "Setting ASan RPATH to: ${ASAN_LIB_DIR}")
+        set(ASAN_RPATH_FLAG "-Wl,-rpath,${ASAN_LIB_DIR}")
+        # Append to executable, shared library, and module linker flags
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
+    else()
+        message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
+    endif()
+endfunction()
+
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
         set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")
@@ -33,26 +56,7 @@ if (ENABLE_ADDRESS_SANITIZER)
             set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address ${CMAKE_EXE_LINKER_FLAGS}")
             set(CMAKE_SHARED_LINKER_FLAGS "-fsanitize=address ${CMAKE_SHARED_LINKER_FLAGS}")
         else ()
-            # Fix a linux clang deficiency where the ASan runtime library is not found automatically
-            # Find the ASan runtime library path and set RPATH
-            execute_process(
-                    COMMAND ${CMAKE_CXX_COMPILER} --print-file-name libclang_rt.asan-x86_64.so
-                    OUTPUT_VARIABLE ASAN_LIB_PATH
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                    RESULT_VARIABLE ASAN_FIND_RESULT
-                    ERROR_QUIET # Avoid printing errors if the command fails during configuration
-            )
-
-            if (ASAN_FIND_RESULT EQUAL 0 AND EXISTS "${ASAN_LIB_PATH}")
-                get_filename_component(ASAN_LIB_DIR ${ASAN_LIB_PATH} DIRECTORY)
-                message(STATUS "Setting ASan RPATH to: ${ASAN_LIB_DIR}")
-                set(ASAN_RPATH_FLAG "-Wl,-rpath,${ASAN_LIB_DIR}")
-                # Append to executable, shared library, and module linker flags
-                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
-                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
-            else()
-                message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
-            endif()
+            celix_fix_linux_clang_asan_libpath()
         endif ()
     elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")

@@ -14,6 +14,10 @@
 # limitations under the License.
 
 
+if (LINUX)
+    celix_fix_linux_clang_asan_libpath()
+endif ()
+
 add_executable(celix_properties_fuzzer src/PropertiesFuzz.cc)
 target_link_libraries(celix_properties_fuzzer PRIVATE utils_cuf)
 target_compile_options(celix_properties_fuzzer PRIVATE -fsanitize=fuzzer,address)
