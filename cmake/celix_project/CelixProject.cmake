@@ -45,7 +45,7 @@ macro(celix_fix_linux_clang_asan_libpath)
     else()
         message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
     endif()
-endmacro()()
+endmacro()
 
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
