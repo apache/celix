@@ -18,7 +18,6 @@
  */
 
 #include "rsa_json_rpc_endpoint_impl.h"
-#include "rsa_request_handler_service.h"
 #include "remote_interceptors_handler.h"
 #include "endpoint_description.h"
 #include "dfi_utils.h"
@@ -38,8 +37,6 @@ struct rsa_json_rpc_endpoint {
     endpoint_description_t *endpointDesc;
     unsigned int serialProtoId;
     remote_interceptors_handler_t *interceptorsHandler;
-    rsa_request_handler_service_t reqHandlerSvc;
-    long reqHandlerSvcId;
     long svcTrackerId;
     celix_thread_rwlock_t lock; //projects below
     void *service;
@@ -51,8 +48,6 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner);
 static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner);
-static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
-        const struct iovec *request, struct iovec *responseOut);
 
 celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
@@ -97,28 +92,14 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     opts.callbackHandle = endpoint;
     opts.addWithOwner = rsaJsonRpcEndpoint_addSvcWithOwner;
     opts.removeWithOwner = rsaJsonRpcEndpoint_removeSvcWithOwner;
-    endpoint->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(endpoint->ctx, &opts);
+    endpoint->svcTrackerId = celix_bundleContext_trackServicesWithOptions(endpoint->ctx, &opts);//sync call, as we need the service is tracked before returning
     if (endpoint->svcTrackerId < 0) {
         celix_logHelper_error(logHelper, "RSA json rpc endpoint: Error Registering %s tracker.", endpointDesc->serviceName);
         return CELIX_ILLEGAL_STATE;
     }
 
-    endpoint->reqHandlerSvc.handle = endpoint;
-    endpoint->reqHandlerSvc.handleRequest = rsaJsonRpcEndpoint_handleRequest;
-    celix_service_registration_options_t opts1 = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts1.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts1.serviceVersion = CELIX_RSA_REQUEST_HANDLER_SERVICE_VERSION;
-    opts1.svc = &endpoint->reqHandlerSvc;
     celix_steal_ptr(lock);
     celix_steal_ptr(endpointDescCopy);
-    endpoint->reqHandlerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(endpoint->ctx, &opts1);
-    if (endpoint->reqHandlerSvcId< 0) {
-        celix_logHelper_error(logHelper, "Error Registering endpoint request handler service for %s.", endpointDesc->serviceName);
-        celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId,
-                                             endpoint, rsaJsonRpcEndpoint_stopSvcTrackerDone);
-        celix_steal_ptr(endpoint); // endpoint is freed in stopSvcTrackerDone
-        return CELIX_ILLEGAL_STATE;
-    }
     *endpointOut = celix_steal_ptr(endpoint);
     return CELIX_SUCCESS;
 }
@@ -132,24 +113,15 @@ static void rsaJsonRpcEndpoint_stopSvcTrackerDone(void *data) {
     return;
 }
 
-static void rsaJsonRpcEndpoint_unregisterReqHandleSvcDone(void *data) {
-    assert(data != NULL);
-    rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)data;
-    celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId,
-            endpoint, rsaJsonRpcEndpoint_stopSvcTrackerDone);
-    return;
-}
-
 void rsaJsonRpcEndpoint_destroy(rsa_json_rpc_endpoint_t *endpoint) {
     if (endpoint != NULL) {
-        celix_bundleContext_unregisterServiceAsync(endpoint->ctx, endpoint->reqHandlerSvcId,
-                endpoint, rsaJsonRpcEndpoint_unregisterReqHandleSvcDone);
+        celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId, endpoint, rsaJsonRpcEndpoint_stopSvcTrackerDone);
     }
     return;
 }
 
-long rsaJsonRpcEndpoint_getRequestHandlerSvcId(rsa_json_rpc_endpoint_t *endpoint) {
-    return endpoint->reqHandlerSvcId;
+long rsaJsonRpcEndpoint_getId(rsa_json_rpc_endpoint_t *endpoint) {
+    return endpoint->svcTrackerId;
 }
 
 static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
@@ -204,16 +176,15 @@ static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
     return;
 }
 
-static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
+celix_status_t rsaJsonRpcEndpoint_handleRequest(rsa_json_rpc_endpoint_t *endpoint, celix_properties_t *metadata,
         const struct iovec *request, struct iovec *responseOut) {
     celix_status_t status = CELIX_SUCCESS;
-    if (handle == NULL || request == NULL || request->iov_base == NULL
+    if (endpoint == NULL || request == NULL || request->iov_base == NULL
             || request->iov_len == 0 || responseOut == NULL || metadata == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     responseOut->iov_base = NULL;
     responseOut->iov_len = 0;
-    rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
 
     long serialProtoId  = celix_properties_getAsLong(metadata, "SerialProtocolId", 0);
     if (serialProtoId != endpoint->serialProtoId) {

@@ -342,6 +342,8 @@ class CelixConan(ConanFile):
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework:
             self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            if self.settings.os == "Macos":
+                self.requires("gettext/0.21") #needed on MacOS 15 by libuuid
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
@@ -363,9 +365,9 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
         self.requires("openssl/[>=3.2.0]", override=True)
-        self.requires("zlib/1.2.13", override=True)
+        # Fix zlib to 1.3.1, 'libzip/1.10.1' and 'libcurl/7.64.1' requires different zlib versions causing conflicts
+        self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
         self.validate()
@@ -382,17 +384,18 @@ class CelixConan(ConanFile):
                 tc.cache_variables["BUILD_ERROR_INJECTOR_JANSSON"] = "ON"
             if "mosquitto" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MOSQUITTO"] = "ON"
+            if "libcurl" in lst:
+                tc.cache_variables["BUILD_ERROR_INJECTOR_CURL"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
             tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
-        elif self.settings.os == "Macos":
-            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         v = Version(self.version)
         tc.cache_variables["CELIX_MAJOR"] = str(v.major.value)
         tc.cache_variables["CELIX_MINOR"] = str(v.minor.value)
         tc.cache_variables["CELIX_MICRO"] = str(v.patch.value)
+        tc.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
         tc.generate()
 
     def _configure_cmake(self):

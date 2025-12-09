@@ -23,13 +23,11 @@ note over rsa_rpc_json
 The interface description file
 is provided by the service provider
 end note
-rsa_rpc_json->framework:Register RPC request handler service\n(rsa_request_handler_service_t)
-return RPC request handler service id
-rsa_rpc_json --> rsa:RPC request handler service id
+rsa_rpc_json --> rsa:endpointId
 
 ==use endpoint(service call)==
 -\rsa:receive rpc request
-rsa->rsa_rpc_json:call RPC request handler service
+rsa->rsa_rpc_json:call handleRequest(endpointId)
 rsa_rpc_json->rsa_rpc_json:deserialize rpc request
 rsa_rpc_json->rsa_rpc_json:ffi_call(ffi_cif, target_service)
 rsa_rpc_json->rsa_rpc_json:serialize the result of service invocation

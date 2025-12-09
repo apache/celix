@@ -373,11 +373,11 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 		status = CELIX_ILLEGAL_STATE;
 	} else {
 		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, endpointDiscoveryPoller_writeMemory);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, poller->poll_timeout);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)poller->poll_timeout);
 		res = curl_easy_perform(curl);
 
 		curl_easy_cleanup(curl);

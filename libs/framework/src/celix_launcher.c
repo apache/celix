@@ -28,6 +28,7 @@
 #include <libgen.h>
 
 #ifndef CELIX_NO_CURLINIT
+#include <stdbool.h>
 #include <curl/curl.h>
 #endif
 
@@ -127,6 +128,33 @@ static celix_status_t celix_launcher_createBundleCache(celix_properties_t* embed
  */
 static celix_status_t celix_launcher_loadRuntimeProperties(const char* configFile, celix_properties_t** outConfigProperties);
 
+#ifndef CELIX_NO_CURLINIT
+/**
+ * @brief Initializes the CURL library if it has not been initialized yet.
+ *
+ * This function ensures that the CURL initialization function is 
+ * called only once, regardless of how many times a celix framework is launched.
+ *
+ * @return CELIX_SUCCESS if CURL was initialized successfully, or 
+ * CELIX_ILLEGAL_STATE if curl initialization failed.
+ */
+static celix_status_t celix_launcher_initializeCurl();
+
+/**
+ * @brief Cleans up the CURL library if it was previously initialized.
+ *
+ * This function is called with __attribute__(destructor) to ensure that the
+ * CURL cleanup function is called only once, regardless of how many times
+ * a (global) launched celix framework is stopped and started again.
+ */
+static void celix_launcher_cleanupCurl() __attribute__((destructor));
+
+/**
+ * @brief CURL initialization bool, used to check if CURL has been initialized.
+ */
+static bool g_curl_initialized = 0;
+#endif
+
 /**
  * @brief Set the global framework instance.
  */
@@ -186,12 +214,18 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
         celix_bundleContext_log(celix_framework_getFrameworkContext(framework), CELIX_LOG_LEVEL_WARNING,
                                 "Failed to schedule celix_shutdown_check");
     }
+
+#ifndef CELIX_NO_CURLINIT
+    status = celix_launcher_initializeCurl();
+    if (status != CELIX_SUCCESS) {
+        celix_launcher_resetLauncher();
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
+    }
+#endif
+
     celix_framework_waitForStop(framework);
     celix_launcher_resetLauncher();
-#ifndef CELIX_NO_CURLINIT
-    // Cleanup Curl
-    curl_global_cleanup();
-#endif
+
     return CELIX_LAUNCHER_OK_EXIT_CODE;
 }
 
@@ -248,11 +282,6 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
     sigact.sa_handler = celix_launcher_noopSignalHandler;
     sigaction(SIGUSR1, &sigact, NULL);
     sigaction(SIGUSR2, &sigact, NULL);
-
-#ifndef CELIX_NO_CURLINIT
-    // Before doing anything else, lets setup Curl
-    curl_global_init(CURL_GLOBAL_ALL);
-#endif
 
     *frameworkOut = celix_frameworkFactory_createFramework(embeddedProps);
     return *frameworkOut != NULL ? CELIX_SUCCESS : CELIX_FRAMEWORK_EXCEPTION;
@@ -449,3 +478,27 @@ static void celix_launcher_resetLauncher() {
     }
     g_launcher.launched = false;
 }
+
+#ifndef CELIX_NO_CURLINIT
+celix_status_t celix_launcher_initializeCurl() {
+    bool alreadyInitialized = __atomic_exchange_n(&g_curl_initialized, true, __ATOMIC_SEQ_CST);
+    if (alreadyInitialized) {
+        return CELIX_SUCCESS;
+    }
+    CURLcode cc = curl_global_init(CURL_GLOBAL_DEFAULT);
+    if (cc != CURLE_OK) {
+        fprintf(stderr, "Failed to initialize Curl: %s\n", curl_easy_strerror(cc));
+        //note only 1 framework can be launcher with celix launcher and the launcher is set, so no startup race
+        __atomic_store_n(&g_curl_initialized, false, __ATOMIC_SEQ_CST); 
+        return CELIX_ILLEGAL_STATE;
+    }
+    return CELIX_SUCCESS;
+}
+
+static void celix_launcher_cleanupCurl() {
+    bool wasInitialized = __atomic_load_n(&g_curl_initialized, __ATOMIC_SEQ_CST);
+    if (wasInitialized) {
+        curl_global_cleanup();
+    }
+}
+#endif

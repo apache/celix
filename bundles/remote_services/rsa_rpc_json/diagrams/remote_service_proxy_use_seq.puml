@@ -16,19 +16,19 @@ limitations under the License.
 @startuml
 ==create proxy factory(service import)==
 -\rsa:importService()
-rsa->rsa_rpc_json:createProxy(endpointDescription, requestSenderSvcId)
+rsa->rsa_rpc_json:createProxy(endpointDescription, celix_rsa_send_request_fp)
 rsa_rpc_json->framework:Register remote service proxy factory service\n(celix_service_factory_t)
 return factory service id
-rsa_rpc_json --> rsa:factory service id
+rsa_rpc_json --> rsa:proxyId
 
 ==use proxy(remote service call)==
--\rsa:remote service call
-rsa->rsa_rpc_json:get remote service proxy service(use celix_service_factory_t)
+framework/-:remote service call
+framework->rsa_rpc_json:get remote service proxy service(use celix_service_factory_t)
 alt proxy service is not existed
 rsa_rpc_json->rsa_rpc_json:Create proxy service according to the interface description file
 end
-rsa_rpc_json-->rsa:proxy service
-rsa->rsa_rpc_json:call proxy service
+rsa_rpc_json-->framework:proxy service
+framework->rsa_rpc_json:call proxy service
 rsa_rpc_json->rsa_rpc_json:serialize invocation information of proxy service
-rsa_rpc_json-->rsa:serialized result
+rsa_rpc_json-->rsa:serialized result (send by celix_rsa_send_request_fp)
 @enduml

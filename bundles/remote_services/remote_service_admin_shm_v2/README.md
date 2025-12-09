@@ -32,17 +32,18 @@ The ‘rsa_json_rpc’ bundle is used to realize (de)serialization and creating 
 
 ### Properties/Configuration
 
-| **Properties**                             | **Type** | **Description**| **Default value** |
-|--------------------------------------------|----------|----------------|------------------|
-| **CELIX_RSA_SHM_POOL_SIZE**                | long     | The RSA SHM pool size in bytes. Its value should be greater than or equal to 8192 bytes.| 256KB            |
-| **CELIX_RSA_SHM_MSG_TIMEOUT**                    | long     | The timeout of remote service invocation in seconds. | default 30s      |
-| **CELIX_RSA_SHM_MAX_CONCURRENT_INVOCATIONS_NUM** | long     | The maximum concurrent invocations of the same service. If there are more concurrent invocations than its value,  service invocation will fail.| 32       |
+| **Properties**                             | **Type**    | **Description**| **Default value** |
+|--------------------------------------------|-------------|----------------|-------------------|
+| **CELIX_RSA_SHM_POOL_SIZE**                | long        | The RSA SHM pool size in bytes. Its value should be greater than or equal to 8192 bytes.| 256KB             |
+| **CELIX_RSA_SHM_MSG_TIMEOUT**                    | long        | The timeout of remote service invocation in seconds. | default 30s       |
+| **CELIX_RSA_SHM_MAX_CONCURRENT_INVOCATIONS_NUM** | long        | The maximum concurrent invocations of the same service. If there are more concurrent invocations than its value,  service invocation will fail.| 32                |
+|**CELIX_RSA_SHM_RPC_TYPES**               | a comma-separated string | The supported rpc types of rsa_shm, the value should be equal to the value of `celix.remote.admin.rpc_type` property of `celix_rsa_rpc_factory_t`. | “celix.remote.admin.rpc_type.json”                |
 
 The value of RSA_SHM_POOL_SIZE should be greater than or equal to 8192 bytes, because current memory pool ctrl block(control_t) size is 6536 bytes.
 
 ### Supported service.exported.configs
 
-- **celix.remote.admin.shm** : The IPC type is shared memory, and the default serialization type is json. And remote service can use `celix.remote.admin.shm.rpc_type` property to configure the serialization type(Current only implement json serialization in celix project).The value of `celix.remote.admin.shm.rpc_type` property should be equal to the value of `celix.remote.admin.rpc_type` property of `rsa_rpc_factory_t`.
+- **celix.remote.admin.shm** : The IPC type is shared memory, and the default serialization type is json. And remote service can use `celix.remote.admin.shm.rpc_type` property to configure the serialization type(Current only implement json serialization in celix project).The value of `celix.remote.admin.shm.rpc_type` property should be equal to the value of `celix.remote.admin.rpc_type` property of `celix_rsa_rpc_factory_t`.
 
 ### Conan Option
     build_rsa_remote_service_admin_shm_v2=True   Default is False
@@ -58,13 +59,11 @@ If you need to complete a remote procedure call, multiple different bundles need
 
 ![rsa_shm_component_diagram](diagrams/rsa_shm_component_diagram.png)
 
-RSA_SHM (Remote Service Admin SHM) has implemented data transmission based on shared memory, and provides a remote service admin service (`remote_service_admin_service_t`), and a remote request sending service (`rsa_request_sender_service_t`).
+RSA_SHM (Remote Service Admin SHM) has implemented data transmission based on shared memory, and provides a remote service admin service (`remote_service_admin_service_t`).
 
-RSA_RPC (Remote Service Admin RPC) implements the serialization and deserialization for interactive data, and provides an endpoint/proxy factory service (`rsa_rpc_factory_t`) of remote service, as well as a remote request handler service (`rsa_request_handler_service_t`).
+RSA_RPC (Remote Service Admin RPC) implements the serialization and deserialization for interactive data, and provides an endpoint/proxy factory service (`celix_rsa_rpc_factory_t`) of remote service.
 
-During imports/exports remote services, the topology manager imports/exports the remote service endpoint by `remote_service_admin_service_t`. At the same time, RSA_SHM creates a remote service proxy/endpoint by `rsa_rpc_factory_t`.
-
-When a remote procedure call occurs, the remote service proxy use `rsa_request_sender_service_t` to send the request to the remote service endpoint. And the remote service endpoint uses `rsa_request_handler_service_t` to convert the request into a local service call.
+During imports/exports remote services, the topology manager imports/exports the remote service endpoint by `remote_service_admin_service_t`. At the same time, RSA_SHM creates a remote service proxy/endpoint by `celix_rsa_rpc_factory_t`.
 
 #### The Remote Service Invocation Sequence
 

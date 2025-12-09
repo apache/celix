@@ -16,19 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <endpoint_description.h>
-#include <endpoint_listener.h>
-#include <export_registration.h>
-#include <import_registration.h>
-#include <remote_constants.h>
-#include <remote_endpoint_impl.h>
-#include <remote_endpoint.h>
-#include <remote_interceptor.h>
-#include <remote_interceptors_handler.h>
-#include <remote_proxy.h>
-#include <remote_service_admin.h>
-#include <celix_rsa_rpc_factory.h>
 
-int main(int argc, char **argv) {
-    return 0;
+#include "curl_ei.h"
+
+extern "C" {
+
+CURLcode __real_curl_global_init(long flags);
+CELIX_EI_DEFINE(curl_global_init, CURLcode)
+CURLcode __wrap_curl_global_init(long flags) {
+    CELIX_EI_IMPL(curl_global_init);
+    return __real_curl_global_init(flags);
 }
+
+} // extern "C"

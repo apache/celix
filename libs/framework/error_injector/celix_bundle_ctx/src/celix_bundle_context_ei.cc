@@ -54,6 +54,13 @@ long __wrap_celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_conte
     return __real_celix_bundleContext_trackServicesWithOptionsAsync(__ctx, __opts);
 }
 
+long __real_celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *__ctx, const celix_service_tracking_options_t *__opts);
+CELIX_EI_DEFINE(celix_bundleContext_trackServicesWithOptions, long)
+long __wrap_celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *__ctx, const celix_service_tracking_options_t *__opts) {
+    CELIX_EI_IMPL(celix_bundleContext_trackServicesWithOptions);
+    return __real_celix_bundleContext_trackServicesWithOptions(__ctx, __opts);
+}
+
 long __real_celix_bundleContext_getBundleId(const celix_bundle_context_t *__ctx);
 CELIX_EI_DEFINE(celix_bundleContext_getBundleId, long)
 long __wrap_celix_bundleContext_getBundleId(const celix_bundle_context_t *__ctx) {

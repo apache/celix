@@ -211,6 +211,33 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     celix_arrayList_destroy(infos);
 }
 
+TEST_F(DependencyManagerTestSuite, DmInterfaceAddRemove) {
+    auto *mng = celix_bundleContext_getDependencyManager(ctx);
+    auto *cmp = celix_dmComponent_create(ctx, "test1");
+
+    void *dummyInterfacePointer = (void *) 0x42;
+
+    auto *p = celix_properties_create();
+    celix_properties_set(p, "key", "value");
+    celix_dmComponent_addInterface(cmp, "test-interface", nullptr, dummyInterfacePointer, p);
+
+    auto *dep = celix_dmServiceDependency_create();
+    celix_dmServiceDependency_setService(dep, "test-interface", nullptr, nullptr);
+    celix_dmComponent_addServiceDependency(cmp, dep);
+
+    celix_dependencyManager_add(mng, cmp);
+
+    celix_dmComponent_removeInterface(cmp, dummyInterfacePointer);
+
+    auto *infos = celix_dependencyManager_createInfos(mng);
+    ASSERT_EQ(1, celix_arrayList_size(infos));
+    auto *dmInfo = (celix_dependency_manager_info_t *) celix_arrayList_get(infos, 0);
+    ASSERT_EQ(1, celix_arrayList_size(dmInfo->components));
+    auto *info = (celix_dm_component_info_t *) celix_arrayList_get(dmInfo->components, 0);
+    EXPECT_EQ(0, celix_arrayList_size(info->interfaces));
+    celix_arrayList_destroy(infos);
+}
+
 TEST_F(DependencyManagerTestSuite, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");

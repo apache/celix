@@ -17,29 +17,20 @@
  * under the License.
  */
 
-#ifndef _RSA_REQUEST_SENDER_TRACKER_H_
-#define _RSA_REQUEST_SENDER_TRACKER_H_
+#ifndef CELIX_CURL_EI_H
+#define CELIX_CURL_EI_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "rsa_request_sender_service.h"
-#include "celix_log_helper.h"
-#include "celix_types.h"
-#include "celix_errno.h"
 
-typedef struct rsa_request_sender_tracker rsa_request_sender_tracker_t;
+#include <curl/curl.h>
+#include "celix_error_injector.h"
 
-celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
-        rsa_request_sender_tracker_t **trackerOut);
-
-void rsaRequestSenderTracker_destroy(rsa_request_sender_tracker_t *tracker);
-
-celix_status_t rsaRequestSenderTracker_useService(rsa_request_sender_tracker_t *tracker,
-        long reqSenderSvcId, void *handle, celix_status_t (*use)(void *handle, rsa_request_sender_service_t *svc));
+CELIX_EI_DECLARE(curl_global_init, CURLcode);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RSA_REQUEST_SENDER_TRACKER_H_ */
+#endif //CELIX_CURL_EI_H

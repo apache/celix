@@ -19,11 +19,8 @@
 
 #include "rsa_json_rpc_impl.h"
 #include "rsa_json_rpc_constants.h"
-#include "rsa_request_sender_tracker.h"
 #include "rsa_json_rpc_proxy_impl.h"
 #include "rsa_json_rpc_endpoint_impl.h"
-#include "rsa_request_sender_service.h"
-#include "rsa_request_handler_service.h"
 #include "RsaJsonRpcTestService.h"
 #include "remote_interceptor.h"
 #include "endpoint_description.h"
@@ -51,6 +48,17 @@ extern "C" {
 #include "remote_interceptors_handler.h"
 }
 
+static celix_status_t SendRequest(void *handle, const endpoint_description_t *endpointDescription,
+                                   celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
+    (void) handle;
+    (void) endpointDescription;
+    (void) metadata;
+    (void) request;
+    response->iov_base = strdup("{}");
+    response->iov_len = 2;
+    return CELIX_SUCCESS;
+}
+
 class RsaJsonRpcUnitTestSuite : public ::testing::Test {
 public:
     RsaJsonRpcUnitTestSuite() {
@@ -75,7 +83,7 @@ public:
         celix_ei_expect_dynFunction_createClosure(nullptr, 0, 0);
         celix_ei_expect_jsonRpc_prepareInvokeRequest(nullptr, 0, 0);
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
-        celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(nullptr, 0, 0);
+        celix_ei_expect_celix_bundleContext_trackServicesWithOptions(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
@@ -168,28 +176,20 @@ TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRemoteInterceptorsHandler) {
     EXPECT_EQ(CELIX_ENOMEM, status);
 }
 
-TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRsaRequestSenderTracker) {
-    rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_calloc((void*)&rsaRequestSenderTracker_create, 0, nullptr);
-    auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
-    EXPECT_EQ(CELIX_ENOMEM, status);
-}
-
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxy) {
     rsa_json_rpc_t *jsonRpc = nullptr;
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     auto endpoint = CreateEndpointDescription();
-    long reqSenderSvcId = 101;//set a dummy service id
-    long proxySvcId = -1;
-    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, reqSenderSvcId, &proxySvcId);
+    long proxyId = -1;
+    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_SUCCESS, status);
-    EXPECT_NE(-1, proxySvcId);
+    EXPECT_NE(-1, proxyId);
 
     endpointDescription_destroy(endpoint);
 
-    rsaJsonRpc_destroyProxy(jsonRpc, proxySvcId);
+    rsaJsonRpc_destroyProxy(jsonRpc, proxyId);
 
     rsaJsonRpc_destroy(jsonRpc);
 }
@@ -200,15 +200,14 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxyWithInvalidParams) {
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     auto endpoint = CreateEndpointDescription();
-    long reqSenderSvcId = 101;//set a dummy service id
-    long proxySvcId = -1;
-    status = rsaJsonRpc_createProxy(jsonRpc, nullptr, reqSenderSvcId, &proxySvcId);
+    long proxyId = -1;
+    status = rsaJsonRpc_createProxy(jsonRpc, nullptr, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, -1, &proxySvcId);
+    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, nullptr, nullptr, &proxyId);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, reqSenderSvcId, nullptr);
+    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, SendRequest, nullptr, nullptr);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     endpointDescription_destroy(endpoint);
@@ -222,10 +221,9 @@ TEST_F(RsaJsonRpcUnitTestSuite, RpcProxyFailedToCreateProxyFactory) {
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     auto endpoint = CreateEndpointDescription();
-    long reqSenderSvcId = 101;//set a dummy service id
-    long proxySvcId = -1;
+    long proxyId = -1;
     celix_ei_expect_calloc((void*)&rsaJsonRpcProxy_factoryCreate, 0, nullptr);
-    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, reqSenderSvcId, &proxySvcId);
+    status = rsaJsonRpc_createProxy(jsonRpc, endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     endpointDescription_destroy(endpoint);
@@ -234,10 +232,7 @@ TEST_F(RsaJsonRpcUnitTestSuite, RpcProxyFailedToCreateProxyFactory) {
 }
 
 TEST_F(RsaJsonRpcUnitTestSuite, DestroyRpcProxyWithInvalidParams) {
-    rsa_json_rpc_t *jsonRpc = (rsa_json_rpc_t *)0x1234;//set a dummy pointer
-    long proxySvcId = 101;//set a dummy service id
-    rsaJsonRpc_destroyProxy(nullptr, proxySvcId);
-    rsaJsonRpc_destroyProxy(jsonRpc, -1);
+    rsaJsonRpc_destroyProxy(nullptr, 101);
 }
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateEndpoint) {
@@ -296,13 +291,9 @@ TEST_F(RsaJsonRpcUnitTestSuite, RpcEndpointFailedToCreateEndpoint) {
 }
 
 TEST_F(RsaJsonRpcUnitTestSuite, DestroyRpcEndpointWithInvalidParams) {
-    rsa_json_rpc_t *jsonRpc = (rsa_json_rpc_t *)0x1234;//set a dummy pointer
-    long requestHandlerSvcId = 101;//set a dummy service id
-    rsaJsonRpc_destroyEndpoint(nullptr, requestHandlerSvcId);
-    rsaJsonRpc_destroyEndpoint(jsonRpc, -1);
+    rsaJsonRpc_destroyEndpoint(nullptr, 101);
 }
 
-static rsa_request_sender_service_t reqSenderSvc{};
 
 class RsaJsonRpcProxyUnitTestSuite : public RsaJsonRpcUnitTestSuite {
 public:
@@ -312,97 +303,76 @@ public:
         EXPECT_EQ(CELIX_SUCCESS, status);
         EXPECT_NE(nullptr, jsonRpcPtr);
         jsonRpc = std::shared_ptr<rsa_json_rpc_t>{jsonRpcPtr, [](auto* r){rsaJsonRpc_destroy(r);}};
-
-        reqSenderSvc.handle = nullptr;
-        reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-            (void)handle;//unused
-            (void)endpointDesc;//unused
-            (void)metadata;//unused
-            (void)request;//unused
-            response->iov_base = strdup("{}");
-            response->iov_len = 2;
-            return CELIX_SUCCESS;
-        };
-        celix_service_registration_options_t opts{};
-        opts.serviceName = CELIX_RSA_REQUEST_SENDER_SERVICE_NAME;
-        opts.serviceVersion = CELIX_RSA_REQUEST_SENDER_SERVICE_VERSION;
-        opts.svc = &reqSenderSvc;
-        reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx.get(), &opts);
-        EXPECT_NE(-1, reqSenderSvcId);
-
     }
 
     ~RsaJsonRpcProxyUnitTestSuite() override {
-        celix_bundleContext_unregisterServiceAsync(ctx.get(), reqSenderSvcId, nullptr, nullptr);
-    }
+
+    };
 
     std::shared_ptr<rsa_json_rpc_t> jsonRpc{};
-    long reqSenderSvcId = -1;
 };
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToGetServiceVersionFromEndpointDescription) {
     auto endpoint = CreateEndpointDescription();
     celix_properties_unset(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION);
-    long proxySvcId = -1;
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &proxySvcId);
+    long proxyId = -1;
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_SUCCESS, status);
     endpointDescription_destroy(endpoint);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
-        (void)handle;//unused
-        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
-        EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_SUCCESS, proxySvc->test(proxySvc->handle));
-    });
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
     EXPECT_FALSE(found);
 
-    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxySvcId);
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite, ServiceVersionUncompatible) {
     auto endpoint = CreateEndpointDescription();
     celix_properties_set(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "2.0.0");//It is 1.0.0 in the descriptor file of consumer
-    long proxySvcId = -1;
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &proxySvcId);
+    long proxyId = -1;
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_SUCCESS, status);
     endpointDescription_destroy(endpoint);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
-        (void)handle;//unused
-        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
-        EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_SUCCESS, proxySvc->test(proxySvc->handle));
-    });
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
     EXPECT_FALSE(found);
 
-    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxySvcId);
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
 class  RsaJsonRpcProxyUnitTestSuite2 : public RsaJsonRpcProxyUnitTestSuite {
 public:
     RsaJsonRpcProxyUnitTestSuite2() {
         auto endpoint = CreateEndpointDescription();
-        auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &proxySvcId);
+        auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
         EXPECT_EQ(CELIX_SUCCESS, status);
         endpointDescription_destroy(endpoint);
 
         celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
     }
     ~RsaJsonRpcProxyUnitTestSuite2() override {
-        rsaJsonRpc_destroyProxy(jsonRpc.get(), proxySvcId);
+        rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
     }
-    long proxySvcId{-1};
+    long proxyId{-1};
 };
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateSendRequestMethodLock) {
+    celix_autoptr(endpoint_description_t) endpoint = CreateEndpointDescription();
+    long proxyId = -1L;
+    celix_ei_expect_celixThreadRwlock_create((void*)&rsaJsonRpcProxy_factoryCreate, 0, CELIX_ENOMEM);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxiesHashMap) {
     auto endpoint = CreateEndpointDescription();
-    long svcId = -1L;
+    long proxyId = -1L;
     celix_ei_expect_celix_longHashMap_create((void*)&rsaJsonRpc_createProxy, 1, nullptr);
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     endpointDescription_destroy(endpoint);
@@ -410,22 +380,42 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxiesHashMap) {
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCloneEndpointDescription) {
     auto endpoint = CreateEndpointDescription();
-    long svcId = -1L;
+    long proxyId = -1L;
     celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     endpointDescription_destroy(endpoint);
 }
 
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxyServiceProperties) {
+    celix_autoptr(endpoint_description_t)  endpoint = CreateEndpointDescription();
+    long proxyId = -1L;
+    celix_ei_expect_celix_properties_copy((void*)&rsaJsonRpcProxy_factoryCreate, 1, nullptr, 2);//first:endpointDescription_clone, second:celix_rsaUtils_createServicePropertiesFromEndpointProperties
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToRegisterProxyService) {
     auto endpoint = CreateEndpointDescription();
-    long svcId = -1L;
+    long proxyId = -1L;
     celix_ei_expect_celix_bundleContext_registerServiceFactoryAsync((void*)&rsaJsonRpcProxy_factoryCreate, 0, -1);
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
     EXPECT_EQ(CELIX_SERVICE_EXCEPTION, status);
 
     endpointDescription_destroy(endpoint);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateAllocMmeoryForProxyWhenGetService) {
+    celix_ei_expect_calloc((void*)-1, 0, nullptr);
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
+    EXPECT_FALSE(found);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateAllocMmeoryForProxyServiceWhenGetService) {
+    celix_ei_expect_calloc((void*)-1, 0, nullptr, 2);
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
+    EXPECT_FALSE(found);
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, CallProxyService) {
@@ -440,36 +430,42 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, CallProxyService) {
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToFindInterfaceDescriptor) {
     setenv("CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR"/non-exist", true);
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
-        (void)handle;//unused
-        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
-        EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_SUCCESS, proxySvc->test(proxySvc->handle));
-    });
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
     EXPECT_FALSE(found);
     unsetenv("CELIX_FRAMEWORK_EXTENDER_PATH");
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateVersionFromString) {
     celix_ei_expect_celix_version_createVersionFromString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
-        (void)handle;//unused
-        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
-        EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_SUCCESS, proxySvc->test(proxySvc->handle));
-    });
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
     EXPECT_FALSE(found);
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateFunctionClosure) {
     celix_ei_expect_dynFunction_createClosure(CELIX_EI_UNKNOWN_CALLER, 0, 1);
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void*, void*) {});
+    EXPECT_FALSE(found);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, InvokeProxyServiceWithInvalidParams) {
     auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
         (void)handle;//unused
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
         EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_SERVICE_EXCEPTION, proxySvc->test(proxySvc->handle));
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, proxySvc->test(nullptr));
     });
-    EXPECT_FALSE(found);
+    EXPECT_TRUE(found);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, InvokeProxyServiceWhenProxyIsDestroying) {
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, this, [](void *handle, void *svc) {
+        auto self = static_cast<RsaJsonRpcProxyUnitTestSuite2*>(handle);
+        rsaJsonRpc_destroyProxy(self->jsonRpc.get(), self->proxyId);
+        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
+        EXPECT_NE(nullptr, proxySvc);
+        EXPECT_EQ(CELIX_ILLEGAL_STATE, proxySvc->test(proxySvc->handle));
+    });
+    EXPECT_TRUE(found);
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToPrepareInvokeRequest) {
@@ -494,15 +490,14 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateMetadata) {
     EXPECT_TRUE(found);
 }
 
-TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToSendRequest) {
-    reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-        (void)handle;//unused
-        (void)endpointDesc;//unused
-        (void)metadata;//unused
-        (void)request;//unused
-        (void)response;//unused
-        return CELIX_ILLEGAL_STATE;
-    };
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToSendRequest) {
+    auto endpoint = CreateEndpointDescription();
+    long proxyId{-1};
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, [](void*, const endpoint_description_t*, celix_properties_t*,
+            const struct iovec*, struct iovec*) { return CELIX_ILLEGAL_STATE;}, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    endpointDescription_destroy(endpoint);
+    celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
 
     auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
         (void)handle;//unused
@@ -511,20 +506,22 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToSendRequest) {
         EXPECT_EQ(CELIX_ILLEGAL_STATE, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
+
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
-TEST_F(RsaJsonRpcProxyUnitTestSuite2, ResponseIsNull) {
-    reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc,
-                                  celix_properties_t *metadata, const struct iovec *request,
-                                  struct iovec *response) -> celix_status_t {
-        (void) handle;//unused
-        (void) endpointDesc;//unused
-        (void) metadata;//unused
-        (void) request;//unused
+TEST_F(RsaJsonRpcProxyUnitTestSuite, ResponseIsNull) {
+    auto endpoint = CreateEndpointDescription();
+    long proxyId{-1};
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, [](void*, const endpoint_description_t*, celix_properties_t*,
+                                                                     const struct iovec*, struct iovec* response) {
         response->iov_base = nullptr;//set to nullptr
         response->iov_len = 0;
-        return CELIX_SUCCESS;
-    };
+        return CELIX_SUCCESS;}, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    endpointDescription_destroy(endpoint);
+    celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
+
     auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr,[](void *handle, void *svc) {
             (void) handle;//unused
             auto proxySvc = static_cast<rsa_rpc_json_test_service_t *>(svc);
@@ -532,56 +529,45 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, ResponseIsNull) {
             EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, proxySvc->test(proxySvc->handle));
         });
     EXPECT_TRUE(found);
+
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
-TEST_F(RsaJsonRpcProxyUnitTestSuite2, ResponseIsInvalid) {
-    reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-        (void)handle;//unused
-        (void)endpointDesc;//unused
-        (void)metadata;//unused
-        (void)request;//unused
-        response->iov_base = nullptr;//set to nullptr
-        response->iov_len = 0;
-        return CELIX_SUCCESS;
-    };
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
-        (void)handle;//unused
-        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
-        EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, proxySvc->test(proxySvc->handle));
-    });
-    EXPECT_TRUE(found);
-
-    //response is invalid json
-    reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-        (void)handle;//unused
-        (void)endpointDesc;//unused
-        (void)metadata;//unused
-        (void)request;//unused
+TEST_F(RsaJsonRpcProxyUnitTestSuite, ResponseIsInvalid) {
+    auto endpoint = CreateEndpointDescription();
+    long proxyId{-1};
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, [](void*, const endpoint_description_t*, celix_properties_t*,
+                                                                     const struct iovec*, struct iovec* response) {
         response->iov_base = strdup("invalid");//set to invalid
         response->iov_len = 0;
-        return CELIX_SUCCESS;
-    };
-    found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
+        return CELIX_SUCCESS;}, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    endpointDescription_destroy(endpoint);
+    celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
+
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
         (void)handle;//unused
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
         EXPECT_NE(nullptr, proxySvc);
         EXPECT_EQ(CELIX_SERVICE_EXCEPTION, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
+
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
-TEST_F(RsaJsonRpcProxyUnitTestSuite2, RemoteServiceReturnsError) {
-    //response is null
-    reqSenderSvc.sendRequest = [](void *handle, const endpoint_description_t *endpointDesc, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-        (void)handle;//unused
-        (void)endpointDesc;//unused
-        (void)metadata;//unused
-        (void)request;//unused
+TEST_F(RsaJsonRpcProxyUnitTestSuite, RemoteServiceReturnsError) {
+    auto endpoint = CreateEndpointDescription();
+    long proxyId{-1};
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, [](void*, const endpoint_description_t*, celix_properties_t*,
+                                                                     const struct iovec*, struct iovec* response) {
         response->iov_base = strdup("{\"e\":70003}");//set error code
         response->iov_len = strlen((const char*)response->iov_base);
-        return CELIX_SUCCESS;
-    };
+        return CELIX_SUCCESS;}, nullptr, &proxyId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    endpointDescription_destroy(endpoint);
+    celix_bundleContext_waitForEvents(ctx.get());//wait for proxy service registration
+
     auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
         (void)handle;//unused
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
@@ -589,6 +575,8 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, RemoteServiceReturnsError) {
         EXPECT_EQ(70003, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
+
+    rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, ServiceInvocationIsIntercepted) {
@@ -687,7 +675,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToCloneEndpointDescription) {
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToTrackEndpointService) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
 
-    celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&rsaJsonRpcEndpoint_create, 0, -1);
+    celix_ei_expect_celix_bundleContext_trackServicesWithOptions((void*)&rsaJsonRpcEndpoint_create, 0, -1);
     long svcId = -1L;
     auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
     EXPECT_EQ(CELIX_ILLEGAL_STATE, status);
@@ -695,21 +683,10 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToTrackEndpointService) {
     endpointDescription_destroy(endpoint);
 }
 
-TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToRegisterRequestHandler) {
+TEST_F(RsaJsonRpcEndPointUnitTestSuite, HandleRequest) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-
-    celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync((void*)&rsaJsonRpcEndpoint_create, 0, -1);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
-    EXPECT_EQ(CELIX_ILLEGAL_STATE, status);
-
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandler) {
-    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
@@ -718,30 +695,24 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandler) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_SUCCESS, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_SUCCESS, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+    free(reply.iov_base);
 
     celix_properties_destroy(metadata);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
 }
 
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
     setenv("CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR"/non-exist", true);
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
@@ -750,22 +721,16 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+    free(reply.iov_base);
 
     celix_properties_destroy(metadata);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
     unsetenv("CELIX_FRAMEWORK_EXTENDER_PATH");
 }
@@ -773,8 +738,8 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceVersionMismatched) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
     celix_properties_set(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "2.0.0");//Its 1.0.0 in the interface descriptor
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
@@ -783,30 +748,24 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceVersionMismatched) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+    free(reply.iov_base);
 
     celix_properties_destroy(metadata);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
 }
 
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, EndpointLostServiceVersion) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
     celix_properties_unset(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
@@ -815,29 +774,23 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, EndpointLostServiceVersion) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+    free(reply.iov_base);
 
     celix_properties_destroy(metadata);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
 }
 
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandlerWithInvalidParams) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
@@ -846,48 +799,43 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandlerWithInvalidParams) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
 
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(nullptr, metadata, &request, &reply));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(nullptr, epId, metadata, &request, &reply));
 
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, nullptr, &request, &reply));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, nullptr, &request, &reply));
 
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, metadata, nullptr, &reply));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, nullptr, &reply));
 
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, metadata, &request, nullptr));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, nullptr));
 
-        request.iov_base =  (char *)"{\"a\": []}";// lost method node
-        request.iov_len = strlen((char*)request.iov_base);
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
+    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), 10000/*non-existing epId*/, metadata, &request, &reply));
 
-        request.iov_base =  (char *)"invalid";
-        request.iov_len = strlen((char*)request.iov_base);
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
+    request.iov_base =  (char *)"{\"a\": []}";// lost method node
+    request.iov_len = strlen((char*)request.iov_base);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
 
-        celix_properties_setLong(metadata, "SerialProtocolId", 1);
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
+    request.iov_base =  (char *)"invalid";
+    request.iov_len = strlen((char*)request.iov_base);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
 
-    });
-    EXPECT_TRUE(found);
+    celix_properties_setLong(metadata, "SerialProtocolId", 1);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
 
     celix_properties_destroy(metadata);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
 }
 
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceInvocationIsIntercepted) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
     celix_properties_unset(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
     EXPECT_EQ(CELIX_SUCCESS, status);
     celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
 
@@ -917,26 +865,43 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceInvocationIsIntercepted) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_INTERCEPTOR_EXCEPTION, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_INTERCEPTOR_EXCEPTION, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+    free(reply.iov_base);
 
     celix_properties_destroy(metadata);
 
 
     celix_bundleContext_unregisterServiceAsync(ctx.get(), interceptorSvcId, nullptr, nullptr);
 
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
     endpointDescription_destroy(endpoint);
 }
 
+TEST_F(RsaJsonRpcEndPointUnitTestSuite, JsonRpcCallFailed) {
+    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
+    long epId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &epId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
 
+    celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
+
+    unsigned int serialProtoId = GenerateSerialProtoId();
+    celix_properties_t *metadata = celix_properties_create();
+    celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
+
+    celix_ei_expect_jsonRpc_call(CELIX_EI_UNKNOWN_CALLER, 0, -1);
+    struct iovec request{};
+    request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
+    request.iov_len = strlen((char*)request.iov_base);
+    struct iovec reply{nullptr,0};
+    EXPECT_EQ(CELIX_SERVICE_EXCEPTION, celix_rsaJsonRpc_handleRequest(jsonRpc.get(), epId, metadata, &request, &reply));
+
+    celix_properties_destroy(metadata);
+
+    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), epId);
+    endpointDescription_destroy(endpoint);
+}

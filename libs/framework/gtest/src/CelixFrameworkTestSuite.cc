@@ -28,6 +28,7 @@
 #include "celix_framework.h"
 #include "framework_private.h"
 #include "celix_constants.h"
+#include "celix_log.h"
 #include "celix_utils.h"
 
 class CelixFrameworkTestSuite : public ::testing::Test {
@@ -73,15 +74,20 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
     //When there is a emtpy event queue
     celix_framework_waitForEmptyEventQueue(framework.get());
 
-    //And a generic event is fired, that block the queue for 20ms
-    auto callback = [](void* /*data*/) {
-        std::this_thread::sleep_for(std::chrono::milliseconds{200});
+    std::promise<int> p;
+    std::future<int> f = p.get_future();
+    //And a generic event is fired, that block the queue until timeout
+    auto callback = [](void* data) {
+        auto* f = static_cast<std::future<std::string>*>(data);
+        f->wait();
     };
-    celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+    celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", &f, callback, nullptr, nullptr);
 
     //Then a wait for empty event queue for max 5ms will return a timeout
     celix_status_t status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 0.005);
     EXPECT_EQ(ETIMEDOUT, status) << "Expected timeout, but got " << celix_strerror(status);
+
+    p.set_value(1);
 
     //And a wait for empty event queue for max 1s will return success
     status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 1);
@@ -98,25 +104,37 @@ TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(config);
     ASSERT_TRUE(fw != nullptr);
 
-    // Start capturing stdout
-    ::testing::internal::CaptureStderr();
+    std::promise<std::string> p;
+    std::future<std::string> f = p.get_future();
+    celix_frameworkLogger_setLogCallback(fw->logger, &p,
+        [](void* handle, celix_log_level_e, const char*, const char *, int, const char *format, va_list formatArgs) {
+            auto* p = static_cast<std::promise<std::string>*>(handle);
+            // format std::string from format and formatArgs
+            char buffer[1024];
+            vsnprintf(buffer, sizeof(buffer), format, formatArgs);
+            auto log = std::string(buffer);
+            auto expected = "Generic event 'test' (id=" + std::to_string(100) + ")";
+            if (log.find(expected) != std::string::npos) {
+                try {
+                    p->set_value(log);
+                } catch (std::future_error& e) {
+                    EXPECT_EQ(std::future_errc::promise_already_satisfied, e.code());
+                }
+            }
+    });
 
-    //When there is a emtpy event queue
     celix_framework_waitForEmptyEventQueue(fw);
     
     //And a generic event is fired, that block the queue for 20ms
-    auto callback = [](void* /*data*/) {
-        std::this_thread::sleep_for(std::chrono::milliseconds{20});
+    auto callback = [](void* data) {
+        auto* f = static_cast<std::future<std::string>*>(data);
+        f->wait();
     };
-    long eventId = celix_framework_fireGenericEvent(fw, -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+    long eventId = celix_framework_fireGenericEvent(fw, 100L, -1L, "test", &f, callback, nullptr, nullptr);
+    EXPECT_EQ(100L, eventId);
 
     //Then waiting for the event queue will have logged errors
     celix_framework_waitForGenericEvent(fw, eventId);
-
-    // And the log will contain a printed warning
-    auto log = ::testing::internal::GetCapturedStderr();
-    auto expected = "Generic event 'test' (id=" + std::to_string(eventId) + ")";
-    EXPECT_TRUE(log.find(expected) != std::string::npos) << "Got " << log; 
 
     // Cleanup framework
     celix_frameworkFactory_destroyFramework(fw);

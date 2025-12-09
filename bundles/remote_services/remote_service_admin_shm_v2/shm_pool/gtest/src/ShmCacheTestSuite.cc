@@ -43,7 +43,7 @@ protected:
           EXPECT_EQ(CELIX_SUCCESS, status);
           EXPECT_TRUE(shmPool != nullptr);
           shmId = shmPool_getShmId(shmPool);
-          EXPECT_TRUE(shmId > 0);
+          EXPECT_LE(0, shmId);
       }
     }
 
@@ -61,7 +61,7 @@ int ShmCacheTestSuite::shmId = -1;
 static void shmPeerClosedCallback(void *handle, shm_cache_t *shmCache, int shmId) {
     (void)handle;
     EXPECT_TRUE(shmCache != nullptr);
-    EXPECT_TRUE(shmId > 0);
+    EXPECT_LE(0, shmId);
 }
 
 TEST_F(ShmCacheTestSuite, CreateDestroyShmCache) {
@@ -177,7 +177,7 @@ TEST_F(ShmCacheTestSuite, GetMemoryPtrFailedDueToInvalidArgument) {
     ssize_t memOffset = shmPool_getMemoryOffset(shmPool, mem);
     EXPECT_LT(0, memOffset);
 
-    void *addr = shmCache_getMemoryPtr(shmCache, 1, memOffset);
+    void *addr = shmCache_getMemoryPtr(shmCache, shmId+1, memOffset);//non-existing shmId
     EXPECT_TRUE(addr == nullptr);
     addr = shmCache_getMemoryPtr(shmCache, -1, memOffset);
     EXPECT_TRUE(addr == nullptr);

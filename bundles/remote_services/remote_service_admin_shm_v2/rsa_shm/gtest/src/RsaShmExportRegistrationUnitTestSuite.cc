@@ -20,9 +20,8 @@
 #include "rsa_shm_constants.h"
 #include "RsaShmTestService.h"
 #include "remote_constants.h"
-#include "rsa_rpc_factory.h"
+#include "celix_rsa_rpc_factory.h"
 #include "endpoint_description.h"
-#include "rsa_request_handler_service.h"
 #include "celix_log_helper.h"
 #include "celix_bundle_context_ei.h"
 #include "malloc_ei.h"
@@ -40,35 +39,30 @@
 #define RSA_RPC_TYPE_FOR_TEST "celix.remote.admin.rpc_type.test"
 
 static celix_status_t expect_RpcFacCreateEndpoint_ret = CELIX_SUCCESS;
-static celix_status_t RpcFacCreateEndpoint(void *handle, const endpoint_description_t *endpoint, long *requestHandlerSvcId) {
+static celix_status_t RpcFacCreateEndpoint(void *handle, const endpoint_description_t *endpoint, long *epId) {
     (void)endpoint; //unused
+    (void)handle; //unused
     if (expect_RpcFacCreateEndpoint_ret != CELIX_SUCCESS) {
         return expect_RpcFacCreateEndpoint_ret;
     }
-    celix_bundle_context_t *ctx = static_cast<celix_bundle_context_t *>(handle); //unused
-    static rsa_request_handler_service_t requestHandler{};
-    requestHandler.handle = ctx;
-    requestHandler.handleRequest = [](void *handle, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) -> celix_status_t {
-        (void) handle; //unused
-        (void) request; //unused
-        (void) metadata; //unused
-        (void) response; //unused
-        return CELIX_SUCCESS;
-    };
-    celix_service_registration_options_t opts{};
-    opts.svc = &requestHandler;
-    opts.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts.serviceVersion = CELIX_RSA_REQUEST_HANDLER_SERVICE_VERSION;
-    auto svcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
-    EXPECT_GE(svcId, 0);
-    *requestHandlerSvcId = svcId;
+    *epId = 1;
     return CELIX_SUCCESS;
 }
 
-static void RpcFacDestroyEndpoint(void *handle, long requestHandlerSvcId) {
-    celix_bundle_context_t *ctx = static_cast<celix_bundle_context_t *>(handle) ;
-    celix_bundleContext_unregisterServiceAsync(ctx, requestHandlerSvcId, nullptr, nullptr);
+static void RpcFacDestroyEndpoint(void *handle, long epId) {
+    (void)handle; //unused
+    (void)epId; //unused
     return;
+}
+
+static celix_status_t RpcFacHandleRequest(void *handle, long endpointId, celix_properties_t *metadata,
+        const struct iovec *request, struct iovec *response) {
+    (void) handle; //unused
+    (void) endpointId; //unused
+    (void) metadata; //unused
+    (void) request; //unused
+    (void) response; //unused
+    return CELIX_SUCCESS;
 }
 
 class RsaShmExportRegUnitTestSuite : public ::testing::Test {
@@ -99,26 +93,17 @@ public:
         calcSvcId = celix_bundleContext_registerServiceAsync(ctx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
         EXPECT_GE(calcSvcId, 0);
 
-        static rsa_rpc_factory_t rpcFactory{};
         rpcFactory.handle = ctx.get();
         rpcFactory.createProxy = nullptr;
         rpcFactory.destroyProxy = nullptr;
         rpcFactory.createEndpoint = RpcFacCreateEndpoint;
         rpcFactory.destroyEndpoint = RpcFacDestroyEndpoint;
-
-        celix_properties_t *rpcFacProps = celix_properties_create();
-        celix_properties_set(rpcFacProps, CELIX_RSA_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
-        celix_properties_set(rpcFacProps, CELIX_FRAMEWORK_SERVICE_VERSION, CELIX_RSA_RPC_FACTORY_VERSION);
-        rpcFactorySvcId = celix_bundleContext_registerServiceAsync(ctx.get(), &rpcFactory, CELIX_RSA_RPC_FACTORY_NAME, rpcFacProps);
-        EXPECT_GE(rpcFactorySvcId, 1);
+        rpcFactory.handleRequest = RpcFacHandleRequest;
 
         celix_bundleContext_waitForEvents(ctx.get());
     }
 
     ~RsaShmExportRegUnitTestSuite() override {
-        if (rpcFactorySvcId >= 0) {
-            celix_bundleContext_unregisterServiceAsync(ctx.get(), rpcFactorySvcId, nullptr, nullptr);
-        }
         celix_bundleContext_unregisterServiceAsync(ctx.get(), calcSvcId, nullptr, nullptr);
         celix_bundleContext_waitForEvents(ctx.get());
 
@@ -162,7 +147,7 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<celix_log_helper_t> logHelper{};
     long calcSvcId{-1};
-    long rpcFactorySvcId{-1};
+    celix_rsa_rpc_factory_t rpcFactory{};
 };
 
 TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistration) {
@@ -170,7 +155,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistration) {
     service_reference_pt reference = GetServiceReference();
 
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_NE(nullptr, exportRegistration);
 
@@ -186,33 +171,22 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithInvalidEndpoint
 
     export_registration_t *exportRegistration = nullptr;
 
-    auto status = exportRegistration_create(nullptr, logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(nullptr, logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = exportRegistration_create(ctx.get(), nullptr, reference, endpoint, &exportRegistration);
+    status = exportRegistration_create(ctx.get(), nullptr, reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = exportRegistration_create(ctx.get(), logHelper.get(), nullptr, endpoint, &exportRegistration);
+    status = exportRegistration_create(ctx.get(), logHelper.get(), nullptr, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, nullptr, &exportRegistration);
+    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, nullptr, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, nullptr);
+    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, nullptr, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    bundleContext_ungetServiceReference(ctx.get(), reference);
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithOutRpcType) {
-    endpoint_description_t *endpoint = CreateEndpointDescription();
-    service_reference_pt reference = GetServiceReference();
-
-    celix_properties_unset(endpoint->properties, RSA_SHM_RPC_TYPE_KEY);
-
-    export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, nullptr);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     bundleContext_ungetServiceReference(ctx.get(), reference);
@@ -226,7 +200,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithGettingServiceR
     celix_ei_expect_bundleContext_retainServiceReference((void*)&exportRegistration_create, 0, CELIX_ILLEGAL_ARGUMENT);
 
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     bundleContext_ungetServiceReference(ctx.get(), reference);
@@ -239,7 +213,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithNoMemory) {
 
     celix_ei_expect_calloc((void*)&exportRegistration_create, 0, nullptr);
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     bundleContext_ungetServiceReference(ctx.get(), reference);
@@ -252,38 +226,21 @@ TEST_F(RsaShmExportRegUnitTestSuite, FailedToCloneEndpointDescription) {
 
     celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_ENOMEM, status);
 
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
 }
 
-TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithTrackingRpcFactoryFails) {
+TEST_F(RsaShmExportRegUnitTestSuite, FailedToCreateRpcFacLock) {
     endpoint_description_t *endpoint = CreateEndpointDescription();
     service_reference_pt reference = GetServiceReference();
 
-    celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&exportRegistration_create, 0, -1);
+    celix_ei_expect_celixThreadRwlock_create((void*)&exportRegistration_create, 0, ENOMEM);
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_SERVICE_EXCEPTION, status);
-
-    bundleContext_ungetServiceReference(ctx.get(), reference);
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaShmExportRegUnitTestSuite, FailedToCreateReqHandlerSvcEntry) {
-    endpoint_description_t *endpoint = CreateEndpointDescription();
-    service_reference_pt reference = GetServiceReference();
-
-    celix_ei_expect_calloc((void*)&exportRegistration_create, 1, nullptr, 2);
-    export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_ENOMEM, status);
-
-    celix_ei_expect_celixThreadRwlock_create((void*)&exportRegistration_create, 1, ENOMEM);
-    status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_ENOMEM, status);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
+    EXPECT_EQ(ENOMEM, status);
 
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
@@ -294,7 +251,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, RegisterMoreThanOneRpcFactory) {
     endpoint_description_t *endpoint = CreateEndpointDescription();
     service_reference_pt reference = GetServiceReference();
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
@@ -320,17 +277,12 @@ TEST_F(RsaShmExportRegUnitTestSuite, RpcFactoryFailedToCreateEndpoint) {
 
     expect_RpcFacCreateEndpoint_ret = CELIX_SERVICE_EXCEPTION;
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    bundleContext_ungetServiceReference(ctx.get(), reference);
-    endpointDescription_destroy(endpoint);
-
-    celix_bundleContext_waitForEvents(ctx.get());
-
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
+    EXPECT_EQ(CELIX_SERVICE_EXCEPTION, status);
     expect_RpcFacCreateEndpoint_ret = CELIX_SUCCESS;//reset error injection
 
-    //Release export registration
-    exportRegistration_release(exportRegistration);
+    bundleContext_ungetServiceReference(ctx.get(), reference);
+    endpointDescription_destroy(endpoint);
 }
 
 TEST_F(RsaShmExportRegUnitTestSuite, RpcFactoryFailedToTrackRequestHandlerService) {
@@ -340,7 +292,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, RpcFactoryFailedToTrackRequestHandlerServic
 
     celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(CELIX_EI_UNKNOWN_CALLER, 0, -1, 2);
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
@@ -357,7 +309,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, ExportRegistrationCall) {
     service_reference_pt reference = GetServiceReference();
 
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
@@ -380,22 +332,18 @@ TEST_F(RsaShmExportRegUnitTestSuite, ExportRegistrationCallWithInvalidParams) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
-TEST_F(RsaShmExportRegUnitTestSuite, ExportRegistrationCallWithNoRequestHandler) {
+TEST_F(RsaShmExportRegUnitTestSuite, ExportRegistrationCallWhenExportRegistrationStopping) {
     //Create export registration
     endpoint_description_t *endpoint = CreateEndpointDescription();
     service_reference_pt reference = GetServiceReference();
 
-    //remove request handler service
-    celix_bundleContext_unregisterServiceAsync(ctx.get(), rpcFactorySvcId, nullptr, nullptr);
-    rpcFactorySvcId = -1;
-
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     bundleContext_ungetServiceReference(ctx.get(), reference);
     endpointDescription_destroy(endpoint);
 
-    celix_bundleContext_waitForEvents(ctx.get());
+    exportRegistration_stop(exportRegistration);
 
     struct iovec request = {.iov_base = (void*)"request", .iov_len = 7};
     struct iovec response{};
@@ -411,7 +359,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, GetExportReference) {
     service_reference_pt reference = GetServiceReference();
 
     export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &rpcFactory, &exportRegistration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_NE(nullptr, exportRegistration);
 

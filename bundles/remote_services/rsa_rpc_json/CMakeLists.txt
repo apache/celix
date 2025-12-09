@@ -25,7 +25,6 @@ if (RSA_JSON_RPC)
             src/rsa_json_rpc_endpoint_impl.c
             src/rsa_json_rpc_impl.c
             src/rsa_json_rpc_proxy_impl.c
-            src/rsa_request_sender_tracker.c
             )
 
     set(RSA_JSON_RPC_DEPS
@@ -41,7 +40,7 @@ if (RSA_JSON_RPC)
             )
 
     add_celix_bundle(rsa_json_rpc
-        VERSION 1.0.0
+        VERSION 2.0.0
         SYMBOLIC_NAME "apache_celix_rsa_json_rpc"
         NAME "Apache Celix Remote Service Admin JSON RPC"
         GROUP "Celix/RSA"

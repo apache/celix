@@ -40,8 +40,8 @@
 #define ETCD_HEADER_INDEX               "X-Etcd-Index: "
 
 #define MAX_OVERHEAD_LENGTH           64
-#define DEFAULT_CURL_TIMEOUT          10
-#define DEFAULT_CURL_CONNECT_TIMEOUT  10
+#define DEFAULT_CURL_TIMEOUT          10L
+#define DEFAULT_CURL_CONNECT_TIMEOUT  10L
 
 struct etcdlib_struct {
     char *host;
@@ -682,7 +682,7 @@ performRequest(CURL **curl, pthread_mutex_t *mutex, char *url, request_t request
         curl_easy_reset(*curl);
     }
 
-    curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1);
+    curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(*curl, CURLOPT_TIMEOUT, DEFAULT_CURL_TIMEOUT);
     curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONNECT_TIMEOUT);
     curl_easy_setopt(*curl, CURLOPT_FOLLOWLOCATION, 1L);
