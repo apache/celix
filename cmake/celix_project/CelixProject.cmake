@@ -24,7 +24,7 @@ mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
 
-function(celix_fix_linux_clang_asan_libpath)
+macro(celix_fix_linux_clang_asan_libpath)
     # Fix a linux clang deficiency where the ASan runtime library is not found automatically
     # Find the ASan runtime library path and set RPATH
     execute_process(
@@ -45,7 +45,7 @@ function(celix_fix_linux_clang_asan_libpath)
     else()
         message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
     endif()
-endfunction()
+endmacro()()
 
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
