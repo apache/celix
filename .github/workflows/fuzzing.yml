@@ -34,9 +34,9 @@ jobs:
         run: |
           conan profile detect 
       - name: Conan install
-        run: conan install . --output-folder=build --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"
+        run: conan install . --output-folder=build --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True" -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True"
       - name: Conan build
-        run: conan build . --output-folder=build -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True" -o "celix/*:celix_err_buffer_size=5120"
+        run: conan build . --output-folder=build -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"  -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True" -o "celix/*:celix_err_buffer_size=5120"
       - name: Set fuzzer run time
         id: set-runtime
         run: |
