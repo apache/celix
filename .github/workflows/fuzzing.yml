@@ -24,7 +24,7 @@ jobs:
       - name: Install Conan
         run: pip install conan
       - name: Cache Conan
-        uses: actions/cache@v3
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: ~/.conan2/p
           key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py', 'libs/utils/**') }}
