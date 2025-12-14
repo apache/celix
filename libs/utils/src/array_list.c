@@ -41,7 +41,7 @@ struct celix_array_list {
     celix_array_list_entry_t* elementData;
     size_t size;
     size_t capacity;
-    celix_arrayList_equals_fp  equalsCallback;
+    celix_arrayList_equals_fp equalsCallback;
     celix_array_list_compare_entries_fp compareCallback;
     celix_array_list_copy_entry_fp copyCallback;
     void (*simpleRemovedCallback)(void* value);
@@ -101,7 +101,8 @@ static bool celix_arrayList_versionEquals(celix_array_list_entry_t a, celix_arra
     return celix_arrayList_compareVersionEntries(a, b) == 0;
 }
 
-inline static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
+inline static bool
+celix_arrayList_equalsForElement(celix_array_list_t* list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
     // by class invariant, equalsCallback is never NULL
     return list->equalsCallback(a, b);
 }
@@ -129,7 +130,7 @@ static void celix_arrayList_destroyVersion(void* v) {
     celix_version_destroy(version);
 }
 
-static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int index) {
+static void celix_arrayList_callRemovedCallback(celix_array_list_t* list, int index) {
     celix_array_list_entry_t entry = list->elementData[index];
     if (list->simpleRemovedCallback != NULL) {
         list->simpleRemovedCallback(entry.voidPtrVal);
@@ -139,7 +140,7 @@ static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int in
 }
 
 static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, size_t capacity) {
-    celix_array_list_entry_t *newList;
+    celix_array_list_entry_t* newList;
     size_t oldCapacity = list->capacity;
     if (capacity > oldCapacity) {
         size_t newCapacity = (oldCapacity * 3) / 2 + 1;
@@ -192,13 +193,14 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
 }
 
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
-    celix_autofree celix_array_list_t *list = calloc(1, sizeof(*list));
+    celix_autofree celix_array_list_t* list = calloc(1, sizeof(*list));
     if (!list) {
         celix_err_push("Failed to allocate memory for list");
         return NULL;
     }
 
-    list->capacity = 10;
+    size_t initialCap = opts->initialCapacity > 0 ? opts->initialCapacity : 10;
+    list->capacity = initialCap;
     list->elementData = calloc(list->capacity, sizeof(celix_array_list_entry_t));
     if (!list->elementData) {
         celix_err_push("Failed to allocate memory for elementData");
@@ -208,7 +210,7 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
     list->elementType = opts->elementType;
     celix_arrayList_setTypeSpecificCallbacks(list);
 
-    //if opts contains callbacks, use them and override the default ones
+    // if opts contains callbacks, use them and override the default ones
     if (opts->simpleRemovedCallback) {
         list->simpleRemovedCallback = opts->simpleRemovedCallback;
     }
@@ -262,7 +264,7 @@ celix_array_list_t* celix_arrayList_createVersionArray() {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
 }
 
-void celix_arrayList_destroy(celix_array_list_t *list) {
+void celix_arrayList_destroy(celix_array_list_t* list) {
     if (list != NULL) {
         celix_arrayList_clear(list);
         free(list->elementData);
@@ -270,15 +272,13 @@ void celix_arrayList_destroy(celix_array_list_t *list) {
     }
 }
 
-celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t *list) {
+celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t* list) {
     return list->elementType;
 }
 
-int celix_arrayList_size(const celix_array_list_t *list) {
-    return (int)list->size;
-}
+int celix_arrayList_size(const celix_array_list_t* list) { return (int)list->size; }
 
-static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *list, int index) {
+static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t* list, int index) {
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
     if (index < list->size) {
@@ -287,7 +287,7 @@ static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *lis
     return entry;
 }
 
-celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) {
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t* list, int index) {
     return arrayList_getEntry(list, index);
 }
 
@@ -429,11 +429,11 @@ celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_ver
     return celix_arrayList_addEntry(list, entry);
 }
 
-int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry) {
+int celix_arrayList_indexOf(celix_array_list_t* list, celix_array_list_entry_t entry) {
     size_t size = celix_arrayList_size(list);
     int i;
     int index = -1;
-    for (i = 0 ; i < size ; ++i) {
+    for (i = 0; i < size; ++i) {
         bool eq = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
         if (eq) {
             index = i;
@@ -442,16 +442,16 @@ int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t e
     }
     return index;
 }
-void celix_arrayList_removeAt(celix_array_list_t *list, int index) {
+void celix_arrayList_removeAt(celix_array_list_t* list, int index) {
     if (index >= 0 && index < list->size) {
         celix_arrayList_callRemovedCallback(list, index);
         size_t numMoved = list->size - index - 1;
-        memmove(list->elementData+index, list->elementData+index+1, sizeof(celix_array_list_entry_t) * numMoved);
+        memmove(list->elementData + index, list->elementData + index + 1, sizeof(celix_array_list_entry_t) * numMoved);
         memset(&list->elementData[--list->size], 0, sizeof(celix_array_list_entry_t));
     }
 }
 
-void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry) {
+void celix_arrayList_removeEntry(celix_array_list_t* list, celix_array_list_entry_t entry) {
     int index = celix_arrayList_indexOf(list, entry);
     celix_arrayList_removeAt(list, index);
 }
@@ -510,7 +510,7 @@ void celix_arrayList_removeVersion(celix_array_list_t* list, const celix_version
     celix_arrayList_removeEntry(list, entry);
 }
 
-void celix_arrayList_clear(celix_array_list_t *list) {
+void celix_arrayList_clear(celix_array_list_t* list) {
     for (int i = 0; i < list->size; ++i) {
         celix_arrayList_callRemovedCallback(list, i);
         memset(&list->elementData[i], 0, sizeof(celix_array_list_entry_t));
@@ -529,7 +529,7 @@ static int celix_arrayList_compareEntries(const void* voidA, const void* voidB, 
     return compare(*a, *b);
 }
 
-void celix_arrayList_sort(celix_array_list_t *list) {
+void celix_arrayList_sort(celix_array_list_t* list) {
     if (list->compareCallback) {
         celix_arrayList_sortEntries(list, list->compareCallback);
     }
@@ -592,7 +592,7 @@ celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
                 return NULL;
             }
         } else {
-            entry = list->elementData[i]; //shallow copy
+            entry = list->elementData[i]; // shallow copy
         }
 
         (void)celix_arrayList_addEntry(copy, entry); // Cannot fail, because ensureCapacity is already called to
@@ -602,7 +602,7 @@ celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
     return celix_steal_ptr(copy);
 }
 
-void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare) {
+void celix_arrayList_sortEntries(celix_array_list_t* list, celix_array_list_compare_entries_fp compare) {
 #if defined(__APPLE__)
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), compare, celix_arrayList_compareEntries);
 #else

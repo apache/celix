@@ -20,9 +20,9 @@
 #include <stdbool.h>
 
 #include "celix_array_list_type.h"
-#include "celix_utils_export.h"
 #include "celix_cleanup.h"
 #include "celix_errno.h"
+#include "celix_utils_export.h"
 #include "celix_version_type.h"
 
 #ifndef CELIX_ARRAY_LIST_H_
@@ -32,11 +32,12 @@
  * Init macro so that the opts are correctly initialized for C++ compilers
  */
 #ifdef __cplusplus
-#define CELIX_OPTS_INIT {}
+#define CELIX_OPTS_INIT                                                                                                \
+    {                                                                                                                  \
+    }
 #else
 #define CELIX_OPTS_INIT
 #endif
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +58,7 @@ typedef enum celix_array_list_element_type {
     CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING = 2, /**< Represents a string element type where the array list is the owner */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 3,   /**< Represents a long integer element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 4, /**< Represents a double element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 5,  /**< Represents a boolean element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 5,   /**< Represents a boolean element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 6, /**< Represents a celix_version_t* element type. */
 } celix_array_list_element_type_t;
 
@@ -75,10 +76,10 @@ typedef union celix_array_list_entry {
                               CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     long int longVal;      /**< A long integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    double doubleVal;       /**< A double value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    bool boolVal;           /**< A boolean value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
+    double doubleVal;      /**< A double value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
+                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
+    bool boolVal;          /**< A boolean value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
+                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     const celix_version_t* versionVal; /**< A celix_version_t* value when the element type is
                                    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
 } celix_array_list_entry_t;
@@ -252,9 +253,14 @@ typedef struct celix_array_list_create_options {
  */
 #define CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS                                                                          \
     {                                                                                                                  \
-        .elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, .simpleRemovedCallback = NULL,                         \
-        .removedCallbackData = NULL, .removedCallback = NULL, .equalsCallback = NULL,                                  \
-        .compareCallback = NULL, .copyCallback = NULL,                                                                 \
+        .elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED,                                                        \
+        .simpleRemovedCallback = NULL,                                                                                 \
+        .removedCallbackData = NULL,                                                                                   \
+        .removedCallback = NULL,                                                                                       \
+        .equalsCallback = NULL,                                                                                        \
+        .compareCallback = NULL,                                                                                       \
+        .copyCallback = NULL,                                                                                          \
+        .initialCapacity = 0,                                                                                          \
     }
 #endif
 
@@ -280,7 +286,7 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
  * @note If a (simple) removed callback is configured, the callback will be called for every array list entry.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_destroy(celix_array_list_t *list);
+void celix_arrayList_destroy(celix_array_list_t* list);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_array_list_t, celix_arrayList_destroy)
 
@@ -288,13 +294,13 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_array_list_t, celix_arrayList_destroy)
  * @brief Return the element type of the array list.
  */
 CELIX_UTILS_EXPORT
-celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t *list);
+celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t* list);
 
 /**
  * @brief Returns the size of the array list.
  */
 CELIX_UTILS_EXPORT
-int celix_arrayList_size(const celix_array_list_t *list);
+int celix_arrayList_size(const celix_array_list_t* list);
 
 /**
  * @brief Returns the value for the provided index.
@@ -307,7 +313,7 @@ int celix_arrayList_size(const celix_array_list_t *list);
  * @return Returns the pointer value for the index. Returns NULL if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-void* celix_arrayList_get(const celix_array_list_t *list, int index);
+void* celix_arrayList_get(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -320,7 +326,7 @@ void* celix_arrayList_get(const celix_array_list_t *list, int index);
  * @return Returns the string value for the index. Returns NULL if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-const char* celix_arrayList_getString(const celix_array_list_t *list, int index);
+const char* celix_arrayList_getString(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -333,7 +339,7 @@ const char* celix_arrayList_getString(const celix_array_list_t *list, int index)
  * @return Returns the long value for the index. Returns 0 if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
+long int celix_arrayList_getLong(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -346,7 +352,7 @@ long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
  * @return Returns the double value for the index. Returns 0 if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
+double celix_arrayList_getDouble(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -359,7 +365,7 @@ double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
  * @return Returns the bool value for the index. Returns false if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
+bool celix_arrayList_getBool(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -372,7 +378,7 @@ bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
  * @return Returns the version value for the index. Returns NULL if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list, int index);
+const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t* list, int index);
 
 /**
  * @brief Returns the entry for the provided index.
@@ -382,7 +388,7 @@ const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list
  * @return Returns the entry for the index. Returns NULL if index is out of bound.
  */
 CELIX_UTILS_EXPORT
-celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index);
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t* list, int index);
 
 /**
  * @brief add pointer entry to the back of the array list.
@@ -529,14 +535,14 @@ celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_ver
  * @return The index of the entry or -1 if the entry is not found.
  */
 CELIX_UTILS_EXPORT
-int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry);
+int celix_arrayList_indexOf(celix_array_list_t* list, celix_array_list_entry_t entry);
 
 /**
  * @brief Removes an entry at the provided index.
  * If the provided index < 0 or out of bound, nothing will be removed.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_removeAt(celix_array_list_t *list, int index);
+void celix_arrayList_removeAt(celix_array_list_t* list, int index);
 
 /**
  * @brief Clear all entries in the array list.
@@ -544,7 +550,7 @@ void celix_arrayList_removeAt(celix_array_list_t *list, int index);
  * @note If a (simple) removed callback is configured, the callback will be called for every array list entry.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_clear(celix_array_list_t *list);
+void celix_arrayList_clear(celix_array_list_t* list);
 
 /**
  * @brief Remove the first entry from array list which matches the provided value.
@@ -556,7 +562,7 @@ void celix_arrayList_clear(celix_array_list_t *list);
  * If there was no equals callback provided a direct memory compare will be done.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry);
+void celix_arrayList_removeEntry(celix_array_list_t* list, celix_array_list_entry_t entry);
 
 /**
  * @brief Remove the first pointer entry from array list which matches the provided value.
@@ -634,14 +640,14 @@ void celix_arrayList_removeVersion(celix_array_list_t* list, const celix_version
  * @brief Sort the array list using the provided sort function.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare);
+void celix_arrayList_sortEntries(celix_array_list_t* list, celix_array_list_compare_entries_fp compare);
 
 /**
  * @brief Sort the array list using the array list configured compare function.
  * Note that undefined the array list compare function can be NULL and in that case the array list will not be sorted.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_sort(celix_array_list_t *list);
+void celix_arrayList_sort(celix_array_list_t* list);
 
 /**
  * @brief Check if the array list are equal.
