@@ -79,6 +79,7 @@ jobs:
             -o celix:enable_testing=True
             -o celix:enable_benchmarking=True
             -o celix:enable_address_sanitizer=True
+            -o celix:enable_undefined_sanitizer=True
             -o celix:build_all=True
             -o celix:enable_cmake_warning_tests=True
             -o celix:enable_testing_on_ci=True
