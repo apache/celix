@@ -14,24 +14,20 @@
 # limitations under the License.
 
 
-if (LINUX)
-    celix_fix_linux_clang_asan_libpath()
-endif ()
-
 add_executable(celix_properties_fuzzer src/PropertiesFuzz.cc)
 target_link_libraries(celix_properties_fuzzer PRIVATE utils_cuf)
-target_compile_options(celix_properties_fuzzer PRIVATE -fsanitize=fuzzer,address)
-target_link_options(celix_properties_fuzzer PRIVATE -fsanitize=fuzzer,address)
+target_compile_options(celix_properties_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
+target_link_options(celix_properties_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
 
 add_executable(celix_version_fuzzer src/VersionFuzz.cc)
 target_link_libraries(celix_version_fuzzer PRIVATE utils_cuf)
-target_compile_options(celix_version_fuzzer PRIVATE -fsanitize=fuzzer,address)
-target_link_options(celix_version_fuzzer PRIVATE -fsanitize=fuzzer,address)
+target_compile_options(celix_version_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
+target_link_options(celix_version_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
 
 add_executable(celix_filter_fuzzer src/FilterFuzz.cc)
 target_link_libraries(celix_filter_fuzzer PRIVATE utils_cuf)
-target_compile_options(celix_filter_fuzzer PRIVATE -fsanitize=fuzzer,address)
-target_link_options(celix_filter_fuzzer PRIVATE -fsanitize=fuzzer,address)
+target_compile_options(celix_filter_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
+target_link_options(celix_filter_fuzzer PRIVATE -fsanitize=fuzzer,undefined,address)
 
 add_custom_command(TARGET celix_properties_fuzzer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

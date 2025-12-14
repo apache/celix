@@ -24,55 +24,51 @@ mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
 
-macro(celix_fix_linux_clang_asan_libpath)
-    # Fix a linux clang deficiency where the ASan runtime library is not found automatically
-    # Find the ASan runtime library path and set RPATH
-    execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} --print-file-name libclang_rt.asan-x86_64.so
-            OUTPUT_VARIABLE ASAN_LIB_PATH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            RESULT_VARIABLE ASAN_FIND_RESULT
-            ERROR_QUIET # Avoid printing errors if the command fails during configuration
-    )
-
-    if (ASAN_FIND_RESULT EQUAL 0 AND EXISTS "${ASAN_LIB_PATH}")
-        get_filename_component(ASAN_LIB_DIR ${ASAN_LIB_PATH} DIRECTORY)
-        message(STATUS "Setting ASan RPATH to: ${ASAN_LIB_DIR}")
-        set(ASAN_RPATH_FLAG "-Wl,-rpath,${ASAN_LIB_DIR}")
-        # Append to executable, shared library, and module linker flags
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
-    else()
-        message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
-    endif()
-endmacro()
-
 if (ENABLE_ADDRESS_SANITIZER)
+    set(UBSAN_SAN "")
+    if (ENABLE_UNDEFINED_SANITIZER)
+        set(UBSAN_SAN "undefined,")
+    endif ()
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
         set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")
-        set(CMAKE_C_FLAGS "-shared-libasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-shared-libasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_C_FLAGS "-shared-libasan -fsanitize=${UBSAN_SAN}address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-shared-libasan -fsanitize=${UBSAN_SAN}address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
         if (APPLE)
-            set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address ${CMAKE_EXE_LINKER_FLAGS}")
-            set(CMAKE_SHARED_LINKER_FLAGS "-fsanitize=address ${CMAKE_SHARED_LINKER_FLAGS}")
+            set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=${UBSAN_SAN}address ${CMAKE_EXE_LINKER_FLAGS}")
+            set(CMAKE_SHARED_LINKER_FLAGS "-fsanitize=${UBSAN_SAN}address ${CMAKE_SHARED_LINKER_FLAGS}")
         else ()
-            celix_fix_linux_clang_asan_libpath()
+            # Fix a linux clang deficiency where the ASan runtime library is not found automatically
+            # Find the ASan runtime library path and set RPATH
+            execute_process(
+                    COMMAND ${CMAKE_CXX_COMPILER} --print-file-name libclang_rt.asan-x86_64.so
+                    OUTPUT_VARIABLE ASAN_LIB_PATH
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    RESULT_VARIABLE ASAN_FIND_RESULT
+                    ERROR_QUIET # Avoid printing errors if the command fails during configuration
+            )
+
+            if (ASAN_FIND_RESULT EQUAL 0 AND EXISTS "${ASAN_LIB_PATH}")
+                get_filename_component(ASAN_LIB_DIR ${ASAN_LIB_PATH} DIRECTORY)
+                message(STATUS "Setting ASan RPATH to: ${ASAN_LIB_DIR}")
+                set(ASAN_RPATH_FLAG "-Wl,-rpath,${ASAN_LIB_DIR}")
+                # Append to executable, shared library, and module linker flags
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ASAN_RPATH_FLAG}")
+            else()
+                message(WARNING "Could not determine path for libclang_rt.asan-x86_64.so using ${CMAKE_CXX_COMPILER}. ASan RPATH not set automatically.")
+            endif()
         endif ()
     elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")
-        set(CMAKE_C_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_C_FLAGS "-lasan -fsanitize=${UBSAN_SAN}address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=${UBSAN_SAN}address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     else ()
         message(WARNING "Address sanitizer is not supported for ${CMAKE_C_COMPILER_ID}")
     endif ()
-endif()
-
-if (ENABLE_UNDEFINED_SANITIZER)
+elseif (ENABLE_UNDEFINED_SANITIZER)
     set(CMAKE_C_FLAGS "-fsanitize=undefined ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-fsanitize=undefined ${CMAKE_CXX_FLAGS}")
-endif()
-
-if (ENABLE_THREAD_SANITIZER)
+elseif (ENABLE_THREAD_SANITIZER)
     set(CMAKE_C_FLAGS "-fsanitize=thread ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-fsanitize=thread ${CMAKE_CXX_FLAGS}")
 endif()
