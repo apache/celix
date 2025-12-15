@@ -138,8 +138,7 @@ if (UTILS)
                         include_deprecated
                         )
         target_link_libraries(utils_cuf PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
-        target_compile_options(utils_cuf PRIVATE -fsanitize=fuzzer-no-link,address) 
-        target_link_options(utils_cuf PRIVATE -fsanitize=fuzzer-no-link,address)
+        target_compile_options(utils_cuf PRIVATE -fsanitize=fuzzer)
         target_link_options(utils_cuf PRIVATE -Wl,--gc-sections)
 
         add_subdirectory(fuzzing)
