@@ -1,0 +1,2 @@
+{"key1":"value1","key2":"value2","object1":{"key3":"value3","key4":"value4"},"object2":{"key5":"value5"},"object3":{"object4":{"key6":"value6"}},"strArr":["value1","value2"],"intArr":[1,2],"realArr":[1.0,2.0],"boolArr":[true,false],"versionArr":["version<1.2.3.qualifier>","version<4.5.6.qualifier>"]}
+

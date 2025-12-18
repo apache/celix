@@ -287,16 +287,7 @@ function(add_celix_bundle)
     #########################################################
 
     ###### Packaging the bundle using using jar or zip and a content dir. Configuring dependencies ######
-    if (JAR_COMMAND)
-        add_custom_command(OUTPUT ${BUNDLE_FILE}
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} -C ${BUNDLE_CONTENT_DIR} .
-                COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        )
-    elseif (ZIP_COMMAND)
+    if (ZIP_COMMAND)
         file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR}) #Note needed because working_directory is bundle content dir
         add_custom_command(OUTPUT ${BUNDLE_FILE}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
@@ -304,6 +295,15 @@ function(add_celix_bundle)
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
                 DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
+        )
+    elseif (JAR_COMMAND)
+        add_custom_command(OUTPUT ${BUNDLE_FILE}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} -C ${BUNDLE_CONTENT_DIR} .
+                COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
+                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     else ()
         message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
@@ -934,21 +934,21 @@ function(install_celix_bundle)
     set(BUNDLE_FILE_INSTALL "${BUNDLE_FILE}.install")
     get_target_property(BUNDLE_FILE_NAME ${BUNDLE} "BUNDLE_FILE_NAME")
     get_target_property(BUNDLE_GEN_DIR ${BUNDLE} "BUNDLE_GEN_DIR")
-    if (JAR_COMMAND)
-        install(CODE
-                "execute_process(
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} -C ${BUNDLE_CONTENT_DIR} .
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            )"
-                COMPONENT ${BUNDLE}
-        )
-    elseif (ZIP_COMMAND)
+    if (ZIP_COMMAND)
         install(CODE
                 "execute_process(
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
                 COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} . -i *
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
+            )"
+                COMPONENT ${BUNDLE}
+        )
+    elseif (JAR_COMMAND)
+        install(CODE
+                "execute_process(
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} -C ${BUNDLE_CONTENT_DIR} .
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             )"
                 COMPONENT ${BUNDLE}
         )

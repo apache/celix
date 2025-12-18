@@ -77,7 +77,9 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
           CONAN_BUILD_OPTIONS: |
             -o celix:enable_testing=True
+            -o celix:enable_benchmarking=True
             -o celix:enable_address_sanitizer=True
+            -o celix:enable_undefined_sanitizer=True
             -o celix:build_all=True
             -o celix:enable_cmake_warning_tests=True
             -o celix:enable_testing_on_ci=True
@@ -120,6 +122,7 @@ jobs:
           libzip-dev \
           libjansson-dev \
           libcurl4-openssl-dev \
+          libbenchmark-dev \
           default-jdk \
           cmake \
           libffi-dev \
@@ -145,6 +148,7 @@ jobs:
         BUILD_OPTIONS: |
           -DBUILD_EXPERIMENTAL=ON
           -DENABLE_TESTING=ON
+          -DENABLE_BENCHMARKING=ON
           -DRSA_JSON_RPC=ON
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
           -DENABLE_TESTING_ON_CI=ON

@@ -47,6 +47,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "enable_fuzzing": False,
+        "enable_benchmarking": False,
         "install_find_modules": False,
         "build_all": False,
         "build_http_admin": False,
@@ -130,6 +132,9 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
+        if self.options.enable_fuzzing and self.settings.compiler != "clang" and self.settings.compiler != "apple-clang":
+            raise ConanInvalidConfiguration("Celix enable_fuzzing=True requires the 'clang' compiler")
+
         self.validate_config_option_is_positive_number("celix_err_buffer_size")
         self.validate_config_option_is_positive_number("celix_utils_max_strlen")
         self.validate_config_option_is_positive_number("celix_properties_optimization_string_buffer_size")
@@ -145,12 +150,18 @@ class CelixConan(ConanFile):
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
         del self.info.options.enable_deprecated_warnings
+        del self.info.options.enable_testing
+        del self.info.options.enable_benchmarking
+        del self.info.options.enable_fuzzing
+        del self.info.options.enable_code_coverage
 
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
+        if self.options.enable_benchmarking:
+            self.test_requires("benchmark/[>=1.6.2]")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
@@ -308,6 +319,8 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
+        if self.options.enable_benchmarking:
+            self.options['benchmark'].shared = True
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True

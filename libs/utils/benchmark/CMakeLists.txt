@@ -15,14 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(UTILS_BENCHMARK_DEFAULT "OFF")
-find_package(benchmark QUIET)
-if (benchmark_FOUND)
-    set(UTILS_BENCHMARK_DEFAULT "ON")
-endif ()
-
-celix_subproject(UTILS_BENCHMARK "Option to enable Celix framework benchmark" ${UTILS_BENCHMARK_DEFAULT})
-if (UTILS_BENCHMARK)
+if (ENABLE_BENCHMARKING)
     find_package(benchmark REQUIRED)
 
     add_executable(celix_string_hashmap_benchmark
