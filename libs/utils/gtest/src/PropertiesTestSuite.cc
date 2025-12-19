@@ -33,7 +33,7 @@ class PropertiesTestSuite : public ::testing::Test {
   public:
     PropertiesTestSuite() { celix_err_resetErrors(); }
 
-    void printStats(const celix_properties_statistics_t* stats) {
+    static void printStats(const celix_properties_statistics_t* stats) {
         printf("Properties statistics:\n");
         printf("|- nr of entries: %zu\n", stats->mapStatistics.nrOfEntries);
         printf("|- nr of buckets: %zu\n", stats->mapStatistics.nrOfBuckets);

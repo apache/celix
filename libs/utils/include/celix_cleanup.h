@@ -118,10 +118,10 @@ extern "C" {
  */
 #ifdef __cplusplus
 #define celix_steal_ptr(p) \
-    ({ auto __ptr = (p); (p) = NULL; __ptr; })
+    ({ auto celix_ptr_ = (p); (p) = NULL; celix_ptr_; })
 #else
 #define celix_steal_ptr(p) \
-    ({ __auto_type __ptr = (p); (p) = NULL; __ptr; })
+    ({ __auto_type celix_ptr_ = (p); (p) = NULL; celix_ptr_; })
 #endif
 
 

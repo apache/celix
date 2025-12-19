@@ -161,7 +161,7 @@ celix_status_t celix_version_tryParse(const char* versionStr, celix_version_t** 
     return celix_version_parseInternal(versionStr, false, version);
 }
 
-celix_version_t* celix_version_createEmptyVersion() {
+celix_version_t* celix_version_createEmptyVersion(void) {
     return celix_version_create(0, 0, 0, NULL);
 }
 

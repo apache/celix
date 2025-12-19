@@ -21,6 +21,7 @@
 #define CELIX_LONG_HASH_MAP_H_
 
 #include "celix_cleanup.h"
+#include "celix_compiler.h"
 #include "celix_hash_map_value.h"
 #include "celix_utils_export.h"
 #include "celix_errno.h"
@@ -40,7 +41,7 @@ extern "C" {
 #endif
 
 /**
- * @brief A hash map with uses long as key.
+ * @brief A hash map with uses long as keys.
  *
  * Entries in the hash map can be a pointer, long, double or bool value.
  * All entries should be of the same type.
@@ -60,19 +61,19 @@ typedef struct celix_long_hash_map_iterator {
 } celix_long_hash_map_iterator_t;
 
 /**
- * @brief Optional create options when creating a long hash map.
+ * @brief Optional creation options when creating a long hash map.
  */
 typedef struct celix_long_hash_map_create_options {
     /**
-     * @brief A simple removed callback, which if provided will be called if a value is removed
-     * from the hash map. The removed value is provided as pointer.
+     * @brief A simple removed callback that, if provided, is called when a value is removed
+     * from the hash map. The removed value is provided as a pointer.
      *
-     * @note only simpleRemovedCallback or removedCallback should be configured, if both are configured,
+     * @note Only simpleRemovedCallback or removedCallback should be configured, if both are configured,
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
      *
-     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     * @param[in] value The value that was removed from the hash map. This value is no longer used by the
      *                         hash map and can be freed.
      */
     void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
@@ -85,12 +86,12 @@ typedef struct celix_long_hash_map_create_options {
     void* removedCallbackData CELIX_OPTS_INIT;
 
     /**
-     * @brief A destroy callback, which if provided will be called if a value is removed
+     * @brief A removed callback that, if provided, will be called when a value is removed
      * from the hash map.
      *
-     * The callback data pointer will be provided as first argument to the destroy callback.
+     * The callback data pointer will be provided as the first argument to the removed callback.
      *
-     * @note only simpleRemovedCallback or removedCallback should be configured, if both are configured,
+     * @note Only simpleRemovedCallback or removedCallback should be configured, if both are configured,
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
@@ -105,7 +106,7 @@ typedef struct celix_long_hash_map_create_options {
     /**
      * @brief The initial hash map capacity.
      *
-     * The number of bucket to allocate when creating the hash map.
+     * The number of buckets to allocate when creating the hash map.
      *
      * If 0 is provided, the hash map initial capacity will be 16 (default hash map capacity).
      * Default is 0.
@@ -117,11 +118,11 @@ typedef struct celix_long_hash_map_create_options {
      * hash map capacity.
      *
      * The max load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
-     * in the hash map. The load factor is an important property of the hash map which influences how close the
+     * in the hash map. The load factor is an important property of the hash map that influences how closely the
      * hash map performs to O(1) for its get, has and put operations.
      *
-     * If the nr of entries increases above the maxLoadFactor * capacity, the hash table capacity will be doubled.
-     * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
+     * If the number of entries increases above the maxLoadFactor * capacity, the hash table capacity will be doubled.
+     * For example, a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
      * is added to the hash map.
      *
      * If 0 is provided, the hash map load factor will be 5 (default hash map load factor).
@@ -132,7 +133,7 @@ typedef struct celix_long_hash_map_create_options {
 
 #ifndef __cplusplus
 /**
- * @brief C Macro to create a empty string_hash_map_create_options_t type.
+ * @brief C Macro to create an empty string_hash_map_create_options_t type.
  */
 #define CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS {      \
     .simpleRemovedCallback = NULL,                      \
@@ -146,13 +147,17 @@ typedef struct celix_long_hash_map_create_options {
 /**
  * @brief Creates a new empty hash map with a long as key.
  */
-CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_create();
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(celix_long_hash_map)
+celix_long_hash_map_t* celix_longHashMap_create(void);
 
 /**
- * @brief Creates a new empty long hash map using using the provided hash map create options.
+ * @brief Creates a new empty long hash map using the provided hash map create options.
  * @param opts The create options, only used during the creation of the hash map.
  */
-CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_RETURNS(celix_long_hash_map)
+celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts);
 
 /**
  * @brief Clears and then deallocated the hash map.
@@ -161,7 +166,9 @@ CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_createWithOptions(co
  *
  * @param map The hashmap
  */
-CELIX_UTILS_EXPORT void celix_longHashMap_destroy(celix_long_hash_map_t* map);
+CELIX_UTILS_EXPORT
+CELIX_OWNERSHIP_TAKES(celix_long_hash_map, 1)
+void celix_longHashMap_destroy(celix_long_hash_map_t* map);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_long_hash_map_t, celix_longHashMap_destroy)
 
@@ -184,7 +191,7 @@ CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* ma
 CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
 /**
- * @brief add long entry the long hash map.
+ * @brief Add long entry the long hash map.
  *
  * If the return status is an error, an error message is logged to celix_err.
  *
@@ -197,7 +204,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_put(celix_long_hash_map_t* m
 CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
 
 /**
- * @brief add double entry the long hash map.
+ * @brief Add double entry to the long hash map.
  *
  * If the return status is an error, an error message is logged to celix_err.
  *
@@ -210,7 +217,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putLong(celix_long_hash_map_
 CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
 
 /**
- * @brief add bool entry the long hash map.
+ * @brief Add bool entry the long hash map.
  *
  * If the return status is an error, an error message is logged to celix_err.
  *
@@ -268,10 +275,10 @@ CELIX_UTILS_EXPORT bool celix_longHashMap_getBool(const celix_long_hash_map_t* m
 CELIX_UTILS_EXPORT bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key);
 
 /**
- * @brief Remove a entry from the hashmap and silently ignore if the hash map does not have a entry with the provided
+ * @brief Remove an entry from the hashmap and silently ignore if the hash map does not have an entry with the provided
  * key.
  *
- * @note If the hash map was created with a (simple) remove callback, the callback will have been called if a entry
+ * @note If the hash map was created with a (simple) remove callback, the callback will have been called if an entry
  * for the provided key was present when this function returns.
  *
  * @return True is the value is found and removed.
@@ -288,7 +295,7 @@ CELIX_UTILS_EXPORT void celix_longHashMap_clear(celix_long_hash_map_t* map);
 /**
  * @brief Check if the provided string hash maps are equal.
  *
- * Equals means that both maps have the same number of entries and that all entries in the first map
+ * Equality means that both maps have the same number of entries and that all entries in the first map
  * are also present in the second map and have the same value.
  *
  * @param[in] map1 The first map to compare.
@@ -360,7 +367,7 @@ CELIX_UTILS_EXPORT void celix_longHashMapIterator_remove(celix_long_hash_map_ite
 /**
  * @brief Marco to loop over all the entries of a long hash map.
  *
- * Small example of how to use the iterate macro:
+ * Small example of how to use the iterator macro:
  * @code{.c}
  * celix_long_hash_map_t* map = ...
  * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
