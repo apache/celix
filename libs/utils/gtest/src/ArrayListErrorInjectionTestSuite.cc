@@ -168,10 +168,12 @@ TEST_F(ArrayListErrorInjectionTestSuite, InitialCapacityOptionUsed) {
     opts.initialCapacity = 1; // smaller than number of elements we will add
     celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
 
+    // Fail the next realloc to verify that a second add triggers a reallocation
+    celix_ei_expect_realloc((void*)celix_arrayList_addString, 2, nullptr, 1);
+
     // First add fits in initial capacity
     EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addString(list, "v1"));
 
-    // Fail the next realloc to verify that a second add triggers a reallocation
-    celix_ei_expect_realloc((void*)celix_arrayList_addString, 2, nullptr, 1);
+    // Second add triggers reallocation and fails
     EXPECT_EQ(CELIX_ENOMEM, celix_arrayList_addString(list, "v2"));
 }
