@@ -47,7 +47,7 @@ TEST_F(UvThreadsTestSuite, MutexGuardTest) {
         EXPECT_NE(0, uv_mutex_trylock(&mutex));
     } //guard out of scope -> unlock
 
-    EXPECT_EQ(0, uv_mutex_trylock(&mutex));
+    ASSERT_EQ(0, uv_mutex_trylock(&mutex));
     uv_mutex_unlock(&mutex);
 }
 
@@ -64,22 +64,24 @@ TEST_F(UvThreadsTestSuite, RwlockGuardTest) {
     ASSERT_EQ(0, uv_rwlock_init(&lock));
     celix_autoptr(uv_rwlock_t) lockCleanup = &lock;
 
+#ifndef __APPLE__ //On MacOs uv_rwlock_tryrdlock and uv_rwlock_trywrlock on write locked lock results in SIGABRT
     {
-        celix_auto(celix_uv_rwlock_wlock_guard_t) guard = celixUvRwlockWlockGuard_init(&lock);
+        celix_auto(celix_uv_rwlock_wlock_guard_t) writeGuard = celixUvRwlockWlockGuard_init(&lock);
         EXPECT_NE(0, uv_rwlock_tryrdlock(&lock));
         EXPECT_NE(0, uv_rwlock_trywrlock(&lock));
-    } //guard out of scope -> unlock
+    } //guard out of scope -> unlock write lock
+#endif
 
     {
-        celix_auto(celix_uv_rwlock_rlock_guard_t) guard = celixUvRwlockRlockGuard_init(&lock);
+        celix_auto(celix_uv_rwlock_rlock_guard_t) readGuard = celixUvRwlockRlockGuard_init(&lock);
 
         EXPECT_EQ(0, uv_rwlock_tryrdlock(&lock));
         uv_rwlock_rdunlock(&lock);
 
         EXPECT_NE(0, uv_rwlock_trywrlock(&lock));
-    } //guard out of scope -> unlock
+    } //guard out of scope -> unlock read lock
 
-    EXPECT_EQ(0, uv_rwlock_trywrlock(&lock));
+    ASSERT_EQ(0, uv_rwlock_trywrlock(&lock));
     uv_rwlock_wrunlock(&lock);
 }
 
