@@ -18,7 +18,13 @@
 celix_subproject(UTILS "Option to enable building the Utilities library" ON)
 if (UTILS)
     find_package(libzip REQUIRED)
-    find_package(jansson REQUIRED) #TODO add jansson dep info to build (conan) and documentation info
+    find_package(jansson REQUIRED)
+    find_package(libuv REQUIRED)
+
+    if (NOT TARGET libuv::uv AND TARGET uv)
+        #Note: conan libuv package 1.49.2 defines uv target, but 1.51.0 defines libuv::uv target
+        add_library(libuv::uv ALIAS uv)
+    endif ()
 
     set(MEMSTREAM_SOURCES )
     set(MEMSTREAM_INCLUDES )
@@ -46,7 +52,7 @@ if (UTILS)
             ${MEMSTREAM_SOURCES}
             )
     set(UTILS_PRIVATE_DEPS libzip::zip jansson::jansson)
-    set(UTILS_PUBLIC_DEPS)
+    set(UTILS_PUBLIC_DEPS libuv::uv)
 
     add_library(utils SHARED ${UTILS_SRC})
 

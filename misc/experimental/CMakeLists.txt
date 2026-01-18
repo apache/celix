@@ -18,6 +18,5 @@
 celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF)
 if (EXPERIMENTAL)
     add_subdirectory(bundles)
-    add_subdirectory(libuv)
     add_subdirectory(rust)
 endif ()

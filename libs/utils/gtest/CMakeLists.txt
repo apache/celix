@@ -35,6 +35,7 @@ add_executable(test_utils
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
+        src/UvThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
         src/ArrayListTestSuite.cc
@@ -42,7 +43,7 @@ add_executable(test_utils
         src/CxxExceptionsTestSuite.cc
 )
 
-target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip libuv::uv)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
@@ -153,7 +154,10 @@ if (EI_TESTS)
             Celix::fts_ei
             utils_cut
             Celix::utils_ei
+            libuv::uv
+            -Wl,--whole-archive
             Celix::ifaddrs_ei
+            -Wl,--no-whole-archive
             Celix::threads_ei
             Celix::malloc_ei
             Celix::asprintf_ei
