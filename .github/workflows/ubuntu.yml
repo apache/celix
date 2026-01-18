@@ -123,6 +123,7 @@ jobs:
           libjansson-dev \
           libcurl4-openssl-dev \
           libbenchmark-dev \
+          libuv1-dev \
           default-jdk \
           cmake \
           libffi-dev \

@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install dependencies
         run: |
-          brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1 google-benchmark
+          brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1 google-benchmark libuv
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
         run: |

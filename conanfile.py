@@ -336,6 +336,8 @@ class CelixConan(ConanFile):
             self.options['mosquitto'].shared = True
             if self.options.enable_testing:
                 self.options['mosquitto'].broker = True
+        if self.options.build_experimental:
+            self.options['libuv'].shared = True
 
     def requirements(self):
         if self.options.build_utils:
@@ -370,6 +372,8 @@ class CelixConan(ConanFile):
         self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
+        if self.options.build_experimental:
+            self.requires("libuv/[>=1.49.2 <2.0.0]")
         self.validate()
 
     def generate(self):

@@ -15,9 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF)
-if (EXPERIMENTAL)
-    add_subdirectory(bundles)
-    add_subdirectory(libuv)
-    add_subdirectory(rust)
+find_package(libuv REQUIRED)
+
+if (NOT TARGET libuv::uv AND TARGET uv)
+    #Note: conan libuv package 1.49.2 defines uv target, but 1.51.0 defines lubuv::uv target
+    add_library(libuv::uv ALIAS uv)
+endif ()
+
+if (ENABLE_TESTING)
+    add_executable(libuv_smoke_test
+        src/libuv_smoke_test.cc
+    )
+    target_link_libraries(libuv_smoke_test PRIVATE libuv::uv GTest::gtest GTest::gtest_main)
+    add_test(NAME libuv_smoke_test COMMAND libuv_smoke_test)
 endif ()
