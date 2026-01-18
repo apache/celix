@@ -154,10 +154,7 @@ if (EI_TESTS)
             Celix::fts_ei
             utils_cut
             Celix::utils_ei
-            libuv::uv
-            -Wl,--whole-archive
             Celix::ifaddrs_ei
-            -Wl,--no-whole-archive
             Celix::threads_ei
             Celix::malloc_ei
             Celix::asprintf_ei
