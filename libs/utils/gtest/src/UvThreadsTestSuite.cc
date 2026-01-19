@@ -48,7 +48,7 @@ TEST_F(UvThreadsTestSuite, MutexGuardTest) {
     celix_autoptr(uv_mutex_t) mutexCleanup = &mutex;
 
     {
-        celix_auto(celix_uv_mutex_lock_guard_t) guard = celixUvMutexLockGuard_init(&mutex);
+        celix_auto(celix_uv_mutex_lock_guard_t) guard = celix_uvMutexLockGuard_init(&mutex);
         uv_thread_t thread;
         ASSERT_EQ(0, uv_thread_create(&thread, uvThreadTryLockForMutex, &mutex));
         EXPECT_EQ(0, uv_thread_join(&thread));
@@ -85,14 +85,14 @@ TEST_F(UvThreadsTestSuite, RwlockGuardTest) {
     celix_autoptr(uv_rwlock_t) lockCleanup = &lock;
 
     {
-        celix_auto(celix_uv_rwlock_wlock_guard_t) writeGuard = celixUvRwlockWlockGuard_init(&lock);
+        celix_auto(celix_uv_write_lock_guard_t) writeGuard = celix_uvWriteLockGuard_init(&lock);
         uv_thread_t thread;
         ASSERT_EQ(0, uv_thread_create(&thread, uvThreadTryLocksForWriteLock, &lock));
         EXPECT_EQ(0, uv_thread_join(&thread));
     } //guard out of scope -> unlock write lock
 
     {
-        celix_auto(celix_uv_rwlock_rlock_guard_t) readGuard = celixUvRwlockRlockGuard_init(&lock);
+        celix_auto(celix_uv_read_lock_guard_t) readGuard = celix_uvReadLockGuard_init(&lock);
         uv_thread_t thread;
         ASSERT_EQ(0, uv_thread_create(&thread, uvThreadTryLocksForReadLock, &lock));
         EXPECT_EQ(0, uv_thread_join(&thread));
