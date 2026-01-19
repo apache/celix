@@ -37,6 +37,11 @@ TEST_F(UvThreadsTestSuite, ThreadAutoCleanupTest) {
     EXPECT_EQ(1, counter.load());
 }
 
+static void uvThreadTryLockForMutex(void* data) {
+    auto* mutex = static_cast<uv_mutex_t*>(data);
+    EXPECT_NE(0, uv_mutex_trylock(mutex));
+}
+
 TEST_F(UvThreadsTestSuite, MutexGuardTest) {
     uv_mutex_t mutex;
     ASSERT_EQ(0, uv_mutex_init(&mutex));
@@ -44,7 +49,9 @@ TEST_F(UvThreadsTestSuite, MutexGuardTest) {
 
     {
         celix_auto(celix_uv_mutex_lock_guard_t) guard = celixUvMutexLockGuard_init(&mutex);
-        EXPECT_NE(0, uv_mutex_trylock(&mutex));
+        uv_thread_t thread;
+        ASSERT_EQ(0, uv_thread_create(&thread, uvThreadTryLockForMutex, &mutex));
+        EXPECT_EQ(0, uv_thread_join(&thread));
     } //guard out of scope -> unlock
 
     ASSERT_EQ(0, uv_mutex_trylock(&mutex));
