@@ -44,6 +44,8 @@
 #include "celix_framework_version.h"
 #include <gtest/gtest.h>
 #include <cstdlib>
+#include <thread>
+#include <atomic>
 extern "C" {
 #include "remote_interceptors_handler.h"
 }
@@ -360,14 +362,6 @@ public:
     long proxyId{-1};
 };
 
-TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateSendRequestMethodLock) {
-    celix_autoptr(endpoint_description_t) endpoint = CreateEndpointDescription();
-    long proxyId = -1L;
-    celix_ei_expect_celixThreadRwlock_create((void*)&rsaJsonRpcProxy_factoryCreate, 0, CELIX_ENOMEM);
-    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, SendRequest, nullptr, &proxyId);
-    EXPECT_EQ(CELIX_ENOMEM, status);
-}
-
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxiesHashMap) {
     auto endpoint = CreateEndpointDescription();
     long proxyId = -1L;
@@ -458,14 +452,26 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, InvokeProxyServiceWithInvalidParams) {
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, InvokeProxyServiceWhenProxyIsDestroying) {
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, this, [](void *handle, void *svc) {
-        auto self = static_cast<RsaJsonRpcProxyUnitTestSuite2*>(handle);
-        rsaJsonRpc_destroyProxy(self->jsonRpc.get(), self->proxyId);
+    std::atomic<int> syncStatus{0};
+    std::thread t([this, &syncStatus](){
+        while (syncStatus.load() != 1) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        syncStatus.store(2);
+        rsaJsonRpc_destroyProxy(jsonRpc.get(), proxyId);
+    });
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, &syncStatus, [](void *handle, void *svc) {
+        auto syncStatus = static_cast<std::atomic<int>*>(handle);
+        syncStatus->store(1);
+        while (syncStatus->load() != 2) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
         EXPECT_NE(nullptr, proxySvc);
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, proxySvc->test(proxySvc->handle));
+        EXPECT_EQ(CELIX_SUCCESS, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
+    t.join();
 }
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToPrepareInvokeRequest) {

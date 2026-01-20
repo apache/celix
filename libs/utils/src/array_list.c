@@ -198,7 +198,7 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
         return NULL;
     }
 
-    list->capacity = 10;
+    list->capacity = opts->initialCapacity != 0 ? opts->initialCapacity : 10;
     list->elementData = calloc(list->capacity, sizeof(celix_array_list_entry_t));
     if (!list->elementData) {
         celix_err_push("Failed to allocate memory for elementData");

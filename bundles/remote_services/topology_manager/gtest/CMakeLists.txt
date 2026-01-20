@@ -49,12 +49,14 @@ if (EI_TESTS)
             Celix::framework
             Celix::threads_ei
 #            Celix::bundle_ctx_ei
-#            Celix::string_hash_map_ei
+            Celix::string_hash_map_ei
             Celix::long_hash_map_ei
             Celix::array_list_ei
             Celix::properties_ei
             Celix::utils_ei
             Celix::malloc_ei
+            Celix::filter_ei
+            Celix::asprintf_ei
             GTest::gtest
             GTest::gtest_main
     )
