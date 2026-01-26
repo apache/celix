@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install build dependencies
         run: |
-          sudo pip install -U conan==1.62.0
+          sudo pip install -U conan==1.66.0
           sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:

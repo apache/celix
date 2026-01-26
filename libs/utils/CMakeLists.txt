@@ -21,11 +21,6 @@ if (UTILS)
     find_package(jansson REQUIRED)
     find_package(libuv REQUIRED)
 
-    if (NOT TARGET libuv::uv AND TARGET uv)
-        #Note: conan libuv package 1.49.2 defines uv target, but 1.51.0 defines libuv::uv target
-        add_library(libuv::uv ALIAS uv)
-    endif ()
-
     set(MEMSTREAM_SOURCES )
     set(MEMSTREAM_INCLUDES )
 
