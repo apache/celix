@@ -23,20 +23,6 @@
 class UvThreadsTestSuite : public ::testing::Test {
 };
 
-static void uvThreadIncrement(void* data) {
-    auto* counter = static_cast<std::atomic<int>*>(data);
-    counter->fetch_add(1);
-}
-
-TEST_F(UvThreadsTestSuite, ThreadAutoCleanupTest) {
-    std::atomic<int> counter{0};
-    {
-        celix_auto(uv_thread_t) thread;
-        ASSERT_EQ(0, uv_thread_create(&thread, uvThreadIncrement, &counter));
-    } //thread out of scope -> join
-    EXPECT_EQ(1, counter.load());
-}
-
 static void uvThreadTryLockForMutex(void* data) {
     auto* mutex = static_cast<uv_mutex_t*>(data);
     EXPECT_NE(0, uv_mutex_trylock(mutex));

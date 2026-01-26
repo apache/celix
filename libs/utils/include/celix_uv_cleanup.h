@@ -28,7 +28,6 @@
 extern "C" {
 #endif
 
-CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(uv_thread_t, uv_thread_join)
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(uv_mutex_t, uv_mutex_destroy)
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(uv_rwlock_t, uv_rwlock_destroy)
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(uv_cond_t, uv_cond_destroy)
