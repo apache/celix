@@ -18,7 +18,7 @@
 option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
 option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 option(ENABLE_THREAD_SANITIZER "Enabled building with thread sanitizer." OFF)
-
+option (ENABLE_GCC_ANALYZER "Enable building with GCC static analyzer." OFF )
 # Clear "Advanced" flag for sanitizer options
 mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
@@ -72,6 +72,15 @@ elseif (ENABLE_THREAD_SANITIZER)
     set(CMAKE_C_FLAGS "-fsanitize=thread ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-fsanitize=thread ${CMAKE_CXX_FLAGS}")
 endif()
+if (ENABLE_GCC_ANALYZER)  
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")  
+        set(CMAKE_C_FLAGS "-fanalyzer ${CMAKE_C_FLAGS}")  
+        set(CMAKE_CXX_FLAGS "-fanalyzer ${CMAKE_CXX_FLAGS}")  
+    else()  
+        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC compiler 10.0.0 OR higher.")  
+    endif()  
+endif()
+
 
 MACRO(celix_subproject)
     set(ARGS "${ARGN}")
