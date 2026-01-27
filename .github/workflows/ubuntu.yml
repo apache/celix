@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install build dependencies
         run: |
-          sudo pip install -U conan==1.66.0
+          sudo pip install -U conan
           sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:
@@ -36,21 +36,17 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
         run: |
           # build profile
-          conan profile new release --detect
-          conan profile update settings.build_type=Release release
-          #Note no backwards compatibility for gcc5 needed, setting libcxx to c++11.
-          conan profile update settings.compiler.libcxx=libstdc++11 release
-          conan profile show release
-          echo "[tool_requires]" >> `conan config home`/profiles/release
-          echo "cmake/3.26.4" >> `conan config home`/profiles/release
+          conan profile detect -f --name release
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path release`
+          echo "[tool_requires]" >> `conan profile path release`
+          echo "cmake/3.26.4" >> `conan profile path release`
+          
           # host profile
-          conan profile new default --detect
-          conan profile update settings.build_type=${{ matrix.type }} default
-          #Note no backwards compatibility for gcc5 needed, setting libcxx to c++11.
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile show default
-          echo "[tool_requires]" >> `conan config home`/profiles/default
-          echo "cmake/3.26.4" >> `conan config home`/profiles/default
+          conan profile detect -f 
+          sed -i 's/build_type=Release/build_type=${{ matrix.type }}/g' `conan profile path default`
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
@@ -71,29 +67,22 @@ jobs:
           key: ${{ runner.os }}-test-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
             ${{ runner.os }}-test-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-
-      - name: Configure and install dependencies
+      - name: Install Dependencies and Build
         env:
           CC: ${{ matrix.compiler[0] }}
           CXX: ${{ matrix.compiler[1] }}
           CONAN_BUILD_OPTIONS: |
-            -o celix:enable_testing=True
-            -o celix:enable_benchmarking=True
-            -o celix:enable_address_sanitizer=True
-            -o celix:enable_undefined_sanitizer=True
-            -o celix:build_all=True
-            -o celix:enable_cmake_warning_tests=True
-            -o celix:enable_testing_on_ci=True
-            -o celix:framework_curlinit=False
-            -o celix:enable_ccache=True
+            -o celix/*:enable_testing=True
+            -o celix/*:enable_benchmarking=True
+            -o celix/*:enable_address_sanitizer=True
+            -o celix/*:enable_undefined_sanitizer=True
+            -o celix/*:build_all=True
+            -o celix/*:enable_cmake_warning_tests=True
+            -o celix/*:enable_testing_on_ci=True
+            -o celix/*:framework_curlinit=False
+            -o celix/*:enable_ccache=True
         run: |
-          conan install . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing
-      - name: Build
-        env:
-          CC: ${{ matrix.compiler[0] }}
-          CXX: ${{ matrix.compiler[1] }}
-          CONAN_CMAKE_GENERATOR: Ninja
-        run: |
-          conan build . -bf build
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
         run: |
           cd build
