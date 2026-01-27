@@ -77,7 +77,7 @@ if (ENABLE_GCC_ANALYZER)
         set(CMAKE_C_FLAGS "-fanalyzer ${CMAKE_C_FLAGS}")  
         set(CMAKE_CXX_FLAGS "-fanalyzer ${CMAKE_CXX_FLAGS}")  
     else()  
-        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC compiler 10.0.0 OR higher.")  
+        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")  
     endif()  
 endif()
 
