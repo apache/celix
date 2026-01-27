@@ -63,7 +63,7 @@ jobs:
             -o celix/*:enable_testing_on_ci=True
             -o celix/*:enable_ccache=True
         run: |
-          conan build .  -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing --require-override=openssl/1.1.1s
+          conan build .  -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test with coverage
         run: |
           cd build
