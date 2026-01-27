@@ -18,7 +18,8 @@
 celix_subproject(UTILS "Option to enable building the Utilities library" ON)
 if (UTILS)
     find_package(libzip REQUIRED)
-    find_package(jansson REQUIRED) #TODO add jansson dep info to build (conan) and documentation info
+    find_package(jansson REQUIRED)
+    find_package(libuv REQUIRED)
 
     set(MEMSTREAM_SOURCES )
     set(MEMSTREAM_INCLUDES )
@@ -46,7 +47,7 @@ if (UTILS)
             ${MEMSTREAM_SOURCES}
             )
     set(UTILS_PRIVATE_DEPS libzip::zip jansson::jansson)
-    set(UTILS_PUBLIC_DEPS)
+    set(UTILS_PUBLIC_DEPS libuv::uv)
 
     add_library(utils SHARED ${UTILS_SRC})
 

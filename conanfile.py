@@ -309,6 +309,7 @@ class CelixConan(ConanFile):
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
         if self.options.build_utils:
             self.options['libzip'].shared = True
+            self.options['libuv'].shared = True
         if self.options.build_framework:
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
@@ -340,6 +341,7 @@ class CelixConan(ConanFile):
     def requirements(self):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
+            self.requires("libuv/[>=1.49.2 <2.0.0]")
         if self.options.build_framework:
             self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
             if self.settings.os == "Macos":

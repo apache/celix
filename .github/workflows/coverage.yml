@@ -19,15 +19,21 @@ jobs:
       - name: Install conan and lcov
         run: |
           sudo apt-get install -yq --no-install-recommends lcov
-          sudo pip install conan==1.62.0 coverage
+          sudo pip install -U conan coverage
       - name: Setup Conan Profile
         run: |
-          conan profile new default --detect
-          conan profile update settings.build_type=Debug default
-          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          echo "[tool_requires]" >> `conan config home`/profiles/default
-          echo "cmake/3.26.4" >> `conan config home`/profiles/default
+          # build profile
+          conan profile detect -f --name release
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path release`
+          echo "[tool_requires]" >> `conan profile path release`
+          echo "cmake/3.26.4" >> `conan profile path release`
+          
+          # host profile
+          conan profile detect -f 
+          sed -i 's/build_type=Release/build_type=Debug/g' `conan profile path default`
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
@@ -48,19 +54,16 @@ jobs:
           key: ${{ runner.os }}-gcov-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
             ${{ runner.os }}-gcov-ccache-
-      - name: Install Dependencies
+      - name: Install Dependencies and Build
         env:
           CONAN_BUILD_OPTIONS: |
-            -o celix:enable_testing=True
-            -o celix:build_all=True
-            -o celix:enable_code_coverage=True
-            -o celix:enable_testing_on_ci=True
-            -o celix:enable_ccache=True
+            -o celix/*:enable_testing=True
+            -o celix/*:build_all=True
+            -o celix/*:enable_code_coverage=True
+            -o celix/*:enable_testing_on_ci=True
+            -o celix/*:enable_ccache=True
         run: |
-          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing --require-override=openssl/1.1.1s
-      - name: Build
-        run: |
-          conan build . -bf build
+          conan build .  -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test with coverage
         run: |
           cd build
