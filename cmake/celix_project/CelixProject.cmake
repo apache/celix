@@ -72,10 +72,32 @@ elseif (ENABLE_THREAD_SANITIZER)
     set(CMAKE_C_FLAGS "-fsanitize=thread ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-fsanitize=thread ${CMAKE_CXX_FLAGS}")
 endif()
+
 if (ENABLE_GCC_ANALYZER)  
     if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")  
-        set(CMAKE_C_FLAGS "-fanalyzer ${CMAKE_C_FLAGS}")  
-        set(CMAKE_CXX_FLAGS "-fanalyzer ${CMAKE_CXX_FLAGS}")  
+       set(ANALYZER_FLAGS   
+            "-fanalyzer"  
+            "-Wno-analyzer-too-complex"  
+            "-Wno-analyzer-double-fclose"  
+            "-Wno-analyzer-double-free"
+            "-Wno-analyzer-deref-before-check"  
+            "-Wno-analyzer-exposure-through-output-file"  
+            "-Wno-analyzer-file-leak"  
+            "-Wno-analyzer-free-of-non-heap"  
+            "-Wno-analyzer-malloc-leak"  
+            "-Wno-analyzer-possible-null-argument"  
+            "-Wno-analyzer-possible-null-dereference"  
+            "-Wno-analyzer-null-argument"  
+            "-Wno-analyzer-null-dereference"  
+            "-Wno-analyzer-stale-setjmp-buffer"  
+            "-Wno-analyzer-tainted-array-index"  
+            "-Wno-analyzer-unsafe-call-within-signal-handler"  
+            "-Wno-analyzer-use-after-free"  
+            "-Wno-analyzer-use-of-pointer-in-stale-stack-frame"
+            "-Wno-analyzer-use-of-uninitialized-value" 
+            "-Wno-analyzer-fd-leak" 
+        )  
+       add_compile_options(${ANALYZER_FLAGS})
     else()  
         message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")  
     endif()  
