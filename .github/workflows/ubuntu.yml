@@ -155,13 +155,14 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CCACHE=ON
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-          -DENABLE_GCC_ANALYZER=ON
+          -DENABLE_GCC_ANALYZER=${{matrix.type == 'RelWithDebInfo' && 'ON' || 'OFF'}}
           -G Ninja
       run: |
         mkdir build install
         cd build
         cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-        ninja && ninja install
+        ninja  -j8 
+        ninja install 
     - name: Test
       run: |
         cd $GITHUB_WORKSPACE/build

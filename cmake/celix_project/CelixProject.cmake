@@ -96,6 +96,7 @@ if (ENABLE_GCC_ANALYZER)
             "-Wno-analyzer-use-of-pointer-in-stale-stack-frame"
             "-Wno-analyzer-use-of-uninitialized-value" 
             "-Wno-analyzer-fd-leak" 
+            "-Wno-analyzer-shift-count-negative"
         )  
        add_compile_options(${ANALYZER_FLAGS})
     else()  
