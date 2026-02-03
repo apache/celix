@@ -124,6 +124,17 @@ if (UTILS)
                 )
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
 
+        #Special test lib that disable the celix_err constructor/destructor attribute usage (for testing)
+        add_library(utils_err_no_ctor_dtor_cut STATIC src/celix_err.c)
+        target_include_directories(utils_err_no_ctor_dtor_cut PUBLIC
+                ${CMAKE_CURRENT_LIST_DIR}/include
+                ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
+                ${CMAKE_BINARY_DIR}/celix/gen/src/utils
+                src
+        )
+        target_compile_definitions(utils_err_no_ctor_dtor_cut PRIVATE CELIX_ERR_DISABLE_CONSTRUCTORS)
+        target_link_libraries(utils_err_no_ctor_dtor_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
+
         add_subdirectory(gtest)
     endif ()
 

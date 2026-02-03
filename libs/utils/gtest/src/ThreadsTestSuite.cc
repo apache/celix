@@ -371,23 +371,6 @@ TEST_F(ThreadsTestSuite, RwLockAttrTest) {
     celixThreadRwlockAttr_destroy(&attr);
 }
 
-TEST_F(ThreadsTestSuite, TssTest) {
-    celix_tss_key_t key;
-    celix_status_t status = celix_tss_create(&key, [](void* ptr) { free(ptr); });
-    EXPECT_EQ(CELIX_SUCCESS, status);
-
-    int* value = (int*)malloc(sizeof(int));
-    *value = 123;
-    status = celix_tss_set(key, value);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-
-    value = (int*)celix_tss_get(key);
-    EXPECT_EQ(123, *value);
-
-    status = celix_tss_delete(key);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-}
-
 static void * thread_test_func_create(void * arg) {
     char ** test_str = (char**) arg;
     *test_str = strdup("SUCCESS");

@@ -17,25 +17,20 @@
  * under the License.
  */
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
+#ifndef CELIX_UV_THREADS_EI_H
+#define CELIX_UV_THREADS_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "celix_errno.h"
+#include <uv.h>
+
 #include "celix_error_injector.h"
 
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_signal, celix_status_t);
-
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
+CELIX_EI_DECLARE(uv_key_create, int);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+#endif // CELIX_UV_THREADS_EI_H
