@@ -157,7 +157,7 @@ class CelixConan(ConanFile):
 
     def build_requirements(self):
         if self.options.enable_testing:
-            self.test_requires("gtest/1.10.0")
+            self.test_requires("gtest/1.17.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
         if self.options.enable_benchmarking:
