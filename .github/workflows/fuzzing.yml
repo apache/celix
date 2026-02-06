@@ -79,7 +79,8 @@ jobs:
           done
           tar -czf fuzzing-corpora-artifact.tar.gz -C fuzzing-artifact .
       - name: Upload fuzzing artifacts
-        if: always() #Always package & upload updated fuzzing corpora artifact
+        #Always package & upload updated fuzzing corpora artifact on the master branch
+        if: always() && github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
         with:
           name: fuzzing-corpora-artifact
