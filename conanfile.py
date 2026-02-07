@@ -94,6 +94,8 @@ class CelixConan(ConanFile):
         "framework_curlinit": True,
         "enable_ccache": False,
         "enable_deprecated_warnings": False,
+        "enable_gcc_analyzer": False , 
+      
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -154,6 +156,7 @@ class CelixConan(ConanFile):
         del self.info.options.enable_benchmarking
         del self.info.options.enable_fuzzing
         del self.info.options.enable_code_coverage
+        del self.info.options.enable_gcc_analyzer
 
     def build_requirements(self):
         if self.options.enable_testing:
@@ -389,7 +392,7 @@ class CelixConan(ConanFile):
             if "libcurl" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_CURL"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
-        # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        #tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
             tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
