@@ -21,49 +21,51 @@ limitations under the License.
 
 This directory contains a [DevContainer](https://containers.dev) setup for developing Apache Celix inside a container.
 
-Although Apache Celix can be built using CMake with APT-installed dependencies or Conan with Conan-installed/built
-dependencies, this DevContainer setup currently only supports Conan.
+Although Apache Celix can be built using CMake with APT-installed dependencies or Conan 
+with Conan-installed/built dependencies, this DevContainer setup is based on Conan.
 
 Please note, the DevContainer setup is not broadly tested and might not work on all systems.
-It has been tested on Ubuntu 23.10 and Fedora 40.
+It has been tested on MacOS 26 and Fedora 43, using podman.
+
+## Mounts
+
+The devcontainer uses the following container volumes to ensure dependency build and project 
+building is more efficient, even after recreating a devcontainer:
+
+- celixdev-conan-package-cache
+- celixdev-conan-download-cache
+- celixdev-ccache-cache
+
+Use `podman volume rm` / `docker volume rm` to remove the volumes if you do no longer use them.
 
 ## VSCode Usage
 
 VSCode has built-in support for DevContainers.
-Simply launch VSCode using the Celix workspace folder, and you will be prompted to open the workspace in a container.
+Launch VSCode using the Celix workspace folder, and you will be prompted to 
+open the workspace in a container.
 
-VSCode ensures that your host `.gitconfig` file, `.gnupg` directory, and SSH agent forwarding are available in the
-container.
+VSCode ensures that your host `.gitconfig` file and SSH agent forwarding 
+are available in the container.
 
 ## CLion Usage
 
-At the time of writing this readme, CLion does not fully support DevContainers,
-but there is some support focusing on Docker. Using a container and remote development via SSH with CLion works.
+CLion 2025.3.1 includes DevContainer support (including Podman), so you can open this repository directly
+using the IDE's DevContainer workflow. Once the container is built, enable and select the conan-debug (generated) 
+profile.
 
-To start developing in a container with build a CevContainer image using the `build-devcontainer-image.sh` script
-and then start a container with SSHD running and interactively set up `.gitconfig`, `.gnupg`, and SSH agent
-forwarding, using the `.devcontainer/run-dev-container.sh` script:
+## Building
 
-```bash
-cd ${CELIX_ROOT}
-./.devcontainer/build-devcontainer-image.sh
-./.devcontainer/run-devcontainer.sh
-ssh -p 2233 celixdev@localhost
-```
-
-In CLion, open the Remote Development window by navigating to "File -> Remote Development..." and add a new
-configuration. When a new configuration is added, you can start a new project using `/home/celixdev/workspace` as the
-project root and selecting CLion as the IDE.
-
-Also ensure the CMake profile from the - conan generated - `CMakeUserPresets.json` is used: Enable the profile in the 
-Settings -> "Build, Execution, Deployment" -> CMake menu.
-
-## Running tests
-Tests can be run using ctest.
-When building with conan, the conanrun.sh script will setup the environment for the
-built dependencies. To run the tests, execute the following commands:
+Build can be done from the root workspace dir:
 
 ```shell
-cd build
-ctest --output-on-failure --test-command ./workspaces/celix/build/conanrun.sh
+cmake --build build --parallel
+```
+
+## Running tests
+
+Tests can be run using ctest.
+When building with Conan, run tests from the build directory after configuring/building:
+
+```shell
+ctest --output-on-failure --test-dir build
 ```
