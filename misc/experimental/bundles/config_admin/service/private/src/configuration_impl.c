@@ -38,7 +38,7 @@
 /* celix.framework */
 #include "bundle.h"
 #include "celix_constants.h"
-#include "utils.h"
+#include "celix_utils.h"
 /* celix.framework_patch*/
 #include "framework_patch.h"
 /* celix.config_admin.public*/

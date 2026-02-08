@@ -47,7 +47,7 @@
 #include "framework_private.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "celix_bundle_archive.h"
 
 struct celix_bundle_activator {
@@ -243,7 +243,11 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celixThreadCondition_init(&framework->dispatcher.cond, NULL);
     framework->dispatcher.active = true;
     framework->currentBundleId = CELIX_FRAMEWORK_BUNDLE_ID;
-    framework->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
+    framework->installRequestMap = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        (int (*)(const void*, const void*))celix_utils_stringEquals);
     framework->installedBundles.entries = celix_arrayList_create();
     framework->configurationMap = config; //note form now on celix_framework_getConfigProperty* can be used
     framework->bundleListeners = celix_arrayList_create();
@@ -2717,4 +2721,3 @@ void celix_framework_waitForStop(celix_framework_t *framework) {
 
     celixThreadMutex_unlock(&framework->shutdown.mutex);
 }
-
