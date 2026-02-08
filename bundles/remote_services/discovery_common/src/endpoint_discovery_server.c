@@ -27,7 +27,6 @@
 #include "civetweb.h"
 #include "celix_errno.h"
 #include "celix_utils.h"
-#include "utils.h"
 #include "celix_log_helper.h"
 #include "discovery.h"
 #include "endpoint_descriptor_writer.h"
@@ -87,7 +86,11 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     }
 
     (*server)->loghelper = &discovery->loghelper;
-    (*server)->entries = hashMap_create(&utils_stringHash, NULL, &utils_stringEquals, NULL);
+    (*server)->entries = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
     if (!(*server)->entries) {
         return CELIX_ENOMEM;
     }

@@ -21,7 +21,6 @@
 
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
-#include "utils.h"
 
 class UtilsTestSuite : public ::testing::Test {
 public:
@@ -183,10 +182,6 @@ TEST_F(UtilsTestSuite, StringHashTest) {
 
     hash = celix_utils_stringHash(nullptr);
     EXPECT_EQ(0, hash);
-
-    //test deprecated api
-    hash = utils_stringHash("abc");
-    EXPECT_EQ(193485963, hash);
 }
 
 TEST_F(UtilsTestSuite, StringEqualsTest) {
@@ -199,38 +194,6 @@ TEST_F(UtilsTestSuite, StringEqualsTest) {
     EXPECT_TRUE(celix_utils_stringEquals("", ""));
     EXPECT_FALSE(celix_utils_stringEquals("", nullptr));
 
-    //test deprecated api
-    EXPECT_TRUE(utils_stringEquals("abc", "abc"));
-}
-
-TEST_F(UtilsTestSuite, IsNumericTest) {
-    //test deprecated api
-
-    // Check numeric string
-    bool result;
-    celix_status_t status = utils_isNumeric("42", &result);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    EXPECT_TRUE(result);
-
-    // Check non numeric string
-    status = utils_isNumeric("42b", &result);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    EXPECT_FALSE(result);
-}
-
-TEST_F(UtilsTestSuite, ThreadEqualSelfTest) {
-    celix_thread thread = celixThread_self();
-    bool equal;
-
-    celix_status_t status = thread_equalsSelf(thread, &equal);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    EXPECT_TRUE(equal);
-
-
-    thread.thread = (pthread_t) 0x42;
-    status = thread_equalsSelf(thread, &equal);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    EXPECT_FALSE(equal);
 }
 
 TEST_F(UtilsTestSuite, StringTrimTest) {
@@ -263,27 +226,6 @@ TEST_F(UtilsTestSuite, StringTrimTest) {
     trimmed = celix_utils_trim("  abc   ");
     EXPECT_STREQ("abc", trimmed);
     free(trimmed);
-}
-
-TEST_F(UtilsTestSuite, StringNBdupTest){
-    // test deprecated api
-
-    // Compare with equal strings
-    const char * org = "abc";
-    char * cmp = nullptr;
-
-    cmp = string_ndup(org, 3);
-    EXPECT_STREQ(org, cmp);
-    free(cmp);
-
-    org = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
-    cmp = string_ndup(org, 50);
-    EXPECT_STREQ(org, cmp);
-    free(cmp);
-
-    cmp = string_ndup(org, 25);
-    EXPECT_EQ(25, strlen(cmp));
-    free(cmp);
 }
 
 TEST_F(UtilsTestSuite, WriteOrCreateStringTest) {
