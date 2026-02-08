@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 
+#include "celix_errno.h"
 #include "celix_types.h"
 #include "celix_properties_type.h"
 #include "celix_framework_export.h"

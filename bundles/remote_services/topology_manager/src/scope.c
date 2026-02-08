@@ -23,7 +23,7 @@
 #include "scope.h"
 #include "tm_scope.h"
 #include "topology_manager.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "filter.h"
 
 static bool import_equal(celix_array_list_entry_t src, celix_array_list_entry_t dest);
@@ -198,7 +198,11 @@ celix_status_t scope_scopeCreate(void *handle, scope_pt *scope) {
     celixThreadMutex_create(&(*scope)->exportScopeLock, NULL);
     celixThreadMutex_create(&(*scope)->importScopeLock, NULL);
 
-    (*scope)->exportScopes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    (*scope)->exportScopes = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.equalsCallback = import_equal;
     (*scope)->importScopes = celix_arrayList_createWithOptions(&opts);

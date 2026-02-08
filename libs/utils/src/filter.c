@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <utils.h>
+#include <celix_utils.h>
 
 #include "celix_convert_utils.h"
 #include "celix_err.h"

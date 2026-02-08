@@ -24,7 +24,7 @@
 
 #include "celix_api.h"
 #include "celix_log_helper.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"
 
@@ -293,7 +293,11 @@ celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t
 	{
 		(*watcher)->discovery = discovery;
 		(*watcher)->loghelper = &discovery->loghelper;
-		(*watcher)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		(*watcher)->entries = hashMap_create(
+            (unsigned int (*)(const void*))celix_utils_stringHash,
+            NULL,
+            (int (*)(const void*, const void*))celix_utils_stringEquals,
+            NULL);
         (*watcher)->ttl = DEFAULT_ETCD_TTL;
 	}
 
@@ -352,4 +356,3 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 
 	return status;
 }
-

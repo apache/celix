@@ -38,7 +38,7 @@
 /* celix.framework */
 #include "celix_constants.h"
 #include "properties.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "service_reference.h"
 #include "service_registration.h"
 /* celix.framework.Patch*/
@@ -137,8 +137,16 @@ celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, con
     this->configurationStore = store;
     this->updatedThreadPool = updatedThreadPool;
 
-    this->managedServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    this->managedServicesReferences = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    this->managedServices = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
+    this->managedServicesReferences = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
 
     celix_status_t mutexStatus = celixThreadMutex_create(&this->managedServicesReferencesMutex, NULL);
     if (mutexStatus != CELIX_SUCCESS) {

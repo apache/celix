@@ -43,7 +43,7 @@
 #include "remote_constants.h"
 #include "filter.h"
 #include "listener_hook_service.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "service_reference.h"
 #include "service_registration.h"
 #include "celix_log_helper.h"

@@ -35,7 +35,6 @@
 #include "bundle_context.h"
 #include "celix_constants.h"
 #include "properties.h"
-#include "utils.h"
 /* celix.utils */
 #include "hash_map.h"
 /* celix.configadmin */
