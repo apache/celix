@@ -22,8 +22,9 @@ limitations under the License.
 # Fuzz Testing with libFuzzer
 
 The utilities library contains fuzz targets that can be built with
-[LLVM libFuzzer](https://llvm.org/docs/LibFuzzer.html).  Fuzzing is
-enabled when using the Clang compiler and the `UTILS_LIBFUZZER` CMake
+[LLVM libFuzzer](https://llvm.org/docs/LibFuzzer.html).  
+
+Fuzzing is enabled when using the Clang compiler and the `UTILS_LIBFUZZER` CMake
 option.
 
 ## Building
@@ -70,5 +71,12 @@ This will display all available LibFuzzer options.
 
 ## Continuous Fuzzing
 
-A GitHub Actions workflow runs the fuzzer periodically. The workflow
-configuration can be found at `.github/workflows/fuzzing.yml`.
+Each Celix Fuzzing run attempts to download the latest fuzzing artifact from the same branch and unpack any 
+existing corpora before executing the fuzzers so new inputs build on the most recent discoveries.
+
+### Maintaining the seed corpus
+
+The Celix Fuzzing workflow uploads the generated corpora files as a build artifact 
+named `fuzzing-corpora-artifact`. 
+The master version of the `fuzzing-corpora-artifactz` artifact is used to keep 
+the seed corpus in `libs/utils/fuzzing/{filter,properties,version}_corpus` updated. 
