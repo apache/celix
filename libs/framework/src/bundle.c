@@ -23,10 +23,10 @@
 #include "celix_properties.h"
 #include "celix_properties_type.h"
 #include "framework_private.h"
-#include "utils.h"
 #include "celix_file_utils.h"
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
+#include "celix_utils.h"
 
 #include <stdlib.h>
 #include <string.h>

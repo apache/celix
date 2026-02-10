@@ -35,7 +35,6 @@
 #include "bundle_context.h"
 #include "celix_log_helper.h"
 #include "celix_utils.h"
-#include "utils.h"
 
 #include "endpoint_descriptor_reader.h"
 #include "discovery.h"
@@ -95,7 +94,11 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 	(*poller)->poll_timeout = atoi(timeout);
 	(*poller)->discovery = discovery;
 	(*poller)->running = false;
-	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	(*poller)->entries = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
 
 	const char* sep = ",";
 	char *save_ptr = NULL;

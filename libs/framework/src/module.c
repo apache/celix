@@ -30,7 +30,6 @@
 #include "celix_module.h"
 #include "celix_utils.h"
 #include "framework_private.h"
-#include "utils.h"
 #include "celix_bundle_private.h"
 
 #ifdef __linux__

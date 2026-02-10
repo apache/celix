@@ -42,7 +42,7 @@
 #include "hash_map.h"
 /* celix.framework */
 #include "properties.h"
-#include "utils.h"
+#include "celix_utils.h"
 /* celix.config_admin.private*/
 #include "configuration_admin_factory.h"
 #include "configuration.h"
@@ -88,7 +88,11 @@ celix_status_t configurationStore_create(bundle_context_pt context, configuratio
 
     (*store)->configurationAdminFactory = factory;
 
-    (*store)->configurations = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    (*store)->configurations = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
 //	(*store)->createdPidCount = 0;
 
     if (configurationStore_createCache((*store)) != CELIX_SUCCESS) {

@@ -27,7 +27,7 @@
 
 #include "celix_threads.h"
 #include "bundle_context.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "celix_errno.h"
 #include "filter.h"
 #include "service_reference.h"
@@ -56,7 +56,11 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
 
         discovery->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2,
                                                           NULL);
-        discovery->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+        discovery->discoveredServices = hashMap_create(
+            (unsigned int (*)(const void*))celix_utils_stringHash,
+            NULL,
+            (int (*)(const void*, const void*))celix_utils_stringEquals,
+            NULL);
 
         celixThreadMutex_create(&discovery->mutex, NULL);
 
@@ -173,6 +177,5 @@ celix_status_t discovery_stop(discovery_t *discovery) {
 
     return status;
 }
-
 
 

@@ -22,15 +22,12 @@
 
 #include "celix_properties.h"
 #include "celix_array_list.h"
-
-#include "celix_bundle.h"
-#include "celix_bundle_context.h"
-#include "celix_framework.h"
-
-#include "celix_properties.h"
-#include "celix_array_list.h"
 #include "celix_constants.h"
-#include "celix_utils_api.h"
+#include "celix_errno.h"
+#include "celix_threads.h"
+#include "celix_utils.h"
+#include "celix_version.h"
+#include "celix_version_range.h"
 #include "celix_bundle.h"
 #include "celix_bundle_context.h"
 

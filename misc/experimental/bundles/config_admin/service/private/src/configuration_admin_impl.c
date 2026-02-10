@@ -33,7 +33,7 @@
 #include "configuration_admin_impl.h"
 
 /* celix.framework.public */
-#include "utils.h"
+#include "celix_utils.h"
 /* celix.framework_patch*/
 #include "framework_patch.h"
 /* celix.config_admin.private*/

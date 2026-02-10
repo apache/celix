@@ -58,6 +58,9 @@ limitations under the License.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
 - ip_utils.h is removed and no longer supported.  
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.
+- utils.h is removed and no longer supported. Use celix_utils.h instead.
+- export.h is removed and no longer supported.
+- celix_utils_api.h is removed and no longer supported.
 - the celix_arrayList_add function no longer accepts a NULL value.
 - version.h and version_range.h are removed and no longer supported. Use celix_version.h and celix_version_range.h 
   instead.

@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <utils.h>
+#include <celix_utils.h>
 #include <assert.h>
 
 #include "service_reference.h"
