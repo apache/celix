@@ -18,11 +18,16 @@
 option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
 option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 option(ENABLE_THREAD_SANITIZER "Enabled building with thread sanitizer." OFF)
-option (ENABLE_GCC_ANALYZER "Enable building with GCC static analyzer." OFF )
+option(ENABLE_GCC_ANALYZER "Enable building with GCC static analyzer." OFF )
+option(ENABLE_CLANG_TIDY "Enable clang-tidy during build" OFF)
+
 # Clear "Advanced" flag for sanitizer options
 mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
 mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
+
+# Enable generation of compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (ENABLE_ADDRESS_SANITIZER)
     set(UBSAN_SAN "")
@@ -73,35 +78,45 @@ elseif (ENABLE_THREAD_SANITIZER)
     set(CMAKE_CXX_FLAGS "-fsanitize=thread ${CMAKE_CXX_FLAGS}")
 endif()
 
-if (ENABLE_GCC_ANALYZER)  
-    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")  
-       set(ANALYZER_FLAGS   
-            "-fanalyzer"  
-            "-Wno-analyzer-too-complex"  
-            "-Wno-analyzer-double-fclose"  
+if (ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    if (CLANG_TIDY_EXE)
+        set(CMAKE_C_CLANG_TIDY ${CLANG_TIDY_EXE})
+        set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE})
+    else()
+        message(FATAL_ERROR "ENABLE_CLANG_TIDY is ON, but clang-tidy was not found.")
+    endif()
+endif ()
+
+if (ENABLE_GCC_ANALYZER)
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+       set(ANALYZER_FLAGS
+            "-fanalyzer"
+            "-Wno-analyzer-too-complex"
+            "-Wno-analyzer-double-fclose"
             "-Wno-analyzer-double-free"
-            "-Wno-analyzer-deref-before-check"  
-            "-Wno-analyzer-exposure-through-output-file"  
-            "-Wno-analyzer-file-leak"  
-            "-Wno-analyzer-free-of-non-heap"  
-            "-Wno-analyzer-malloc-leak"  
-            "-Wno-analyzer-possible-null-argument"  
-            "-Wno-analyzer-possible-null-dereference"  
-            "-Wno-analyzer-null-argument"  
-            "-Wno-analyzer-null-dereference"  
-            "-Wno-analyzer-stale-setjmp-buffer"  
-            "-Wno-analyzer-tainted-array-index"  
-            "-Wno-analyzer-unsafe-call-within-signal-handler"  
-            "-Wno-analyzer-use-after-free"  
+            "-Wno-analyzer-deref-before-check"
+            "-Wno-analyzer-exposure-through-output-file"
+            "-Wno-analyzer-file-leak"
+            "-Wno-analyzer-free-of-non-heap"
+            "-Wno-analyzer-malloc-leak"
+            "-Wno-analyzer-possible-null-argument"
+            "-Wno-analyzer-possible-null-dereference"
+            "-Wno-analyzer-null-argument"
+            "-Wno-analyzer-null-dereference"
+            "-Wno-analyzer-stale-setjmp-buffer"
+            "-Wno-analyzer-tainted-array-index"
+            "-Wno-analyzer-unsafe-call-within-signal-handler"
+            "-Wno-analyzer-use-after-free"
             "-Wno-analyzer-use-of-pointer-in-stale-stack-frame"
-            "-Wno-analyzer-use-of-uninitialized-value" 
-            "-Wno-analyzer-fd-leak" 
+            "-Wno-analyzer-use-of-uninitialized-value"
+            "-Wno-analyzer-fd-leak"
             "-Wno-analyzer-shift-count-negative"
-        )  
+        )
        add_compile_options(${ANALYZER_FLAGS})
-    else()  
-        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")  
-    endif()  
+    else()
+        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")
+    endif()
 endif()
 
 

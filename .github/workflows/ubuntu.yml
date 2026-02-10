@@ -81,6 +81,7 @@ jobs:
             -o celix/*:enable_testing_on_ci=True
             -o celix/*:framework_curlinit=False
             -o celix/*:enable_ccache=True
+            -o celix/*:enable_clang_tidy=${{ (matrix.type == 'RelWithDebInfo' && matrix.compiler[0] == 'clang') && 'True' || 'False' }}
         run: |
           conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
@@ -106,6 +107,7 @@ jobs:
         sudo apt-get install -yq --no-install-recommends \
           build-essential \
           ninja-build \
+          clang-tidy \
           curl \
           uuid-dev \
           libzip-dev \

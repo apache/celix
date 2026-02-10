@@ -47,6 +47,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "enable_clang_tidy": False,
+        "clang_tidy_warnings_as_errors": True,
         "enable_fuzzing": False,
         "enable_benchmarking": False,
         "install_find_modules": False,
@@ -94,8 +96,8 @@ class CelixConan(ConanFile):
         "framework_curlinit": True,
         "enable_ccache": False,
         "enable_deprecated_warnings": False,
-        "enable_gcc_analyzer": False , 
-      
+        "enable_gcc_analyzer": False ,
+
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -157,6 +159,8 @@ class CelixConan(ConanFile):
         del self.info.options.enable_fuzzing
         del self.info.options.enable_code_coverage
         del self.info.options.enable_gcc_analyzer
+        del self.info.options.enable_clang_tidy
+        del self.info.options.clang_tidy_warnings_as_errors
 
     def build_requirements(self):
         if self.options.enable_testing:
