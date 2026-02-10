@@ -58,17 +58,25 @@ jobs:
           conan install . -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
           #CMake configure -> generate build/compile_commands.json
           cmake --preset conan-relwithdebinfo
-      - name: Setup Rust Tools (binary install)
-        uses: cargo-bins/cargo-binstall@ec80feb9e330418e014932e5982599255eff6dbb #v1.17.4
-      - name: Install SARIF Tools
-        run: cargo binstall -y clang-tidy-sarif
+# Note action cargo-bins/cargo-binstall not allowed ("all actions must be from a repository owned by your enterprise, created by GitHub, verified in the GitHub Marketplace, or match one of the patterns:...")
+#      - name: Setup Rust Tools (binary install)
+#        uses: cargo-bins/cargo-binstall@ec80feb9e330418e014932e5982599255eff6dbb #v1.17.4
+#      - name: Install SARIF Tools
+#        run: cargo binstall -y clang-tidy-sarif
+      - name: Install SARIF Tools via Curl
+        run: |
+          VERSION="v0.8.0"
+          TARGET="x86_64-unknown-linux-gnu"
+          curl -sSL "https://github.com/psastras/sarif-rs/releases/download/clang-tidy-sarif-${VERSION}/clang-tidy-sarif-${TARGET}" -o clang-tidy-sarif
+          chmod +x clang-tidy-sarif
       - name: Run clang-tidy
         run: |
           set -o pipefail
           run-clang-tidy -p build -quiet | tee clang-tidy-report.txt
       - name: Convert clang-tidy output to sarif
         if: always()
-        run: cat clang-tidy-report.txt | clang-tidy-sarif > clang-tidy-report.sarif
+#        run: cat clang-tidy-report.txt | clang-tidy-sarif > clang-tidy-report.sarif
+        run: cat clang-tidy-report.txt | ./clang-tidy-sarif > clang-tidy-report.sarif
       - name: upload sarif report
         uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 #4.32.2
         if: always()
