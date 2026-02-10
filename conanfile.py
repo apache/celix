@@ -157,6 +157,7 @@ class CelixConan(ConanFile):
         del self.info.options.enable_fuzzing
         del self.info.options.enable_code_coverage
         del self.info.options.enable_gcc_analyzer
+        del self.info.options.celix_use_compression_for_bundle_zips
 
     def build_requirements(self):
         if self.options.enable_testing:

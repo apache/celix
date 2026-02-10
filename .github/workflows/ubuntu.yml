@@ -146,6 +146,7 @@ jobs:
           -DENABLE_CCACHE=ON
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           -DENABLE_GCC_ANALYZER=${{matrix.type == 'RelWithDebInfo' && 'ON' || 'OFF'}}
+          -DCELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS=OFF
           -G Ninja
       run: |
         mkdir build install
