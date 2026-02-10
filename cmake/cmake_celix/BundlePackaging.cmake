@@ -19,27 +19,15 @@
 set(CELIX_NO_POSTFIX_BUILD_TYPES RelWithDebInfo Release CACHE STRING "The build type used for creating bundle without a build type postfix.")
 option(CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS "Enables bundle compression" TRUE)
 
-if (CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS)
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cf)
-    set(CELIX_ZIP_COMMAND_ARGUMENTS -rq)
-else ()
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cf0)
+if (NOT CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS)
+    #Note `cmake -E tar --format=zip` does not support not compressing the zip files,
+    #falling back to using a zip command.
+    find_program(ZIP_COMMAND zip NO_CMAKE_FIND_ROOT_PATH)
+    if (NOT ZIP_COMMAND)
+        message(FATAL_ERROR "Cannot find zip executable, zip exe is needed for creating zip files without compression")
+    endif ()
     set(CELIX_ZIP_COMMAND_ARGUMENTS -rq0)
 endif ()
-
-find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
-
-if (JAR_COMMAND AND NOT CELIX_USE_ZIP_INSTEAD_OF_JAR)
-    message(DEBUG "Using jar to create bundles")
-else ()
-    find_program(ZIP_COMMAND zip NO_CMAKE_FIND_ROOT_PATH)
-    if (ZIP_COMMAND)
-        message(DEBUG "Using zip to create bundles")
-    else ()
-        message(FATAL_ERROR "A jar or zip command is needed to created bundles")
-    endif ()
-endif ()
-
 
 ##### setup bundles/deploy target
 if (NOT TARGET celix-bundles)
@@ -286,7 +274,7 @@ function(add_celix_bundle)
     )
     #########################################################
 
-    ###### Packaging the bundle using using jar or zip and a content dir. Configuring dependencies ######
+    ###### Packaging the bundle using using zip or Cmake built-in zip and a content dir. Configuring dependencies ######
     if (ZIP_COMMAND)
         file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR}) #Note needed because working_directory is bundle content dir
         add_custom_command(OUTPUT ${BUNDLE_FILE}
@@ -296,20 +284,17 @@ function(add_celix_bundle)
                 DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
-    elseif (JAR_COMMAND)
+    else ()
+        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR}) #Note needed because working_directory is bundle content dir
         add_custom_command(OUTPUT ${BUNDLE_FILE}
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} -C ${BUNDLE_CONTENT_DIR} .
+                COMMAND ${CMAKE_COMMAND} -E tar cf ${BUNDLE_FILE} --format=zip .
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
                 DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
-    else ()
-        message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
     endif ()
     ###################################################################################
-
 
     ###################################
     ##### Additional Cleanup info #####
@@ -943,17 +928,15 @@ function(install_celix_bundle)
             )"
                 COMPONENT ${BUNDLE}
         )
-    elseif (JAR_COMMAND)
+    else ()
         install(CODE
                 "execute_process(
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} -C ${BUNDLE_CONTENT_DIR} .
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMAND ${CMAKE_COMMAND} -E tar cf ${BUNDLE_FILE_INSTALL} --format=zip .
+                WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
             )"
                 COMPONENT ${BUNDLE}
         )
-    else ()
-        message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
     endif ()
 
     install(FILES ${BUNDLE_FILE_INSTALL} DESTINATION share/${INSTALL_PROJECT_NAME}/bundles
