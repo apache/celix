@@ -69,14 +69,14 @@ if(ZIP_COMMAND)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zip_content
     )
-else()
+else ()
     add_custom_command(OUTPUT ${TEST_ZIP_FILE}
-        COMMAND ${JAR_COMMAND} -cf ${TEST_ZIP_FILE} -C ${CMAKE_CURRENT_BINARY_DIR}/zip_content .
-        COMMENT "Creating ${TEST_ZIP_FILE} for testing"
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E tar cf ${TEST_ZIP_FILE} --format=zip .
+            COMMENT "Creating ${TEST_ZIP_FILE} for testing"
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zip_content
     )
-endif()
+endif ()
 add_custom_target(test_utils_resources DEPENDS ${TEST_ZIP_FILE})
 add_dependencies(test_utils test_utils_resources)
 target_compile_definitions(test_utils PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_FILE}\")
