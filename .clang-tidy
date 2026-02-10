@@ -134,11 +134,13 @@ Checks: >
   -cert-dcl51-cpp,
   -cert-dcl50-cpp,
   -cert-msc50-cpp,
-  -cert-msc51-cpp,
-  -cert-dcl59-cpp
-WarningsAsErrors: '*'
-HeaderFilterRegex: '.*'
-#HeaderFilterRegex: '(bundles|libs|misc)/.*'
+  -cert-msc51-cpp
+# TODO re-enable check suppression (disabled to trigger check results in the GitHub Sarif report)
+#  -cert-dcl59-cpp
+WarningsAsErrors: "*"
 FormatStyle: file
-SystemHeaders: false
+#Note SystemHeaders not supported on ubuntu 22.04 ci (clang-tidy version 14.0), using header filter regex instead
+#HeaderFilterRegex: ".*"
+#SystemHeaders: false
+HeaderFilterRegex: "(bundles|libs|misc).*"
 ...
