@@ -106,7 +106,6 @@ jobs:
         sudo apt-get install -yq --no-install-recommends \
           build-essential \
           ninja-build \
-          clang-tidy \
           curl \
           uuid-dev \
           libzip-dev \
