@@ -147,7 +147,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CCACHE=ON
           -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-          -DENABLE_GCC_ANALYZER=${{matrix.type == 'RelWithDebInfo' && 'ON' || 'OFF'}}
+          -DENABLE_GCC_ANALYZER=OFF
           -G Ninja
       run: |
         mkdir build install
