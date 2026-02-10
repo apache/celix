@@ -112,11 +112,11 @@ if (ENABLE_GCC_ANALYZER)
             "-Wno-analyzer-use-of-uninitialized-value"
             "-Wno-analyzer-fd-leak"
             "-Wno-analyzer-shift-count-negative"
-        )
-       add_compile_options(${ANALYZER_FLAGS})
+        )  
+       add_compile_options("$<$<COMPILE_LANGUAGE:C>:${ANALYZER_FLAGS}>")
     else()
-        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")
-    endif()
+        message(WARNING "ENABLE_GCC_ANALYZER is only supported with GCC ")  
+    endif()  
 endif()
 
 
