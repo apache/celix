@@ -267,19 +267,3 @@ celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr) {
 celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void)) {
     return pthread_once(once_control, init_routine);
 }
-
-celix_status_t celix_tss_create(celix_tss_key_t* key, void (*destroyFunction)(void*)) {
-    return pthread_key_create(key, destroyFunction);
-}
-
-celix_status_t celix_tss_delete(celix_tss_key_t key) {
-    return pthread_key_delete(key);
-}
-
-celix_status_t celix_tss_set(celix_tss_key_t key, void* value) {
-    return pthread_setspecific(key, value);
-}
-
-void* celix_tss_get(celix_tss_key_t key) {
-    return pthread_getspecific(key);
-}

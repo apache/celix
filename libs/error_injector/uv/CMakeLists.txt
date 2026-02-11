@@ -15,16 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(threads_ei STATIC src/celix_threads_ei.cc)
+find_package(libuv REQUIRED)
 
-target_include_directories(threads_ei PUBLIC include)
-target_link_libraries(threads_ei PUBLIC Celix::error_injector Celix::utils)
+add_library(uv_ei STATIC src/uv_ei.cc)
 
-target_link_options(threads_ei INTERFACE
-        LINKER:--wrap,celixThreadMutex_create
-        LINKER:--wrap,celixThread_create
-        LINKER:--wrap,celixThreadCondition_signal
-        LINKER:--wrap,celixThreadCondition_init
-        LINKER:--wrap,celixThreadRwlock_create
+target_include_directories(uv_ei PUBLIC include)
+target_link_libraries(uv_ei PUBLIC Celix::error_injector libuv::uv)
+
+target_link_options(uv_ei INTERFACE
+        LINKER:--wrap,uv_key_create
 )
-add_library(Celix::threads_ei ALIAS threads_ei)
+add_library(Celix::uv_ei ALIAS uv_ei)
