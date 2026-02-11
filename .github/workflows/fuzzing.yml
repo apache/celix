@@ -9,6 +9,8 @@ on:
 jobs:
   fuzz-utils:
     runs-on: ubuntu-22.04
+    permissions:
+      actions: read
     timeout-minutes: 30
     steps:
       - name: Checkout source code
@@ -37,6 +39,17 @@ jobs:
         run: conan install . --output-folder=build --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True" -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True"
       - name: Conan build
         run: conan build . --output-folder=build -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"  -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True" -o "celix/*:celix_err_buffer_size=5120"
+      - name: Restore previous fuzzing corpora artifact
+        continue-on-error: true #can fail if no previous fuzzing-corpora-artifact exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+        run: | 
+          #retrieve lastest master / Celix Fuzzing run id
+          RUN_ID=$(gh run list --branch "${BRANCH_NAME}" --workflow "${{ github.workflow }}" --json databaseId --jq '.[0].databaseId')
+          gh run download "$RUN_ID" --name fuzzing-corpora-artifact
+          mkdir -p build/libs/utils/fuzzing
+          tar -xzf fuzzing-corpora-artifact.tar.gz -C fuzzing-previous
       - name: Set fuzzer run time
         id: set-runtime
         run: |
@@ -57,3 +70,18 @@ jobs:
         run: |
           source build/conanrun.sh
           ./build/libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
+      - name: Package fuzzing corpora artifacts
+        if: always() #Always package & upload updated fuzzing corpora artifacts
+        run: |
+          mkdir -p fuzzing-artifact
+          for path in build/libs/utils/fuzzing/*_corpus; do
+            cp -a "$path" fuzzing-artifact/
+          done
+          tar -czf fuzzing-corpora-artifact.tar.gz -C fuzzing-artifact .
+      - name: Upload fuzzing artifacts
+        #Always package & upload updated fuzzing corpora artifact on the master branch
+        if: always() && github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 #v4.3.1
+        with:
+          name: fuzzing-corpora-artifact
+          path: fuzzing-corpora-artifact.tar.gz
