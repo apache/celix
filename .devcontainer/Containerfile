@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM docker.io/library/ubuntu:24.04@sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30 as build
+FROM docker.io/library/ubuntu:24.04@sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30 as base
 
 # Install dependencies
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
@@ -28,101 +28,45 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
         make \
         zip \
         ninja-build \
+        clang-tidy \
         lcov \
         sudo \
         python3 \
         pipx && \
     apt-get clean
 
-#python3-pip && \
-
 # Build image using conan & cmake
-FROM build as conan-build
+FROM base as conan-build
 
-# Install conan
-#RUN pip3 install conan && pip3 cache purge
-##RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-#        python3-conan && \
-#    apt-get clean
-ENV PATH="${PATH}:/root/.local/bin"
-RUN pipx install conan
+ARG USERNAME=celixdev
+ARG USER_UID=1000
+ARG USER_GID=1000
 
-# Setup conan profile for root
-COPY conan-container-default-profile /root/.conan2/profiles/default
-COPY conan-container-debug-profile /root/.conan2/profiles/debug
-
-# Build image using apt dependencies
-FROM build as apt-build
-
-# Install celix dependencies (note git needed for cloning gtest)
-RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
-    DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
-        git \
-        civetweb \
-        libavahi-compat-libdnssd-dev \
-        libcivetweb-dev \
-        libcpputest-dev \
-        libcurl4-openssl-dev \
-        libczmq-dev \
-        libffi-dev \
-        libjansson-dev \
-        libxml2-dev \
-        libzip-dev \
-        libuv1-dev \
-        rapidjson-dev \
-        uuid-dev && \
-    sudo apt-get clean
-
-#Note from build not conan-build, because conan-dev uses a celixdev user
-FROM build as conan-dev
-
-# Remove ubuntu user and add celixdev with sudo rights and a "celixdev" password
 RUN userdel -r ubuntu && \
-    groupadd --gid 1000 celixdev && \
-    useradd --uid 1000 --gid 1000 -m \
-    -s /bin/bash -G sudo celixdev && \
-    echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
-    echo "celixdev:celixdev" | chpasswd
-USER celixdev
-WORKDIR /home/celixdev
+    groupadd --gid ${USER_GID} ${USERNAME} && \
+    useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} && \
+    usermod -aG sudo ${USERNAME} && \
+    echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-#Create workdir, used in vscode
-#RUN sudo mkdir -p /workspaces/celix/build && sudo chown -R celixdev:celixdev /workspaces
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
 
-# Setup python venv for celixdev and install conan
-ENV PATH="${PATH}:/home/celixdev/.local/bin"
-RUN pipx install conan
+ENV PATH="${PATH}:/home/${USERNAME}/.local/bin"
+RUN pipx install conan && \
+    conan profile detect --force && \
+    cp /home/${USERNAME}/.conan2/profiles/default /home/${USERNAME}/.conan2/profiles/release && \
+    cp /home/${USERNAME}/.conan2/profiles/default /home/${USERNAME}/.conan2/profiles/debug && \
+    sed -i 's/^build_type=.*/build_type=Release/' /home/${USERNAME}/.conan2/profiles/release && \
+    sed -i 's/^build_type=.*/build_type=Debug/' /home/${USERNAME}/.conan2/profiles/debug
 
-# Setup conan profile for celixdev
-COPY --chown=celixdev:celixdev conan-container-default-profile /home/celixdev/.conan2/profiles/default
-COPY --chown=celixdev:celixdev conan-container-debug-profile /home/celixdev/.conan2/profiles/debug
+FROM conan-build as conan-dev
 
-#Install development dependencies
-RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
-    sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb \
+USER root
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    gnupg2 dos2unix locales-all ssh rsync tar tzdata sudo vim cmake-curses-gui gdb \
     wget curl && \
-    sudo apt-get clean
+    apt-get clean \
 
-RUN sudo mkdir /run/sshd
-
-FROM apt-build as apt-dev
-
-# Remove ubuntu user and add celixdev with sudo rights and a "celixdev" password
-RUN userdel -r ubuntu && \
-    groupadd --gid 1000 celixdev && \
-    useradd --uid 1000 --gid 1000 -m \
-    -s /bin/bash -G sudo celixdev && \
-    echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
-    echo "celixdev:celixdev" | chpasswd
-USER celixdev
-WORKDIR /home/celixdev
-
-#Install development dependencies
-RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
-    sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb \
-    wget curl && \
-    sudo apt-get clean
-
-RUN sudo mkdir /run/sshd
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}

@@ -4,12 +4,41 @@
         "dockerfile": "Containerfile",
         "target": "conan-dev"
     },
-     "runArgs" : [
+    "runArgs": [
         "--userns=keep-id"
     ],
-    "securityOpt":["label=disable"],
+    "mounts": [
+        "type=volume,source=celixdev-conan-package-cache,target=/home/celixdev/.conan2/p",
+        "type=volume,source=celixdev-conan-download-cache,target=/home/celixdev/.conan2/d",
+        "type=volume,source=celixdev-ccache-cache,target=/home/celixdev/.ccache"
+    ],
+    "containerEnv": {
+        "CONAN_PROFILE": "debug",
+        "CONAN_OUT": "build",
+        "CONAN_OPTS": "--options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True --options celix/*:enable_testing=True --options celix/*:enable_ccache=True --options celix/*:enable_code_coverage=True",
+        "CONAN_CONF": "--conf tools.cmake.cmaketoolchain:generator=Ninja"
+    },
+    "securityOpt": [
+        "label=disable"
+    ],
     "remoteUser": "celixdev",
     "containerUser": "celixdev",
-    "onCreateCommand": "sh .devcontainer/setup-project-with-conan.sh",
-    "postCreateCommand": "sh .devcontainer/build-project-with-conan.sh"
+    "postCreateCommand": "conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF} --output-folder ${CONAN_OUT} && cmake --preset conan-debug",
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cpptools",
+                "matepek.vscode-catch2-test-adapter",
+                "ms-vscode.cmake-tools"
+            ]
+        },
+        "jetbrains": {
+            "backend": "CLion"
+        }
+    }
 }
