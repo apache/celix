@@ -14,7 +14,6 @@
     ],
     "containerEnv": {
         "CONAN_PROFILE": "debug",
-        "CONAN_OUT": "build",
         "CONAN_OPTS": "--options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True --options celix/*:enable_testing=True --options celix/*:enable_ccache=True --options celix/*:enable_code_coverage=True",
         "CONAN_CONF": "--conf tools.cmake.cmaketoolchain:generator=Ninja"
     },
@@ -23,7 +22,7 @@
     ],
     "remoteUser": "celixdev",
     "containerUser": "celixdev",
-    "postCreateCommand": "conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF} --output-folder ${CONAN_OUT} && cmake --preset conan-debug",
+    "postCreateCommand": "conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF}",
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {}

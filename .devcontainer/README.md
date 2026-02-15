@@ -53,12 +53,33 @@ CLion 2025.3.1 includes DevContainer support (including Podman), so you can open
 using the IDE's DevContainer workflow. Once the container is built, enable and select the conan-debug (generated) 
 profile.
 
+When running tests from the CLion, ensure that the correct ctest args are used:
+``
+
+## Conan Install
+
+Run conan install to install required dependencies and tools and generate the needed cmake configuration files
+
+```shell
+conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF}
+```
+
+Note: `CONAN_PROFILE`, `CONAN_OPTS` and `CONAN_CONF` are environments variables in the dev container. 
+
+## CMake Configure
+
+CMake configure can be done from the root workspace dir:
+
+```shell
+cmake --preset conan-debug
+```
+
 ## Building
 
 Build can be done from the root workspace dir:
 
 ```shell
-cmake --build build --parallel
+cmake --build build/Debug --parallel
 ```
 
 ## Running tests
@@ -67,5 +88,8 @@ Tests can be run using ctest.
 When building with Conan, run tests from the build directory after configuring/building:
 
 ```shell
-ctest --output-on-failure --test-dir build
+ctest --preset conan-debug --output-on-failure -j1
 ```
+
+Note `-j1` is needed to prevent ctest from running tests parallel; running tests in parallel is currently not supported
+in Apache Celix. 
