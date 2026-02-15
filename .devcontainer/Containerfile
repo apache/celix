@@ -59,10 +59,14 @@ RUN pipx install conan && \
     sed -i 's/^build_type=.*/build_type=Release/' /home/${USERNAME}/.conan2/profiles/release && \
     sed -i 's/^build_type=.*/build_type=Debug/' /home/${USERNAME}/.conan2/profiles/debug
 
-FROM base as conan-dev
+FROM conan-build as conan-dev
 
+USER root
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
     gnupg2 dos2unix locales-all ssh rsync tar tzdata sudo vim cmake-curses-gui gdb \
     wget curl && \
     apt-get clean \
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
