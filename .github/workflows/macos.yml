@@ -64,13 +64,9 @@ jobs:
             -o celix/*:framework_curlinit=False
             -o celix/*:enable_ccache=True
         run: |
-          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
-        run: |
-          cd build
-          source conanrun.sh
-          ctest --output-on-failure
-          source deactivate_conanrun.sh
+        run: ctest --preset conan-release --output-on-failure -j1
 
   macos-build-brew:
     runs-on: macOS-15

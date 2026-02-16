@@ -82,13 +82,12 @@ jobs:
             -o celix/*:framework_curlinit=False
             -o celix/*:enable_ccache=True
         run: |
-          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
-        run: |
-          cd build
-          source conanrun.sh
-          ctest --output-on-failure
-          source deactivate_conanrun.sh
+        env:
+          CONAN_PRESET: ${{ matrix.type == 'Debug' && 'conan-debug'' || 'conan-release' }}
+        run: ctest --preset ${CONAN_PRESET} --output-on-failure -j1
+
 
   linux-build-apt:
     runs-on: ubuntu-22.04
