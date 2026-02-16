@@ -32,11 +32,11 @@ jobs:
             ${{ runner.os }}-conan-
       - name: Setup Conan Profile
         run: |
-          conan profile detect 
+          conan profile detect
       - name: Conan install
-        run: conan install . --output-folder=build --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True" -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True"
+        run: conan install . --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True" -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True"
       - name: Conan build
-        run: conan build . --output-folder=build -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"  -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True" -o "celix/*:celix_err_buffer_size=5120"
+        run: conan build . -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"  -o "celix/*:enable_address_sanitizer=True" -o "celix/*:enable_undefined_sanitizer=True" -o "celix/*:celix_err_buffer_size=5120"
       - name: Set fuzzer run time
         id: set-runtime
         run: |
@@ -48,12 +48,12 @@ jobs:
       - name: Run properties fuzzer
         run: |
           source build/conanrun.sh
-          ./build/libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
+          ./build/Release/libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
       - name: Run version fuzzer
         run: |
           source build/conanrun.sh
-          ./build/libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
+          ./build/Release/libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
       - name: Run filter fuzzer
         run: |
           source build/conanrun.sh
-          ./build/libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
+          ./build/Release/libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus

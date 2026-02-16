@@ -42,16 +42,15 @@ jobs:
           conan build . --profile debug --build=missing \
           --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
           --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
-          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
-          --output-folder build"
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja"
       - name: Test Celix
         run: |
           docker run --rm \
           -v ~/.conan2-container-package-cache:/home/celixdev/.conan2/p \
           -v $(pwd):/home/celixdev/workspace apache/celix-conan-build:latest /bin/bash -c \
-          "cd /home/celixdev/workspace/build && \
+          "cd /home/celixdev/workspace && \
           source conanrun.sh && \
-          ctest --output-on-failure"
+          ctest --preset conan-release --output-on-failure -j1"
   build-dev-container-images:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
