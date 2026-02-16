@@ -53,8 +53,21 @@ CLion 2025.3.1 includes DevContainer support (including Podman), so you can open
 using the IDE's DevContainer workflow. Once the container is built, enable and select the conan-debug (generated) 
 profile.
 
-When running tests from the CLion, ensure that the correct ctest args are used:
-``
+When running "All CTests" from the CLion UI (2025.3.2), ensure that the correct ctest args are used:
+ - ALT-SHIFT-F10 (`Run...`)
+ - Hover `All CTests`
+ - Click `Edit...`
+ - Configure CTest arguments to: `--preset conan-debug --extra-verbose -j1`
+ - Configure working directory to: `$ProjectFileDir$`
+
+When running gtests from the CLion UI (2025.3.2) directly from gtest sources, ensure that the environment is 
+correctly configured:
+ - Click "play" button next to the line numbers
+ - Click `Modify Run Configuration...`
+ - Click `Edit environment variables` (file icon in the `Environment variables` textfield) 
+ - Click `Browse` from "Load variables from file"
+ - Browse to `build/Debug/generators/conanrun.sh`
+ - Click `OK`, Click `Apply`, Click `Ok`
 
 ## Conan Install
 

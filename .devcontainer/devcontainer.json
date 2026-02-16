@@ -15,14 +15,14 @@
     "containerEnv": {
         "CONAN_PROFILE": "debug",
         "CONAN_OPTS": "--options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True --options celix/*:enable_testing=True --options celix/*:enable_ccache=True --options celix/*:enable_code_coverage=True",
-        "CONAN_CONF": "--conf tools.cmake.cmaketoolchain:generator=Ninja"
+        "CONAN_CONF": "--conf tools.cmake.cmaketoolchain:generator=Ninja",
     },
     "securityOpt": [
         "label=disable"
     ],
     "remoteUser": "celixdev",
     "containerUser": "celixdev",
-    "postCreateCommand": "conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF}",
+    "onCreateCommand": "conan install . --build missing --profile ${CONAN_PROFILE} ${CONAN_OPTS} ${CONAN_CONF}",
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {}
