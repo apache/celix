@@ -66,10 +66,10 @@ jobs:
           conan build .  -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test with coverage
         run: |
-          cd build/Release
-          source conanrun.sh
+          cd build/Debug
+          source generators/conanrun.sh
           make coverage
-          source deactivate_conanrun.sh
+          source generators/deactivate_conanrun.sh
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
         uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c #v4.4.1

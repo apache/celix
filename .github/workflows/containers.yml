@@ -49,7 +49,6 @@ jobs:
           -v ~/.conan2-container-package-cache:/home/celixdev/.conan2/p \
           -v $(pwd):/home/celixdev/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /home/celixdev/workspace && \
-          source conanrun.sh && \
           ctest --preset conan-release --output-on-failure -j1"
   build-dev-container-images:
     runs-on: ubuntu-22.04
