@@ -87,7 +87,6 @@ class CelixConan(ConanFile):
         "build_event_admin_remote_provider_mqtt": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
-        "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
@@ -232,7 +231,6 @@ class CelixConan(ConanFile):
             options["build_framework"] = True
             options["build_log_helper"] = True
             options["build_celix_dfi"] = True
-            options["celix_install_deprecated_api"] = True
 
         if options["build_event_admin"]:
             options["build_framework"] = True
@@ -274,8 +272,6 @@ class CelixConan(ConanFile):
 
         if options["build_log_service_api"]:
             options["build_utils"] = True
-            if options["celix_install_deprecated_api"]:
-                options["build_framework"] = True
 
         if options["build_components_ready_check"]:
             options["build_framework"] = True
@@ -379,8 +375,10 @@ class CelixConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
+        conan_internal_options = ["build_all"] #options are not used in CMake
         for opt in self._celix_defaults.keys():
-            tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
+            if opt not in conan_internal_options:
+                tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
         if self.options.enable_testing:
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
