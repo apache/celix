@@ -65,14 +65,14 @@ jobs:
         run: |
           cd build/Debug
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
+          ./libs/utils/fuzzing/celix_properties_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
       - name: Run version fuzzer
         run: |
           cd build/Debug
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
+          ./libs/utils/fuzzing/celix_version_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
       - name: Run filter fuzzer
         run: |
           cd build/Debug
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
+          ./libs/utils/fuzzing/celix_filter_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
