@@ -34,16 +34,16 @@ jobs:
         run: |
            # build profile
            conan profile detect -f --name release
-           sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path release`
+           sed -i 's/compiler.cppstd=.*/compiler.cppstd=gnu17/g' `conan profile path release`
            echo "[tool_requires]" >> `conan profile path release`
            echo "cmake/3.26.4" >> `conan profile path release`
            
            # host profile
-           conan profile detect -f
-           sed -i 's/build_type=Release/build_type=${{ matrix.type }}/g' `conan profile path default`
-           sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
-           echo "[tool_requires]" >> `conan profile path default`
-           echo "cmake/3.26.4" >> `conan profile path default`
+           conan profile detect -f --name debug
+           sed -i 's/build_type=.*/build_type=Debug/g' `conan profile path debug`
+           sed -i 's/compiler.cppstd=.*/compiler.cppstd=gnu17/g' `conan profile path debug`
+           echo "[tool_requires]" >> `conan profile path debug`
+           echo "cmake/3.26.4" >> `conan profile path debug`
       - name: Conan build
         env:
           CONAN_BUILD_OPTIONS: |
@@ -52,7 +52,7 @@ jobs:
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:enable_undefined_sanitizer=True
             -o  celix/*:celix_err_buffer_size=5120
-        run: conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
+        run: conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h debug ${CONAN_BUILD_OPTIONS} -b missing
       - name: Set fuzzer run time
         id: set-runtime
         run: |

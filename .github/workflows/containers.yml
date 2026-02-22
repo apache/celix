@@ -39,7 +39,7 @@ jobs:
           -v ~/.ccache-container:/bome/celixdev/.ccache \
           -v $(pwd):/home/celixdev/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /home/celixdev/workspace && \
-          conan build . --profile debug --build=missing \
+          conan build . -pr:b release -pr:h debug --build=missing \
           --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
           --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
           --conf:build tools.cmake.cmaketoolchain:generator=Ninja"
@@ -49,7 +49,7 @@ jobs:
           -v ~/.conan2-container-package-cache:/home/celixdev/.conan2/p \
           -v $(pwd):/home/celixdev/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /home/celixdev/workspace && \
-          ctest --preset conan-release --output-on-failure -j1"
+          ctest --preset conan-debug --output-on-failure -j1"
   build-dev-container-images:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
