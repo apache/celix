@@ -41,7 +41,7 @@ jobs:
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:enable_undefined_sanitizer=True
             -o celix/*:celix_err_buffer_size=5120
-        run: conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja ${CONAN_BUILD_OPTIONS} -b missing
+        run: conan build -c tools.cmake.cmaketoolchain:generator=Ninja ${CONAN_BUILD_OPTIONS} -b missing
       - name: Set fuzzer run time
         id: set-runtime
         run: |
@@ -54,14 +54,14 @@ jobs:
         run: |
           cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
+          ./libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./libs/utils/fuzzing/properties_corpus
       - name: Run version fuzzer
         run: |
           cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
+          ./libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./libs/utils/fuzzing/version_corpus
       - name: Run filter fuzzer
         run: |
           cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
+          ./libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./libs/utils/fuzzing/filter_corpus
