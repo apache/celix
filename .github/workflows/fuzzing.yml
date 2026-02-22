@@ -32,18 +32,7 @@ jobs:
             ${{ runner.os }}-conan-
       - name: Setup Conan Profile
         run: |
-           # build profile
-           conan profile detect -f --name release
-           sed -i 's/compiler.cppstd=.*/compiler.cppstd=gnu17/g' `conan profile path release`
-           echo "[tool_requires]" >> `conan profile path release`
-           echo "cmake/3.26.4" >> `conan profile path release`
-           
-           # host profile
-           conan profile detect -f --name debug
-           sed -i 's/build_type=.*/build_type=Debug/g' `conan profile path debug`
-           sed -i 's/compiler.cppstd=.*/compiler.cppstd=gnu17/g' `conan profile path debug`
-           echo "[tool_requires]" >> `conan profile path debug`
-           echo "cmake/3.26.4" >> `conan profile path debug`
+          conan profile detect
       - name: Conan build
         env:
           CONAN_BUILD_OPTIONS: |
@@ -51,8 +40,8 @@ jobs:
             -o celix/*:enable_fuzzing=True
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:enable_undefined_sanitizer=True
-            -o  celix/*:celix_err_buffer_size=5120
-        run: conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h debug ${CONAN_BUILD_OPTIONS} -b missing
+            -o celix/*:celix_err_buffer_size=5120
+        run: conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja ${CONAN_BUILD_OPTIONS} -b missing
       - name: Set fuzzer run time
         id: set-runtime
         run: |
@@ -63,16 +52,16 @@ jobs:
           fi
       - name: Run properties fuzzer
         run: |
-          cd build/Debug
+          cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_properties_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
+          ./libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
       - name: Run version fuzzer
         run: |
-          cd build/Debug
+          cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_version_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
+          ./libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
       - name: Run filter fuzzer
         run: |
-          cd build/Debug
+          cd build/Release
           source generators/conanrun.sh
-          ./libs/utils/fuzzing/celix_filter_fuzzerd -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
+          ./libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
