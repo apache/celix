@@ -14,7 +14,7 @@
     ],
     "containerEnv": {
         "CONAN_PROFILE": "debug",
-        "CONAN_OPTS": "--options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True --options celix/*:enable_testing=True --options celix/*:enable_ccache=True --options celix/*:enable_code_coverage=True",
+        "CONAN_OPTS": "--options celix/*:build_all=True -o celix/*:enable_address_sanitizer=True -o celix/*:enable_testing=True -o celix/*:enable_ccache=True -o celix/*:enable_code_coverage=True",
         "CONAN_CONF": "--conf tools.cmake.cmaketoolchain:generator=Ninja",
     },
     "securityOpt": [
