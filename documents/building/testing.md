@@ -22,44 +22,53 @@ limitations under the License.
 # Testing Apache Celix
 
 This document describes how to build and run tests for Apache Celix.
+Building and testing can be done with Conan 2 (recommended) or with system CMake (manual dependencies).
 
-## Building Tests
+## Build & test using Conan 2 (recommended)
 
-Celix uses CMake and Google Test for its unit and integration tests. To build the tests, ensure you have all dependencies installed, then run:
+If the [building](README.md) instructions for conan where followed, there should be a `build/Debug` build directory
+and a `conan-debug` cmake preset. This preset can be used to run the tests using ctest:
 
-```sh
-cmake -B build -DENABLE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+```bash
+ctest --preset conan-debug --output-on-failure -j1
 ```
 
-```sh
-#conan
+Notes:
+  - `-j1` is needed because the Apache Celix tests are using cache directories and are not prepared for parallel testing.
+  - Use `-o "celix/*:enable_address_sanitizer=True"` during `conan install` to enable AddressSanitizer (ASAN).
+  - Use `-o "celix/*:enable_undefined_sanitizer"` during `conan install` to enable UndefinedBehaviorSanitizer (UBSAN).
 
-To enable AddressSanitizer (ASAN) when building tests, configure CMake with the `ENABLE_ASAN` option:
+## Running specific tests
 
-```sh
-cmake -B build -DENABLE_TESTING=ON -DENABLE_ADDRESS_SANITIZER=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+- Run tests matching a regex (useful to run a single test case or test binary):
+
+```bash
+# Run tests whose names match "MyTestName"
+ctest --preset conan-debug -R shell --output-on-failure -j1
 ```
 
-This will build Apache Celix and its tests with ASAN enabled, helping to detect memory errors during test execution.
+- Run a test binary directly (executable path depends on your build layout):
 
-## Running Tests
-
-After building, you can run all tests using CTest:
-
-```sh
-ctest --output-on-failure --test-dir build
+```bash
+source build/Debug/generators/conanrun.sh 
+./build/Debug/bundles/components_ready_check/tests/components_ready_check_test
+source build/Debug/generators/deactivate_conanrun.sh
 ```
 
-Or run a test for a specific subdir, e.g.: 
+## Build & test using plain CMake (system dependencies)
 
-```sh
-ctest --output-on-failure --test-dir build/bundles/shell
+If you prefer to use your system packages rather than Conan, install the required dev packages
+(see `documents/building/README.md` for package lists) then configure CMake with testing enabled.
+
+Example (configure & build only):
+```bash
+cmake -DENABLE_TESTING=ON -DENABLE_ADDRESS_SANITIZER=ON -DENABLE_UNDEFINED_SANITIZER=ON -DCMAKE_BUILD_TYPE=Debug -G Ninja -S . -B build
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-Or run a specific test binary directly from the `build` directory, e.g.:
+- with apt & cmake you can also run only tests in a certain build-tree subdirectory:
 
-```sh
-./build/bundles/components_ready_check/tests/components_ready_check_test
+```bash
+ctest --output-on-failure --test-dir build/Debug/bundles/shell
 ```
