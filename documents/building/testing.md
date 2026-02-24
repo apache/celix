@@ -44,7 +44,7 @@ Notes:
 
 ```bash
 # Run tests whose names match "MyTestName"
-ctest --preset conan-debug --test-dir build/Debug -R shell --output-on-failure -j1
+ctest --preset conan-debug -R shell --output-on-failure -j1
 ```
 
 - Run a test binary directly (executable path depends on your build layout):
@@ -63,12 +63,12 @@ If you prefer to use your system packages rather than Conan, install the require
 Example (configure & build only):
 ```bash
 cmake -DENABLE_TESTING=ON -DENABLE_ADDRESS_SANITIZER=ON -DENABLE_UNDEFINED_SANITIZER=ON -DCMAKE_BUILD_TYPE=Debug -G Ninja -S . -B build
-cmake --build . --parallel
-ctest --test-dir . --output-on-failure
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
 - with apt & cmake you can also run only tests in a certain build-tree subdirectory:
 
 ```bash
-ctest --preset conan-debug --output-on-failure --test-dir build/Debug/bundles/shell
+ctest --output-on-failure --test-dir build/Debug/bundles/shell
 ```

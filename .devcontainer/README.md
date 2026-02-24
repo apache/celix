@@ -92,7 +92,7 @@ cmake --preset conan-debug
 Build can be done from the root workspace dir:
 
 ```shell
-cmake --build build/Debug --parallel
+cmake --build --preset conan-debug --parallel
 ```
 
 ## Running tests
