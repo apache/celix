@@ -98,9 +98,7 @@ using `--profile:host debug`, assuming the build_type is `Debug`):
 
 ```bash
 # Configure with a conan-generated preset (conan-debug in this case)
-cmake --preset conan-debug
-# Build
-cmake --build build/Debug --parallel
+ cmake --build --preset conan-debug --parallel
 ```
 
 When using Conan you typically do not "install" Celix system-wide; Conan places package artifacts in the local Conan 
@@ -113,8 +111,7 @@ For example, to only build the framework and utils libraries:
 conan install . --build=missing --profile:build default --profile:host debug \
     -o "celix/*:build_framework=True" \
     -o "celix/*:build_utils=True"
-cmake --preset conan-debug
-cmake --build build/Debug --parallel
+ cmake --build --preset conan-debug --parallel
 ```
 
 To see a complete overview of the available build options in the recipe you can inspect the recipe metadata (this works for local recipes too):

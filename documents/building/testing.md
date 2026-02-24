@@ -22,7 +22,7 @@ limitations under the License.
 # Testing Apache Celix
 
 This document describes how to build and run tests for Apache Celix.
-Building and testing can be done with Conan 2 (recommended) or with system CMake (manual dependencies. 
+Building and testing can be done with Conan 2 (recommended) or with system CMake (manual dependencies).
 
 ## Build & test using Conan 2 (recommended)
 
