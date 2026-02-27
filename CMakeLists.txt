@@ -157,8 +157,6 @@ if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
-
 option(CELIX_CXX14 "Build C++14 libraries and bundles." ON)
 option(CELIX_CXX17 "Build C++17 libraries, bundles and if testing is enabled C++17 tests" ON)
 if (CELIX_CXX17 AND NOT CELIX_CXX14)

@@ -83,6 +83,8 @@ limitations under the License.
 - The manifest format has been changed to JSON, and the manifest attribute names have been changed.
   The old manifest format is no longer supported.
   The old manifest attribute names are also no longer defined in `celix_constants.h`.
+- Using jar to packaging bundles is no longer support. Jar was used to ensure the MANIFEST.MF was the first
+  entry in a bundle zip file, but MANIFEST.MF is no longer used (replaced by MANIFEST.json).
 
 ## New Features
 
