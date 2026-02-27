@@ -24,6 +24,7 @@
 #include <condition_variable>
 #include <vector>
 #include <cstdio>
+#include <algorithm>
 #include <gtest/gtest.h>
 
 #include "celix_bundle_context.h"

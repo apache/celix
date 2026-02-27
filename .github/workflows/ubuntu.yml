@@ -85,7 +85,7 @@ jobs:
           conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
         env:
-          CONAN_PRESET: ${{ matrix.type == 'Debug' && 'conan-debug'' || 'conan-release' }}
+          CONAN_PRESET: ${{ matrix.type == 'Debug' && 'conan-debug' || 'conan-relwithdebinfo' }}
         run: ctest --preset ${CONAN_PRESET} --output-on-failure -j1
 
 
