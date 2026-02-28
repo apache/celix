@@ -16,11 +16,12 @@
 # under the License.
 
 [package]
-name = "rust_bundle_activator"
+name = "rust_bundle"
 version = "0.0.1"
+edition = '2021'
 
 [dependencies]
-celix_bindings = { path = "../celix_bindings" }
+celix = { path = "../celix" }
 
 [lib]
 name = "rust_bundle_activator"

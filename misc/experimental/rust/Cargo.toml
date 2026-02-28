@@ -18,5 +18,9 @@
 [workspace]
 members = [
     "celix_bindings",
+    "celix",
     "hello_world_activator",
+    "rust_shell_api",
+    "shell_command_bundle",
 ]
+resolver = "2"

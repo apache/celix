@@ -30,3 +30,6 @@
 #include "celix_framework.h"
 #include "celix_framework_factory.h"
 #include "celix_framework_utils.h"
+
+#include "celix_shell_command.h"
+#include "celix_log_service.h"
