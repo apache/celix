@@ -63,33 +63,4 @@ celix_status_t __wrap_celixThreadRwlock_create(celix_thread_rwlock_t *__rwlock, 
     return __real_celixThreadRwlock_create(__rwlock, __attr);
 }
 
-
-celix_status_t __real_celix_tss_create(celix_tss_key_t* __key, void (*__destroyFunction)(void*));
-CELIX_EI_DEFINE(celix_tss_create, celix_status_t)
-celix_status_t __wrap_celix_tss_create(celix_tss_key_t* __key, void (*__destroyFunction)(void*)) {
-    CELIX_EI_IMPL(celix_tss_create);
-    return __real_celix_tss_create(__key, __destroyFunction);
-}
-
-celix_status_t __real_celix_tss_delete(celix_tss_key_t __key);
-CELIX_EI_DEFINE(celix_tss_delete, celix_status_t)
-celix_status_t __wrap_celix_tss_delete(celix_tss_key_t __key) {
-    CELIX_EI_IMPL(celix_tss_delete);
-    return __real_celix_tss_delete(__key);
-}
-
-celix_status_t __real_celix_tss_set(celix_tss_key_t __key, void* __value);
-CELIX_EI_DEFINE(celix_tss_set, celix_status_t)
-celix_status_t __wrap_celix_tss_set(celix_tss_key_t __key, void* __value) {
-    CELIX_EI_IMPL(celix_tss_set);
-    return __real_celix_tss_set(__key, __value);
-}
-
-void* __real_celix_tss_get(celix_tss_key_t __key);
-CELIX_EI_DEFINE(celix_tss_get, void*)
-void* __wrap_celix_tss_get(celix_tss_key_t __key) {
-    CELIX_EI_IMPL(celix_tss_get);
-    return __real_celix_tss_get(__key);
-}
-
 }

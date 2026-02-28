@@ -1,5 +1,5 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
+* Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -17,25 +17,19 @@
  * under the License.
  */
 
+#ifndef CELIX_CELIX_ERR_PRIVATE_H
+#define CELIX_CELIX_ERR_PRIVATE_H
 
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "celix_errno.h"
-#include "celix_error_injector.h"
+void celix_err_initThreadSpecificStorageKey();
 
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_signal, celix_status_t);
-
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
+void celix_err_deinitThreadSpecificStorageKey();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+#endif //CELIX_CELIX_ERR_PRIVATE_H

@@ -23,7 +23,7 @@
 #include <fstream>
 
 #include "celix_err.h"
-#include "celix_threads_ei.h"
+#include "celix_errno.h"
 #include "malloc_ei.h"
 
 class ErrErrorInjectionTestSuite : public ::testing::Test {
@@ -34,27 +34,9 @@ public:
         freopen(CAPTURE_FILENAME, "w", stderr);
     }
     ~ErrErrorInjectionTestSuite() noexcept override {
-        celix_ei_expect_celix_tss_set(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_malloc(nullptr, 0, CELIX_SUCCESS);
     }
 };
-
-TEST_F(ErrErrorInjectionTestSuite, PushErrorWithTssSetFailingTest) {
-    //Given a primed error injection for celix_tss_set
-    celix_ei_expect_celix_tss_set((void*)celix_err_push, 1, CELIX_ILLEGAL_STATE);
-
-    //When an error is pushed
-    celix_err_push("error message");
-
-    fclose(stderr);
-    std::ifstream tempFile{CAPTURE_FILENAME};
-    std::string fileContents((std::istreambuf_iterator<char>(tempFile)),
-                             std::istreambuf_iterator<char>());
-    tempFile.close();
-
-    EXPECT_TRUE(strstr(fileContents.c_str(), "Failed to set thread specific storage for celix_err") != nullptr) <<
-        "Expected error message not found in: " << fileContents;
-}
 
 TEST_F(ErrErrorInjectionTestSuite, PushErrorWithMallocFailingTest) {
     //Given a primed error injection for malloc
