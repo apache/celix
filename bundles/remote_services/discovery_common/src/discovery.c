@@ -30,7 +30,6 @@
 #include <string.h>
 
 #include "celix_filter.h"
-#include "filter.h"
 #include "celix_threads.h"
 #include "bundle_context.h"
 #include "celix_log_helper.h"
@@ -103,7 +102,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 			endpoint_description_t *endpoint = hashMapIterator_nextValue(iter);
 
 			bool matchResult = false;
-			filter_match(filter, endpoint->properties, &matchResult);
+			matchResult = celix_filter_match(filter, endpoint->properties);
 			if (matchResult) {
 				endpoint_listener_t *listener = service;
 

@@ -327,7 +327,7 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
 celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry,
                                                     bundle_pt owner,
                                                     const char* serviceName,
-                                                    filter_pt filter,
+                                                    celix_filter_t* filter,
                                                     celix_array_list_t** out) {
     bool matchResult;
     celix_autoptr(celix_array_list_t) references = celix_arrayList_create();
@@ -353,7 +353,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
                 bool matched = false;
                 matchResult = false;
                 if (filter != NULL) {
-                    filter_match(filter, props, &matchResult);
+                    matchResult = celix_filter_match(filter, props);
                 }
                 if ((serviceName == NULL) && ((filter == NULL) || matchResult)) {
                     matched = true;
@@ -362,7 +362,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
                     matchResult = false;
                     serviceRegistration_getServiceName(registration, &className);
                     if (filter != NULL) {
-                        filter_match(filter, props, &matchResult);
+                        matchResult = celix_filter_match(filter, props);
                     }
                     if ((strcmp(className, serviceName) == 0) && ((filter == NULL) || matchResult)) {
                         matched = true;
@@ -1074,7 +1074,7 @@ static void celix_serviceRegistry_serviceChanged(celix_service_registry_t *regis
         bool matchResult = false;
         serviceRegistration_getProperties(registration, &props);
         if (entry->filter != NULL) {
-            filter_match(entry->filter, props, &matchResult);
+            matchResult = celix_filter_match(entry->filter, props);
         }
         matched = (entry->filter == NULL) || matchResult;
         if (matched) {

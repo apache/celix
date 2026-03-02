@@ -29,7 +29,7 @@
 #include "bundle_context.h"
 #include "celix_utils.h"
 #include "celix_errno.h"
-#include "filter.h"
+#include "celix_filter.h"
 #include "service_reference.h"
 
 

@@ -33,7 +33,7 @@
 /* celix.framework */
 #include "bundle_context.h"
 #include "bundle_private.h"
-#include "filter.h"
+#include "celix_filter.h"
 /* celix.config_admin.public */
 #include "configuration.h"
 /* celix.config_admin.private */
@@ -58,7 +58,7 @@ celix_status_t configurationStore_findConfiguration(configuration_store_pt store
 
 celix_status_t configurationStore_getFactoryConfigurations(configuration_store_pt store, char *factoryPid, configuration_pt *configuration);
 
-celix_status_t configurationStore_listConfigurations(configuration_store_pt store, filter_pt filter, array_list_pt *configurations);
+celix_status_t configurationStore_listConfigurations(configuration_store_pt store, celix_filter_t* filter, array_list_pt *configurations);
 
 celix_status_t configurationStore_unbindConfigurations(configuration_store_pt store, bundle_pt bundle);
 

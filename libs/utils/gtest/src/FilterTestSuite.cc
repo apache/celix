@@ -760,25 +760,3 @@ TEST_F(FilterTestSuite, SubStringWithArrayAttributesTest) {
     EXPECT_TRUE(filter5 != nullptr);
     EXPECT_TRUE(celix_filter_match(filter5, props));
 }
-
-#include "filter.h"
-TEST_F(FilterTestSuite, DeprecatedApiTest) {
-    auto* f1 = filter_create("(test_attr1=attr1)");
-    auto* f2 = filter_create("(test_attr1=attr1)");
-    bool result;
-    auto status = filter_match_filter(f1, f2, &result);
-    EXPECT_EQ(status, CELIX_SUCCESS);
-    EXPECT_TRUE(result);
-
-    const char* str;
-    status = filter_getString(f1, &str);
-    EXPECT_EQ(status, CELIX_SUCCESS);
-    EXPECT_STREQ(str, "(test_attr1=attr1)");
-
-    status = filter_match(f1, nullptr, &result);
-    EXPECT_EQ(status, CELIX_SUCCESS);
-    EXPECT_FALSE(result);
-
-    filter_destroy(f1);
-    filter_destroy(f2);
-}

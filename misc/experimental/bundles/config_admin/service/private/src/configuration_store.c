@@ -207,7 +207,7 @@ celix_status_t configurationStore_getFactoryConfigurations(configuration_store_p
     return CELIX_SUCCESS;
 }
 
-celix_status_t configurationStore_listConfigurations(configuration_store_pt store, filter_pt filter, array_list_pt *configurations) {
+celix_status_t configurationStore_listConfigurations(configuration_store_pt store, celix_filter_t* filter, array_list_pt *configurations) {
     return CELIX_SUCCESS;
 }
 
