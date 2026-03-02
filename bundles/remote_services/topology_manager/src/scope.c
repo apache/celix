@@ -24,7 +24,7 @@
 #include "tm_scope.h"
 #include "topology_manager.h"
 #include "celix_utils.h"
-#include "filter.h"
+#include "celix_filter.h"
 
 static bool import_equal(celix_array_list_entry_t src, celix_array_list_entry_t dest);
 
@@ -124,7 +124,7 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
         memset(&entry, 0, sizeof(entry));
         entry.voidPtrVal = new;
         int index = celix_arrayList_indexOf(scope->importScopes, entry);
-        filter_pt present = (filter_pt) celix_arrayList_get(scope->importScopes, index);
+        celix_filter_t* present = celix_arrayList_get(scope->importScopes, index);
         if (present == NULL) {
             celix_arrayList_add(scope->importScopes, celix_steal_ptr(new));
         } else {
@@ -142,12 +142,12 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
 celix_status_t tm_removeImportScope(void *handle, char *filter) {
     celix_status_t status = CELIX_SUCCESS;
     scope_pt scope = (scope_pt) handle;
-    filter_pt new;
+    celix_filter_t* new;
 
     if (handle == NULL)
         return CELIX_ILLEGAL_ARGUMENT;
 
-    new = filter_create(filter);
+    new = celix_filter_create(filter);
     if (new == NULL) {
         return CELIX_ILLEGAL_ARGUMENT; // filter not parsable
     }
@@ -157,19 +157,19 @@ celix_status_t tm_removeImportScope(void *handle, char *filter) {
         memset(&entry, 0, sizeof(entry));
         entry.voidPtrVal = new;
         int index = celix_arrayList_indexOf(scope->importScopes, entry);
-        filter_pt present = (filter_pt) celix_arrayList_get(scope->importScopes, index);
+        celix_filter_t* present = celix_arrayList_get(scope->importScopes, index);
         if (present == NULL)
             status = CELIX_ILLEGAL_ARGUMENT;
         else {
             celix_arrayList_remove(scope->importScopes, present);
-            filter_destroy(present);
+            celix_filter_destroy(present);
         }
         celixThreadMutex_unlock(&scope->importScopeLock);
     }
     if (scope->importScopeChangedHandler != NULL) {
         status = CELIX_DO_IF(status, scope->importScopeChangedHandler(scope->manager, filter));
     }
-    filter_destroy(new);
+    celix_filter_destroy(new);
     return status;
 }
 
@@ -228,8 +228,8 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
 
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {
         for (int i = 0; i < celix_arrayList_size(scope->importScopes); i++) {
-            filter_pt element = (filter_pt) celix_arrayList_get(scope->importScopes, i);
-            filter_destroy(element);
+            celix_filter_t* element = celix_arrayList_get(scope->importScopes, i);
+            celix_filter_destroy(element);
         }
         celix_arrayList_destroy(scope->importScopes);
         celixThreadMutex_unlock(&scope->importScopeLock);
@@ -245,13 +245,11 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
  * STATIC FUNCTIONS
  *****************************************************************************/
 static bool import_equal(celix_array_list_entry_t src, celix_array_list_entry_t dest) {
-    celix_status_t status;
-
-    filter_pt src_filter = (filter_pt) src.voidPtrVal;
-    filter_pt dest_filter = (filter_pt) dest.voidPtrVal;
+    celix_filter_t* src_filter = src.voidPtrVal;
+    celix_filter_t* dest_filter = dest.voidPtrVal;
     bool result;
-    status = filter_match_filter(src_filter, dest_filter, &result);
-    return (status == CELIX_SUCCESS) && result;
+    result = celix_filter_equals(src_filter, dest_filter);
+    return result;
 }
 
 bool scope_allowImport(scope_pt scope, endpoint_description_t *endpoint) {
@@ -262,8 +260,8 @@ bool scope_allowImport(scope_pt scope, endpoint_description_t *endpoint) {
             allowImport = true;
         } else {
             for (int i = 0; i < celix_arrayList_size(scope->importScopes); i++) {
-                filter_pt element = (filter_pt) celix_arrayList_get(scope->importScopes, i);
-                filter_match(element, endpoint->properties, &allowImport);
+                celix_filter_t* element = celix_arrayList_get(scope->importScopes, i);
+                allowImport = celix_filter_match(element, endpoint->properties);
                 if (allowImport) {
                     break;
                 }
@@ -310,7 +308,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
             celix_autoptr(celix_filter_t) filter = celix_filter_create(filterStr);
             if (filter != NULL) {
                 // test if the scope filter matches the exported service properties
-                status = filter_match(filter, serviceProperties, &found);
+                found = celix_filter_match(filter, serviceProperties);
                 if (found) {
                     struct scope_item *item = (struct scope_item *) hashMapEntry_getValue(scopedEntry);
                     *props = item->props;

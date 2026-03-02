@@ -21,7 +21,7 @@
 #define SERVICE_REGISTRY_H_
 
 #include "celix_properties.h"
-#include "filter.h"
+#include "celix_filter.h"
 #include "service_factory.h"
 #include "celix_service_event.h"
 #include "celix_array_list.h"
@@ -64,7 +64,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t serviceRegistry_getServiceReference(celix_
 
 CELIX_FRAMEWORK_EXPORT celix_status_t
 serviceRegistry_getServiceReferences(celix_service_registry_t* registry, celix_bundle_t *bundle, const char *serviceName,
-                                     filter_pt filter, celix_array_list_t **references);
+                                     celix_filter_t* filter, celix_array_list_t **references);
 
 CELIX_FRAMEWORK_EXPORT celix_status_t serviceRegistry_clearReferencesFor(celix_service_registry_t* registry, celix_bundle_t *bundle);
 

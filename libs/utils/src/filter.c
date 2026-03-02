@@ -31,7 +31,6 @@
 #include "celix_stdio_cleanup.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_version.h"
-#include "filter.h"
 
 // ignoring clang-tidy recursion warnings for this file, because filter uses recursion
 // NOLINTBEGIN(misc-no-recursion)
