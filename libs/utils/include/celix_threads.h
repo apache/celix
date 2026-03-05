@@ -359,65 +359,6 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_signal(celix_thread_cond_
 
 CELIX_UTILS_EXPORT celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void));
 
-//Thread Specific Storage (TSS) Abstraction
-typedef pthread_key_t celix_tss_key_t;
-
-/**
- * @brief Create a thread specific storage key visible for all threads.
- *
- *
- * Upon creation, the value NULL shall be associated with
- * the new key in all active threads of the process. Upon thread creation,
- * the value NULL shall be associated with all defined keys in the new thread
- *
- * An optional destructor function may be associated with each key value. At thread exit, if a key value has a
- * non-NULL destructor pointer, and the thread has a non-NULL value associated with that key, the value of the key is
- * set to NULL, and then the function pointed to is called with the previously associated value as its sole argument.
- * The order of  destructor calls is unspecified if more than one destructor exists for a thread when it exits.
- *
- * @param key The key to create.
- * @param destroyFunction The function to call when the key is destroyed.
- * @return CELIX_SUCCESS if the key is created successfully.
- *
- * @retval CELIX_ENOMEM if there was insufficient memory for the key creation.
- * @retval CELIX_EAGAIN if the system lacked the necessary resources to create another thread specific data key.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_tss_create(celix_tss_key_t* key, void (*destroyFunction)(void*));
-
-/**
- * @brief Delete a thread specific storage key previously created by celix_tss_create.
- *
- * @param key The key to delete.
- * @return CELIX_SUCCESS if the key is deleted successfully.
- *
- * @retval CELIX_ILLEGAL_ARGUMENT if the key is invalid.
- * @retval CELIX_ILLEGAL_STATE if the key is otherwise not deleted successfully.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_tss_delete(celix_tss_key_t key);
-
-/**
- * @brief Set a thread-specific value for the provide thread specific storage key.
- *
- * @param key The key to set the value for.
- * @param value The thread-specific value to set.
- * @return CELIX_SUCCESS if the value is set successfully.
- *
- * @retval CELIX_ILLEGAL_ARGUMENT if the key is invalid.
- * @retval CELIX_ENOMEM if there was insufficient memory to set the value.
- * @retval CELIX_ILLEGAL_STATE if the value is not set successfully.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_tss_set(celix_tss_key_t key, void* value);
-
-/**
- * @brief Get the thread-specific value for the provided thread specific storage key.
- *
- * @param key The key to get the value for.
- * @return The thread-specific value.
- *
- * @retval NULL if the key is invalid or there is no thread-specific value set for the key.
- */
-CELIX_UTILS_EXPORT void* celix_tss_get(celix_tss_key_t key);
-
 #ifdef __cplusplus
 }
 #endif

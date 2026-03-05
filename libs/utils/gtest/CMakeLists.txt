@@ -103,13 +103,23 @@ if (EI_TESTS)
     target_link_libraries(test_utils_celix_err_with_ei PRIVATE
             utils_cut
             Celix::malloc_ei
-            Celix::threads_ei
             GTest::gtest GTest::gtest_main
     )
     add_test(NAME test_utils_celix_err_with_ei COMMAND test_utils_celix_err_with_ei)
     setup_target_for_coverage(test_utils_celix_err_with_ei SCAN_DIR ..)
 
-    #Note testing version seperated, otherwise version calls are already wrapped
+    add_executable(test_utils_celix_err_key_create_with_ei
+            src/ErrKeyCreateErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_utils_celix_err_key_create_with_ei PRIVATE
+            utils_err_no_ctor_dtor_cut
+            Celix::uv_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_utils_celix_err_key_create_with_ei COMMAND test_utils_celix_err_key_create_with_ei)
+    setup_target_for_coverage(test_utils_celix_err_key_create_with_ei SCAN_DIR ..)
+
+    #Note testing version separated, otherwise version calls are already wrapped
     add_executable(test_utils_version_with_ei
             src/VersionErrorInjectionTestSuite.cc
     )
@@ -154,7 +164,6 @@ if (EI_TESTS)
             Celix::fts_ei
             utils_cut
             Celix::utils_ei
-            Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
             Celix::asprintf_ei
