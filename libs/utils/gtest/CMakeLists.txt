@@ -113,7 +113,7 @@ if (EI_TESTS)
     )
     target_link_libraries(test_utils_celix_err_key_create_with_ei PRIVATE
             utils_err_no_ctor_dtor_cut
-            Celix::uv_ei
+            Celix::pthread_ei
             GTest::gtest GTest::gtest_main
     )
     add_test(NAME test_utils_celix_err_key_create_with_ei COMMAND test_utils_celix_err_key_create_with_ei)

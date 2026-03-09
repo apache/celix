@@ -29,5 +29,6 @@ target_link_options(pthread_ei INTERFACE
         LINKER:--wrap,pthread_condattr_setpshared
         LINKER:--wrap,pthread_cond_init
         LINKER:--wrap,pthread_cond_timedwait
+        LINKER:--wrap,pthread_key_create
         )
 add_library(Celix::pthread_ei ALIAS pthread_ei)

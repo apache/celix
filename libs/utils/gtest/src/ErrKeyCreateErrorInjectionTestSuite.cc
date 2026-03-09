@@ -21,25 +21,25 @@
 
 #include "celix_err.h"
 #include "celix_err_private.h"
-#include "uv_ei.h"
+#include "pthread_ei.h"
 
 class ErrKeyCreateErrorInjectionTestSuite : public ::testing::Test {
 public:
     ErrKeyCreateErrorInjectionTestSuite() = default;
 
     ~ErrKeyCreateErrorInjectionTestSuite() noexcept override {
-        celix_ei_expect_uv_key_create(nullptr, 0, 0);
+        celix_ei_expect_pthread_key_create(nullptr, 0, 0);
     }
 };
 
 TEST_F(ErrKeyCreateErrorInjectionTestSuite, InitThreadStorageKeyFailureAndSuccess) {
-    celix_ei_expect_uv_key_create((void*)celix_err_initThreadSpecificStorageKey, 0, -1);
+    celix_ei_expect_pthread_key_create((void*)celix_err_initThreadSpecificStorageKey, 0, -1);
     celix_err_initThreadSpecificStorageKey();
 
     celix_err_push("error message");
     EXPECT_EQ(0, celix_err_getErrorCount());
 
-    celix_ei_expect_uv_key_create(nullptr, 0, 0);
+    celix_ei_expect_pthread_key_create(nullptr, 0, 0);
     celix_err_initThreadSpecificStorageKey();
     celix_err_resetErrors();
     celix_err_push("error message");

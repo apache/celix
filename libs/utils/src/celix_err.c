@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <uv.h>
 
 
@@ -43,6 +44,13 @@ typedef struct celix_err {
 
 uv_key_t celix_err_tssKey;
 bool celix_err_tssKeyInitialized = false;
+
+static void celix_err_destroyTssErr(void* data) {
+    celix_err_t* err = data;
+    if (err != NULL) {
+        free(err);
+    }
+}
 
 static celix_err_t* celix_err_getRawTssErr() {
     if (!celix_err_tssKeyInitialized) {
@@ -77,11 +85,11 @@ CELIX_ERR_CONSTRUCTOR void celix_err_initThreadSpecificStorageKey() {
     if (celix_err_tssKeyInitialized) {
         return;
     }
-    int rc = uv_key_create(&celix_err_tssKey);
+    int rc = pthread_key_create(&celix_err_tssKey, celix_err_destroyTssErr);
     if (rc == 0) {
         celix_err_tssKeyInitialized = true;
     } else {
-        fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
+        fprintf(stderr,"Failed to create thread specific storage key for celix_err %d\n", rc);
     }
 }
 
