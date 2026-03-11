@@ -34,13 +34,13 @@ public:
         freopen(CAPTURE_FILENAME, "w", stderr);
     }
     ~ErrErrorInjectionTestSuite() noexcept override {
-        celix_ei_expect_malloc(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_calloc(nullptr, 0, CELIX_SUCCESS);
     }
 };
 
 TEST_F(ErrErrorInjectionTestSuite, PushErrorWithMallocFailingTest) {
     //Given a primed error injection for malloc
-    celix_ei_expect_malloc(CELIX_EI_UNKNOWN_CALLER, 1, nullptr);
+    celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 1, nullptr);
 
     //When an error is pushed
     celix_err_push("error message");

@@ -108,17 +108,6 @@ if (EI_TESTS)
     add_test(NAME test_utils_celix_err_with_ei COMMAND test_utils_celix_err_with_ei)
     setup_target_for_coverage(test_utils_celix_err_with_ei SCAN_DIR ..)
 
-    add_executable(test_utils_celix_err_key_create_with_ei
-            src/ErrKeyCreateErrorInjectionTestSuite.cc
-    )
-    target_link_libraries(test_utils_celix_err_key_create_with_ei PRIVATE
-            utils_err_no_ctor_dtor_cut
-            Celix::pthread_ei
-            GTest::gtest GTest::gtest_main
-    )
-    add_test(NAME test_utils_celix_err_key_create_with_ei COMMAND test_utils_celix_err_key_create_with_ei)
-    setup_target_for_coverage(test_utils_celix_err_key_create_with_ei SCAN_DIR ..)
-
     #Note testing version separated, otherwise version calls are already wrapped
     add_executable(test_utils_version_with_ei
             src/VersionErrorInjectionTestSuite.cc

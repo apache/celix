@@ -40,7 +40,7 @@ if (UTILS)
             src/celix_file_utils.c
             src/celix_convert_utils.c
             src/celix_errno.c
-            src/celix_err.c
+            src/celix_err.cc
             src/celix_cleanup.c
             src/celix_array_list_encoding.c
             src/celix_json_utils.c
@@ -50,6 +50,7 @@ if (UTILS)
     set(UTILS_PUBLIC_DEPS libuv::uv)
 
     add_library(utils SHARED ${UTILS_SRC})
+    target_compile_features(utils PRIVATE cxx_std_11)
 
     set_target_properties(utils
             PROPERTIES
@@ -115,6 +116,7 @@ if (UTILS)
     if (ENABLE_TESTING)
         add_library(utils_cut STATIC ${UTILS_SRC})
         target_compile_definitions(utils_cut PRIVATE CELIX_UTILS_STATIC_DEFINE)
+        target_compile_features(utils_cut PRIVATE cxx_std_11)
         target_include_directories(utils_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${CMAKE_CURRENT_LIST_DIR}/include_internal
@@ -125,7 +127,7 @@ if (UTILS)
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
 
         #Special test lib that disable the celix_err constructor/destructor attribute usage (for testing)
-        add_library(utils_err_no_ctor_dtor_cut STATIC src/celix_err.c)
+        add_library(utils_err_no_ctor_dtor_cut STATIC src/celix_err.cc)
         target_include_directories(utils_err_no_ctor_dtor_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${CMAKE_BINARY_DIR}/celix/gen/includes/utils

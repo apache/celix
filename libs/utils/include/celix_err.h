@@ -92,7 +92,7 @@ CELIX_UTILS_EXPORT void celix_err_printErrors(FILE* stream, const char* prefix, 
  * @return the number of characters written to the buffer (excluding the terminating null character).
  * A return value of size or more means that the output was truncated. See also snprintf.
  */
-CELIX_UTILS_EXPORT int celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix);
+CELIX_UTILS_EXPORT size_t celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix);
 
 #ifdef __cplusplus
 }
