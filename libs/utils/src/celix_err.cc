@@ -47,7 +47,7 @@ CelixErrManager& CelixErrManager::getInstance() {
     thread_local CelixErrManager instance;
     return instance;
 }
-CelixErrManager::CelixErrManager() {
+CelixErrManager::CelixErrManager() : err{nullptr} {
     // guarantee true lazy allocation in all tls models to reduce per pthread memory usage
     err = static_cast<celix_err_t*>(calloc(1, sizeof(*err)));
     if (!err) {
