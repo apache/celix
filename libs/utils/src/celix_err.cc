@@ -24,83 +24,46 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "celix_threads.h"
-
 typedef struct celix_err {
     char buffer[CELIX_ERR_BUFFER_SIZE];
     size_t pos;
 } celix_err_t;
 
+namespace {
+class  CelixErrManager {
+public:
+    static CelixErrManager& getInstance();
+    celix_err_t* err;
+    CelixErrManager(const CelixErrManager&) = delete;
+    CelixErrManager& operator=(const CelixErrManager&) = delete;
+    CelixErrManager(CelixErrManager&&) = delete;
+    CelixErrManager& operator=(CelixErrManager&&) = delete;
+private:
+    CelixErrManager();
+    ~CelixErrManager();
+};
 
-celix_tss_key_t celix_err_tssKey;
-bool celix_err_tssKeyInitialized = false;
-
-static void celix_err_destroyTssErr(void* data) {
-    celix_err_t* err = data;
-    if (err != NULL) {
-        free(err);
-    }
+CelixErrManager& CelixErrManager::getInstance() {
+    thread_local CelixErrManager instance;
+    return instance;
 }
-
-
-static celix_err_t* celix_err_getRawTssErr() {
-    if (!celix_err_tssKeyInitialized) {
-        return NULL;
-    }
-    return celix_tss_get(celix_err_tssKey);
-}
-
-
-celix_err_t* celix_err_getTssErr() {
-    if (!celix_err_tssKeyInitialized) {
-        fprintf(stderr, "celix_err_tssKey is not initialized\n");
-        return NULL;
-    }
-
-    celix_err_t* err = celix_tss_get(celix_err_tssKey);
-    if (err) {
-        return err;
-    }
-
-    err = malloc(sizeof(*err));
-    if (err) {
-        err->pos = 0; //no entry
-        celix_status_t status = celix_tss_set(celix_err_tssKey, err);
-        if (status != CELIX_SUCCESS) {
-            fprintf(stderr, "Failed to set thread specific storage for celix_err\n");
-            free(err);
-            err = NULL;
-        }
-    } else {
+CelixErrManager::CelixErrManager() : err{nullptr} {
+    // guarantee true lazy allocation in all tls models to reduce per pthread memory usage
+    err = static_cast<celix_err_t*>(calloc(1, sizeof(*err)));
+    if (!err) {
         fprintf(stderr, "Failed to allocate memory for celix_err\n");
     }
-    return err;
 }
 
-__attribute__((constructor)) void celix_err_initThreadSpecificStorageKey() {
-    celix_status_t status = celix_tss_create(&celix_err_tssKey, celix_err_destroyTssErr);
-    if (status == CELIX_SUCCESS) {
-        celix_err_tssKeyInitialized = true;
-    } else {
-        fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
-    }
+CelixErrManager::~CelixErrManager() {
+    free(err);
+}
 }
 
-__attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
-    if (!celix_err_tssKeyInitialized) {
-        fprintf(stderr, "celix_err_tssKey is not initialized\n");
-        return;
-    }
-
-    celix_status_t status = celix_tss_delete(celix_err_tssKey);
-    if (status != CELIX_SUCCESS) {
-        fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
-    }
-}
 
 const char* celix_err_popLastError() {
     const char* result = NULL;
-    celix_err_t* err = celix_err_getRawTssErr();
+    celix_err_t* err = CelixErrManager::getInstance().err;
     if (err && err->pos > 0) {
         //move back to start last error message
         err->pos -= 1; //move before \0 in last error message
@@ -114,8 +77,8 @@ const char* celix_err_popLastError() {
 
 int celix_err_getErrorCount() {
     int result = 0;
-    celix_err_t* err = celix_err_getRawTssErr();
-    for (int i = 0; err && i < err->pos; ++i) {
+    celix_err_t* err = CelixErrManager::getInstance().err;
+    for (size_t i = 0; err && i < err->pos; ++i) {
         if (err->buffer[i] == '\0') {
             result += 1;
         }
@@ -124,14 +87,14 @@ int celix_err_getErrorCount() {
 }
 
 void celix_err_resetErrors() {
-    celix_err_t* err = celix_err_getRawTssErr();
+    celix_err_t* err = CelixErrManager::getInstance().err;
     if (err) {
         err->pos = 0; //no entry
     }
 }
 
 void celix_err_push(const char* msg) {
-    celix_err_t* err = celix_err_getTssErr();
+    celix_err_t* err = CelixErrManager::getInstance().err;
     if (err) {
         size_t len = strnlen(msg, CELIX_ERR_BUFFER_SIZE);
         if (err->pos + len + 1 <= CELIX_ERR_BUFFER_SIZE) {
@@ -148,7 +111,7 @@ void celix_err_pushf(const char* format, ...) {
     va_list argsCopy;
     va_start(args, format);
     va_copy(argsCopy, args);
-    celix_err_t* err = celix_err_getTssErr();
+    celix_err_t* err = CelixErrManager::getInstance().err;
     if (err) {
         size_t len = vsnprintf(err->buffer + err->pos, CELIX_ERR_BUFFER_SIZE - err->pos, format, args);
         if (err->pos + len + 1 <= CELIX_ERR_BUFFER_SIZE) {
@@ -173,9 +136,9 @@ void celix_err_printErrors(FILE* stream, const char* prefix, const char* postfix
     }
 }
 
-int celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix) {
+size_t celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix) {
     int ret;
-    int bytes = 0;
+    size_t bytes = 0;
     const char* pre = prefix == NULL ? "" : prefix;
     const char* post = postfix == NULL ? "\n" : postfix;
     for (const char *errMsg = celix_err_popLastError(); errMsg != NULL && bytes < size; errMsg = celix_err_popLastError()) {

@@ -76,4 +76,11 @@ int __wrap_pthread_cond_timedwait(pthread_cond_t * __cond, pthread_mutex_t * __m
     return __real_pthread_cond_timedwait(__cond, __mutex, __abstime);
 }
 
+int __real_pthread_key_create(pthread_key_t * __key, void (*__destr_function)(void *));
+CELIX_EI_DEFINE(pthread_key_create, int)
+int __wrap_pthread_key_create(pthread_key_t * __key, void (*__destr_function)(void *)) {
+    CELIX_EI_IMPL(pthread_key_create);
+    return __real_pthread_key_create(__key, __destr_function);
+}
+
 }

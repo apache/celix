@@ -40,6 +40,8 @@ CELIX_EI_DECLARE(pthread_cond_init, int);
 
 CELIX_EI_DECLARE(pthread_cond_timedwait, int);
 
+CELIX_EI_DECLARE(pthread_key_create, int);
+
 #ifdef __cplusplus
 }
 #endif
