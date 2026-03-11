@@ -58,3 +58,8 @@ celix_subproject(ERROR_INJECTOR_CURL "Option to enable building the curl error i
 if (ERROR_INJECTOR_CURL)
     add_subdirectory(curl)
 endif ()
+
+celix_subproject(ERROR_INJECTOR_UV "Option to enable building the curl error injector" ON)
+if (ERROR_INJECTOR_UV)
+    add_subdirectory(uv)
+endif ()
