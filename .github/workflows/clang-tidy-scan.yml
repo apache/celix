@@ -1,0 +1,85 @@
+name: Celix clang-tidy Scan
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 0 * * *'
+
+env:
+  CONAN_USER_HOME: "${{ github.workspace }}/release/"
+  CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+  CONAN_HOME: "${{ github.workspace }}/release/"
+  CC: gcc
+  CXX: g++
+
+jobs:
+
+  clang-tidy-scan:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
+      - name: Install build dependencies
+        run: |
+          sudo pip install -U conan
+          sudo apt-get install -yq --no-install-recommends ninja-build clang-tidy
+      - name: Setup Conan Profile
+        run: |
+          # build profile
+          conan profile detect -f --name release
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path release`
+          echo "[tool_requires]" >> `conan profile path release`
+          echo "cmake/3.26.4" >> `conan profile path release`
+
+          # host profile
+          conan profile detect -f
+          sed -i 's/build_type=Release/build_type=RelWithDebInfo/g' `conan profile path default`
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
+      - name: Conan Cache
+        id: cache-conan
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
+        env:
+          cache-name: cache-conan2-modules
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ runner.os }}-test-builder-${{ env.cache-name }}-gcc-RelWithDebInfo-clang-tidy-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-test-builder-${{ env.cache-name }}-gcc-RelWithDebInfo-
+      - name: Install Dependencies and configure CMake
+        env:
+          CONAN_BUILD_OPTIONS: |
+            -o celix/*:enable_testing=True
+            -o celix/*:enable_benchmarking=True
+            -o celix/*:build_all=True
+        run: |
+          conan install . -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -of build ${CONAN_BUILD_OPTIONS} -b missing
+          #CMake configure -> generate build/compile_commands.json
+          cmake --preset conan-relwithdebinfo
+# Note action cargo-bins/cargo-binstall not allowed ("all actions must be from a repository owned by your enterprise, created by GitHub, verified in the GitHub Marketplace, or match one of the patterns:...")
+#      - name: Setup Rust Tools (binary install)
+#        uses: cargo-bins/cargo-binstall@ec80feb9e330418e014932e5982599255eff6dbb #v1.17.4
+#      - name: Install SARIF Tools
+#        run: cargo binstall -y clang-tidy-sarif
+      - name: Install clang-tidy SARIF tool via Curl
+        run: |
+          VERSION="v0.8.0"
+          TARGET="x86_64-unknown-linux-gnu"
+          curl -sSL "https://github.com/psastras/sarif-rs/releases/download/clang-tidy-sarif-${VERSION}/clang-tidy-sarif-${TARGET}" -o clang-tidy-sarif
+          chmod +x clang-tidy-sarif
+      - name: Run clang-tidy
+        run: |
+          set -o pipefail
+          run-clang-tidy -p build -quiet | tee clang-tidy-report.txt
+      - name: Convert clang-tidy output to SARIF
+        if: always()
+#        run: cat clang-tidy-report.txt | clang-tidy-sarif > clang-tidy-report.sarif
+        run: cat clang-tidy-report.txt | ./clang-tidy-sarif > clang-tidy-report.sarif
+      - name: upload SARIF report
+        uses: github/codeql-action/upload-sarif@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 #4.32.2
+        if: always()
+        with:
+          sarif_file: clang-tidy-report.sarif
+          category: clang-tidy
