@@ -83,7 +83,7 @@ class TestPackageConan(ConanFile):
             with chdir(self, self.build_folder):
                 celix_options = self.dependencies["celix"].options
                 if celix_options.build_framework:
-                    self.run("./conan_test_package/use_framework", env="conanrun")
+                    self.run("./use_framework", env="conanrun")
                 if celix_options.build_http_admin:
                     self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), env="conanrun")
                 if celix_options.build_log_service:
@@ -92,8 +92,8 @@ class TestPackageConan(ConanFile):
                     self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), env="conanrun")
                 if celix_options.build_remote_service_admin:
                     self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), env="conanrun")
-                    self.run("./conan_test_package/use_c_rsa_spi", env="conanrun")
-                    self.run("./conan_test_package/use_rsa_utils", env="conanrun")
+                    self.run("./use_c_rsa_spi", env="conanrun")
+                    self.run("./use_rsa_utils", env="conanrun")
 
                 if celix_options.build_rsa_remote_service_admin_dfi and celix_options.build_launcher:
                     self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), env="conanrun")
@@ -109,9 +109,9 @@ class TestPackageConan(ConanFile):
                     self.run("./use_rsa_discovery_zeroconf",
                              cwd=os.path.join("deploy", "use_rsa_discovery_zeroconf"), env="conanrun")
                 if celix_options.build_shell:
-                    self.run("./conan_test_package/use_shell", env="conanrun")
+                    self.run("./use_shell", env="conanrun")
                     if celix_options.celix_cxx17 or celix_options.celix_cxx14:
-                        self.run("./conan_test_package/use_cxx_shell", env="conanrun")
+                        self.run("./use_cxx_shell", env="conanrun")
                 if celix_options.build_remote_shell:
                     self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), env="conanrun")
                 if celix_options.build_shell_tui:
@@ -119,32 +119,32 @@ class TestPackageConan(ConanFile):
                 if celix_options.build_shell_wui:
                     self.run("./use_shell_wui", cwd=os.path.join("deploy", "use_shell_wui"), env="conanrun")
                 if celix_options.build_celix_etcdlib:
-                    self.run("./conan_test_package/use_etcd_lib", env="conanrun")
+                    self.run("./use_etcd_lib", env="conanrun")
                 if celix_options.build_launcher:
                     self.run("./use_launcher", cwd=os.path.join("deploy", "use_launcher"), env="conanrun")
                 if celix_options.build_promises:
-                    self.run("./conan_test_package/use_promises", env="conanrun")
+                    self.run("./use_promises", env="conanrun")
                 if celix_options.build_pushstreams:
-                    self.run("./conan_test_package/use_pushstreams", env="conanrun")
+                    self.run("./use_pushstreams", env="conanrun")
                 if celix_options.build_log_helper:
-                    self.run("./conan_test_package/use_log_helper", env="conanrun")
+                    self.run("./use_log_helper", env="conanrun")
                 if celix_options.build_log_service_api:
-                    self.run("./conan_test_package/use_log_service_api", env="conanrun")
+                    self.run("./use_log_service_api", env="conanrun")
                 if celix_options.build_cxx_remote_service_admin:
                     self.run("./use_cxx_remote_service_admin",
                              cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), env="conanrun")
-                    self.run("./conan_test_package/use_rsa_spi", env="conanrun")
+                    self.run("./use_rsa_spi", env="conanrun")
                 if celix_options.build_shell_api:
-                    self.run("./conan_test_package/use_shell_api", env="conanrun")
+                    self.run("./use_shell_api", env="conanrun")
                 if celix_options.build_celix_dfi:
-                    self.run("./conan_test_package/use_celix_dfi", env="conanrun")
+                    self.run("./use_celix_dfi", env="conanrun")
                 if celix_options.build_utils:
-                    self.run("./conan_test_package/use_utils", env="conanrun")
+                    self.run("./use_utils", env="conanrun")
                 if celix_options.build_event_admin:
                     self.run("./use_event_admin",
                              cwd=os.path.join("deploy", "use_event_admin"), env="conanrun")
-                    self.run("./conan_test_package/use_event_admin_api", env="conanrun")
-                    self.run("./conan_test_package/use_event_admin_spi", env="conanrun")
+                    self.run("./use_event_admin_api", env="conanrun")
+                    self.run("./use_event_admin_spi", env="conanrun")
                 if celix_options.build_event_admin_remote_provider_mqtt:
                     self.run("./use_event_admin_remote_provider_mqtt",
                              cwd=os.path.join("deploy", "use_event_admin_remote_provider_mqtt"), env="conanrun")
