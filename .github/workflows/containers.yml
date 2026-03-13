@@ -42,6 +42,7 @@ jobs:
           conan build . -pr:b release -pr:h debug --build=missing \
           --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
           --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          -o mosquitto/*:broker=True -o *:shared=True \
           --conf:build tools.cmake.cmaketoolchain:generator=Ninja"
       - name: Test Celix
         run: |

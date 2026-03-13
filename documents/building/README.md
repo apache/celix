@@ -86,6 +86,8 @@ conan install . --build=missing --profile:build default --profile:host debug \
     -o "celix/*:build_all=True" \
     -o "celix/*:enable_testing=True" \
     -o "celix/*:enable_ccache=True" \
+    -o "mosquitto/*:broker=True" \
+    -o "*:shared=True" \
     --conf tools.cmake.cmaketoolchain:generator=Ninja
 ```
 
@@ -110,7 +112,8 @@ For example, to only build the framework and utils libraries:
 ```bash
 conan install . --build=missing --profile:build default --profile:host debug \
     -o "celix/*:build_framework=True" \
-    -o "celix/*:build_utils=True"
+    -o "celix/*:build_utils=True" \
+    -o "*:shared=True"
  cmake --build --preset conan-debug --parallel
 ```
 

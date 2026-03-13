@@ -63,6 +63,8 @@ jobs:
             -o celix/*:enable_testing_on_ci=True
             -o celix/*:framework_curlinit=False
             -o celix/*:enable_ccache=True
+            -o mosquitto/*:broker=True 
+            -o *:shared=True
         run: |
           conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
