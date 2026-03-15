@@ -57,6 +57,7 @@
 
 //The prefix of the config property which is used to store the interfaces of a port. e.g. CELIX_RSA_INTERFACES_OF_PORT_8080. The value is a comma-separated list of interface names.
 #define CELIX_RSA_INTERFACES_OF_PORT_PREFIX "CELIX_RSA_INTERFACES_OF_PORT_"
+//The config property for the ranking offset of imported services. The value is a comma-separated list of <config type>=<ranking offset>. e.g. CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS="celix.remote.admin.shm=-1,org.amdatu.remote.admin.http=-2". The ranking offset will be added to the original service ranking of the imported service. This allows the user to configure the ranking of imported services based on different configuration types.
 #define CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS "CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS"
 
 typedef struct celix_rsa_service_entry {
