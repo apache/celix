@@ -94,6 +94,7 @@ conan install . --build=missing --profile:build default --profile:host debug \
 Notes:
 - Use `--profile:host debug` or `--profile:host default` depending on the host (target) profile you want to generate builds for.
 - Replace or add `-o` options to selectively enable/disable bundles (see below).
+- Celix validates dependency options rather than autoconfigures them to avoid [dependency graph inconsistencies](https://github.com/conan-io/conan/issues/19692); incompatible options will cause validation errors.
 
 Configure and build using the generated CMake preset (Conan will create presets named like `conan-debug` when 
 using `--profile:host debug`, assuming the build_type is `Debug`):
