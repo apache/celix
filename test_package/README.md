@@ -34,19 +34,14 @@ a Celix package is properly installed in the local Conan cache. To this end, it 
 To create a Celix package in the local cache with C++ support and verify that it's properly installed, run the following command in the Celix root directory:
 
 ```BASH
-conan create . celix/2.2.3@zhengpeng/testing -tf examples/conan_test_package/ -o celix:celix_cxx17=True
+conan create . -o celix_cxx17=True
 ```
 
 To verify a Celix package with C++ support is properly installed in the local cache, run the following command in the Celix root directory:
 
 ```BASH
-conan test examples/conan_test_package/ celix/2.2.3@zhengpeng/testing  -o celix:celix_cxx17=True
+conan test test_package celix/3.0.0@  -o celix_cxx17=True
 ```
 
 Though it might not be wise to spend time reading C/C++ codes in this folder, it's instructive to have a look at `conanfile.py` and `CMakeLists.txt`,
-which illustrates a non-intrusive way of using Conan with CMake build system. Pay attention to our use of `cmake_paths` `cmake_find_package` generators
-and the following line:
-
-```python
-    cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-```
+which illustrates a non-intrusive way of using Conan with CMake build system. 

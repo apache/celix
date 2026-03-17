@@ -28,6 +28,11 @@ Note that not all existing code adheres to these conventions.
 New code should adhere to these conventions, and when possible, existing code should be updated to adhere to these
 conventions.
 
+## Using Generative AI
+
+- You own any code you submit, including AI-assisted changes. GenAI suggestions do not transfer ownership or responsibility.
+- Review AI-produced code critically for structure, threading behavior, resource handling, coding conventions, and test coverage. 
+
 ## Naming Conventions
 
 ### C/C++ Variables

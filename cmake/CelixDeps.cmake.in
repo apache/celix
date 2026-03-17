@@ -2,6 +2,8 @@ $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::framework>>:find_dependency(libuuid)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::deployment_admin>>:find_dependency(libuuid)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::pubsub_spi>>:find_dependency(libuuid)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::utils>>:find_dependency(libzip)>
+$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::utils>>:find_dependency(jansson)>
+$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::utils>>:find_dependency(libuv)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::deployment_admin>>:find_dependency(ZLIB)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::dfi>>:find_dependency(libffi)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::dfi>>:find_dependency(jansson)>

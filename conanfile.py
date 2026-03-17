@@ -17,7 +17,7 @@
 
 from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
-from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.scm import Version
 from conan.tools.files import copy
 import os
@@ -33,7 +33,7 @@ class CelixConan(ConanFile):
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
     exports_sources = ("CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*",
-                       "LICENSE", "!examples/conan_test_package*")
+                       "LICENSE")
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
@@ -87,13 +87,14 @@ class CelixConan(ConanFile):
         "build_event_admin_remote_provider_mqtt": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
-        "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
         "enable_ccache": False,
         "enable_deprecated_warnings": False,
+        "enable_gcc_analyzer": False , 
+      
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -154,10 +155,11 @@ class CelixConan(ConanFile):
         del self.info.options.enable_benchmarking
         del self.info.options.enable_fuzzing
         del self.info.options.enable_code_coverage
+        del self.info.options.enable_gcc_analyzer
 
     def build_requirements(self):
         if self.options.enable_testing:
-            self.test_requires("gtest/1.10.0")
+            self.test_requires("gtest/1.17.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
         if self.options.enable_benchmarking:
@@ -232,7 +234,6 @@ class CelixConan(ConanFile):
             options["build_framework"] = True
             options["build_log_helper"] = True
             options["build_celix_dfi"] = True
-            options["celix_install_deprecated_api"] = True
 
         if options["build_event_admin"]:
             options["build_framework"] = True
@@ -274,8 +275,6 @@ class CelixConan(ConanFile):
 
         if options["build_log_service_api"]:
             options["build_utils"] = True
-            if options["celix_install_deprecated_api"]:
-                options["build_framework"] = True
 
         if options["build_components_ready_check"]:
             options["build_framework"] = True
@@ -309,6 +308,7 @@ class CelixConan(ConanFile):
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
         if self.options.build_utils:
             self.options['libzip'].shared = True
+            self.options['libuv'].shared = True
         if self.options.build_framework:
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
@@ -340,6 +340,7 @@ class CelixConan(ConanFile):
     def requirements(self):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
+            self.requires("libuv/[>=1.49.2 <2.0.0]")
         if self.options.build_framework:
             self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
             if self.settings.os == "Macos":
@@ -372,10 +373,15 @@ class CelixConan(ConanFile):
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
         self.validate()
 
+    def layout(self):
+        cmake_layout(self)
+
     def generate(self):
         tc = CMakeToolchain(self)
+        conan_internal_options = ["build_all"] #options are not used in CMake
         for opt in self._celix_defaults.keys():
-            tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
+            if opt not in conan_internal_options:
+                tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
         if self.options.enable_testing:
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
@@ -387,7 +393,7 @@ class CelixConan(ConanFile):
             if "libcurl" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_CURL"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
-        # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        #tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
             tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"

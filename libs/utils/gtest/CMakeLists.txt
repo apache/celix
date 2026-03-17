@@ -35,6 +35,7 @@ add_executable(test_utils
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
+        src/UvThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
         src/ArrayListTestSuite.cc
@@ -42,7 +43,7 @@ add_executable(test_utils
         src/CxxExceptionsTestSuite.cc
 )
 
-target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip libuv::uv)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
@@ -68,14 +69,14 @@ if(ZIP_COMMAND)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zip_content
     )
-else()
+else ()
     add_custom_command(OUTPUT ${TEST_ZIP_FILE}
-        COMMAND ${JAR_COMMAND} -cf ${TEST_ZIP_FILE} -C ${CMAKE_CURRENT_BINARY_DIR}/zip_content .
-        COMMENT "Creating ${TEST_ZIP_FILE} for testing"
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMAND ${CMAKE_COMMAND} -E tar cf ${TEST_ZIP_FILE} --format=zip .
+            COMMENT "Creating ${TEST_ZIP_FILE} for testing"
+            DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zip_content
     )
-endif()
+endif ()
 add_custom_target(test_utils_resources DEPENDS ${TEST_ZIP_FILE})
 add_dependencies(test_utils test_utils_resources)
 target_compile_definitions(test_utils PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_FILE}\")

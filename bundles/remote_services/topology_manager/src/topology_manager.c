@@ -42,9 +42,9 @@
 #include "celix_bundle.h"
 #include "remote_service_admin.h"
 #include "remote_constants.h"
-#include "filter.h"
+#include "celix_filter.h"
 #include "listener_hook_service.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "service_reference.h"
 #include "service_registration.h"
 #include "celix_log_helper.h"
@@ -765,7 +765,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 }
 
 celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr) {
-	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	service_registration_t *reg = NULL;
 	bool found;
@@ -797,13 +796,14 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 		if (reg != NULL) {
 			props = NULL;
 			serviceRegistration_getProperties(reg, &props);
-			status = filter_match(filter, props, &found);
+			found = celix_filter_match(filter, props);
 			if (found) {
 				srvRefs[nrFound++] = reference;
 			}
 		}
 	}
 
+	celix_status_t status = CELIX_SUCCESS;
 	if (nrFound > 0) {
 		for (int i = 0; i < nrFound; i++) {
 			// Question: can srvRefs become invalid meanwhile??
@@ -1338,7 +1338,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 				status = topologyManager_getEndpointDescriptionForExportRegistration(rsaSvcEntry->rsa, export, &endpoint);
 				if (status == CELIX_SUCCESS) {
 					bool matchResult = false;
-					filter_match(filter, endpoint->properties, &matchResult);
+					matchResult = celix_filter_match(filter, endpoint->properties);
 					if (matchResult) {
 						endpoint_listener_t *listener = (endpoint_listener_t *) service;
 						status = listener->endpointAdded(listener->handle, endpoint, (char*)scope);
@@ -1409,7 +1409,7 @@ static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_mana
 				celix_status_t substatus = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
 				if (substatus == CELIX_SUCCESS) {
 					bool matchResult = false;
-					filter_match(filter, endpoint->properties, &matchResult);
+					matchResult = celix_filter_match(filter, endpoint->properties);
 					if (matchResult) {
 						status = epl->endpointAdded(epl->handle, endpoint, (char*)scope);
 					}

@@ -28,12 +28,20 @@
 #include "celix_string_hash_map.h"
 #include "celix_hash_map_internal.h"
 #include "celix_properties_internal.h"
-#include "utils.h"
+#include "celix_utils.h"
 
 class StringHashmapBenchmark {
 public:
     explicit StringHashmapBenchmark(int64_t _nrOfEntries) : testVectorsMap{createRandomMap(_nrOfEntries)} {
-        deprecatedHashMap = hashMap_create(utils_stringHash, nullptr, utils_stringEquals, nullptr);
+        deprecatedHashMap = hashMap_create(
+            reinterpret_cast<unsigned int (*)(const void*)>(celix_utils_stringHash),
+            nullptr,
+            [](const void* keyA, const void* keyB) -> int
+            {
+                auto equal = celix_utils_stringEquals(static_cast<const char*>(keyA), static_cast<const char*>(keyB));
+                return equal ? 1 : 0;
+            },
+            nullptr);
         celix_string_hash_map_create_options_t opts{};
         opts.storeKeysWeakly = true; //ensure that the celix hash map does not copy strings (we don't want to measure that).
         celixHashMap = celix_stringHashMap_createWithOptions(&opts);

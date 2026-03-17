@@ -26,7 +26,6 @@
 #include "celix_utils.h"
 #include "celix_errno.h"
 #include "shell_private.h"
-#include "utils.h"
 
 shell_t* shell_create(celix_bundle_context_t *ctx) {
     shell_t *shell = calloc(1, sizeof(*shell));
@@ -35,7 +34,11 @@ shell_t* shell_create(celix_bundle_context_t *ctx) {
     shell->logHelper = celix_logHelper_create(ctx, "celix_shell");
     
     celixThreadRwlock_create(&shell->lock, NULL);
-    shell->commandServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    shell->commandServices = hashMap_create(
+        (unsigned int (*)(const void*))celix_utils_stringHash,
+        NULL,
+        (int (*)(const void*, const void*))celix_utils_stringEquals,
+        NULL);
 
     return shell;
 }

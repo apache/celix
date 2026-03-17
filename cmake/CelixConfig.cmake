@@ -35,15 +35,15 @@ include(CMakeFindDependencyMacro)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
+# The rest is added to ensure backwards compatibility with project using the cmake lib/include var instead of targets.
+set(CELIX_CMAKE_MODULES_DIR ${CELIX_REL_INSTALL_DIR}/share/celix/cmake/Modules)
+
 #adds celix optional dependencies
 include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake")
 
 #imports lib and exe targets (e.g. Celix::framework)
 include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake")
 include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
-
-# The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
-set(CELIX_CMAKE_MODULES_DIR ${CELIX_REL_INSTALL_DIR}/share/celix/cmake/Modules)
 
 set(CELIX_FRAMEWORK_INCLUDE_DIR "${CELIX_REL_INSTALL_DIR}/include/celix")
 set(CELIX_UTILS_INCLUDE_DIR "${CELIX_REL_INSTALL_DIR}/include/utils")
@@ -67,16 +67,6 @@ endif ()
 if (TARGET Celix::etcdlib)
   set(CELIX_ETCD_INCLUDE_DIRS $<TARGET_PROPERTY:Celix::etcdlib,INTERFACE_INCLUDE_DIRECTORIES>)
   set(CELIX_ETCD_LIB Celix::etcdlib)
-endif ()
-
-if (TARGET Celix::dependency_manager_so)
-  set(CELIX_DM_LIB Celix::dependency_manager_so)
-  set(CELIX_DM_INCLUDE_DIR $<TARGET_PROPERTY:Celix::dependency_manager_so,INTERFACE_INCLUDE_DIRECTORIES>)
-  set(CELIX_DM_STATIC_LIB Celix::dependency_manager_static)
-endif ()
-if (TARGET Celix::dependency_manager_cxx)
-  set(CELIX_DM_STATIC_CXX_LIB Celix::dependency_manager_cxx)
-  set(CELIX_DM_CXX_STATIC_LIB $<TARGET_PROPERTY:Celix::dependency_manager_cxx,INTERFACE_INCLUDE_DIRECTORIES>)
 endif ()
 
 set(CELIX_BUNDLES_DIR ${CELIX_REL_INSTALL_DIR}/share/celix/bundles)

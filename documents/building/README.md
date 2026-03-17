@@ -20,13 +20,11 @@ limitations under the License.
 -->
 
 # Building and Installing Apache Celix
+
 Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently, the [continuous integration build server] builds and tests Apache Celix for:
 
-* Ubuntu Focal Fossa (20.04)
-  * GCC
-  * CLang
 * Ubuntu Jammy Jellyfish (22.04)
   * GCC 
   * CLang 
@@ -43,6 +41,7 @@ git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ## Building and installing
+
 Apache Celix can be build using [Conan](https://conan.io) as package manager/build system or by directly using
 [CMake](https://cmake.org).
 
@@ -50,10 +49,8 @@ Apache Celix can be build using [Conan](https://conan.io) as package manager/bui
 The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
-    * build-essentials (gcc/g++ or clang/clang++) 
-    * java or zip (for packaging bundles)
-    * make (3.14 or higher)
-    * git
+    * build-essentials 
+    * zip (for packaging bundles)
     * cmake (3.19 or higher)
     * Conan (2 or higher)
 
@@ -69,45 +66,66 @@ sudo apt-get install -yq --no-install-recommends \
     ninja-build
         
 #Install conan
-pip3 install -U conan   
+pip3 install -U conan
 ```
 
-Configure conan default profile using automatic detection of the system
+Configure the Conan default profile using automatic detection of the system:
 ```bash
 conan profile detect
 ```
 
-Create Apache Celix package - and build the dependencies - in the Conan cache:
+Conan 2 uses a two-step workflow: first generate the CMake presets and toolchain files with `conan install`, 
+then configure and build with CMake. The project provides convenient presets when you run `conan install`.
+
+Create a build directory and install dependencies (this will generate CMakePresets.json / CMakeUserPresets.json in the source or build folder):
+
 ```bash
 cd <celix_source_dir>
-conan create . --build missing -o build_all=True   
-#Optionally build with CMake->Ninja, instead of CMake->Make. Note this includes building dependencies with Ninja. 
-conan create . --build missing -o build_all=True  -c tools.cmake.cmaketoolchain:generator=Ninja 
+# Create an output folder for the conan-generated files
+conan install . --build=missing --profile:build default --profile:host debug \
+    -o "celix/*:build_all=True" \
+    -o "celix/*:enable_testing=True" \
+    -o "celix/*:enable_ccache=True" \
+    --conf tools.cmake.cmaketoolchain:generator=Ninja
 ```
 
-Note installing Apache Celix is not required when using Conan, because Conan will install the Apache Celix package
-in the local Conan cache.
+Notes:
+- Use `--profile:host debug` or `--profile:host default` depending on the host (target) profile you want to generate builds for.
+- Replace or add `-o` options to selectively enable/disable bundles (see below).
 
-It is also possible to only build a selection of the Apache Celix bundles and/or libs. This can be done by providing
-build options for the required parts instead of the `build_all=True` option. For example to only build the Apache Celix
-framework library and the Apache Celix utils library use the following command:
+Configure and build using the generated CMake preset (Conan will create presets named like `conan-debug` when 
+using `--profile:host debug`, assuming the build_type is `Debug`):
+
 ```bash
-conan create . --build missing -o build_framework=True -o build_utils=True
+# Configure with a conan-generated preset (conan-debug in this case)
+ cmake --build --preset conan-debug --parallel
 ```
 
-To see a complete overview of the available build options use the following command:
+When using Conan you typically do not "install" Celix system-wide; Conan places package artifacts in the local Conan 
+cache and the generated build files allow you to produce executables and run tests.
+
+It is also possible to only build a selection of the Apache Celix bundles and/or libraries. 
+This can be done by passing per-package options instead of building everything. 
+For example, to only build the framework and utils libraries:
+```bash
+conan install . --build=missing --profile:build default --profile:host debug \
+    -o "celix/*:build_framework=True" \
+    -o "celix/*:build_utils=True"
+ cmake --build --preset conan-debug --parallel
+```
+
+To see a complete overview of the available build options in the recipe you can inspect the recipe metadata (this works for local recipes too):
 ```bash
 conan inspect . | grep build_
 ```
 
-#### CMake Private Linking Workaround
+#### CMake Private Linking Workaround (Conan)
 
-When using Celix via Conan, you may encounter an [issue](https://github.com/apache/celix/issues/642) where libzip.so is not found by linker.
-This is due to a [bug in Conan](https://github.com/conan-io/conan/issues/7192).
+When using Celix via Conan, you may encounter an [issue](https://github.com/apache/celix/issues/642) where `libzip.so` is not found by the linker. This is due to a [bug in Conan](https://github.com/conan-io/conan/issues/7192).
 
-A workaround we adopt in Celix is adding the following to conanfile.py:
+A workaround we adopt in Celix is adding the following to `conanfile.py` (the same approach applies for Conan 2's `generate()`):
 
-```python
+```text
     def generate(self):
         deps = CMakeDeps(self)
         deps.generate()
@@ -125,58 +143,65 @@ The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
     * build-essentials (gcc/g++ or clang/clang++) 
-    * java or zip (for packaging bundles)
-    * make (3.19 or higher)
-    * git
+    * zip (for packaging bundles)
+    * cmake (3.19 or higher)
+    * ninja (to build with ninja instead of make)
 * Apache Celix Dependencies
     * libzip
     * uuid
     * zlib
     * curl (only initialized in the Celix framework)
-    * jansson (for serialization in libdfi)
+    * jansson (json properties and manifest handling)
     * libffi (for libdfi)
     * libxml2 (for remote services and bonjour shell)
     * rapidjson (for C++ remote service discovery)
+    * libavahi (for remote service discovery)
+    * libuv (for threading abstraction)
+    * libcurl (used in framwork for setup and (among others) in remote services
 	
 
 For Ubuntu 22.04, use the following commands:
+
 ```bash
-#### get dependencies
-sudo apt-get install -yq --no-install-recommends \
-    build-essential \
-    cmake \
-    git \
-    curl \
-    uuid-dev \
-    libjansson-dev \
-    libcurl4-openssl-dev \
-    default-jdk \
-    libffi-dev \
-    libzip-dev \
-    libxml2-dev \
-    libcpputest-dev \
-    rapidjson-dev
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
+  build-essential \
+  ninja-build \
+  curl \
+  uuid-dev \
+  libzip-dev \
+  libjansson-dev \
+  libcurl4-openssl-dev \
+  libbenchmark-dev \
+  libuv1-dev \
+  cmake \
+  libffi-dev \
+  libxml2-dev \
+  rapidjson-dev \
+  libavahi-compat-libdnssd-dev \
+  ccache
 ```
 
 For OSX systems with brew installed, use the following commands:
 ```bash
 brew update && \
-brew install lcov libffi libzip rapidjson libxml2 cmake jansson && \
-brew link --force libffi
+brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1 google-benchmark libuv 
 ``` 
 
-Use CMake and make to build Apache Celix
+Use CMake to configure and build Apache Celix (prefer CMake's --build and --install helper commands over raw make):
 ```bash
 cd celix
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. 
-make -j
+# configure using CMake and Ninja generator
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -G Ninja -S . -B build
+# build using CMake
+cmake --build build --parallel
+# (optional) install
+sudo cmake --install build
 ```
 
 ## Editing Build options
-With use of CMake, Apache Celix makes it possible to edit build options. This enabled users, among other options, to configure a install location and select additional bundles.
-To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be necessary (Fedora: `dnf install cmake-gui`). 
+With use of CMake, Apache Celix makes it possible to edit build options. This enabled users, among other options, 
+to configure a install location and select additional bundles. 
 
 ```bash
 cd celix/build
@@ -190,9 +215,8 @@ For this guide we assume the CMAKE_INSTALL_PREFIX is `/usr/local`.
 ## Installing Apache Celix
 
 ```bash
-cd celix/build
-make -j
-sudo make install
+cmake --build build --parallel
+sudo cmake --install build
 ```
 
 ## Running Apache Celix
@@ -209,33 +233,33 @@ For more info how to build your own projects and/or running the Apache Celix exa
 ```bash
 #bash
 git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/etcdlib
-make -j
-sudo make install
+cd celix
+# Configure the build from the top-level source dir, but point CMake to the etcdlib source
+cmake -S libs/etcdlib -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --parallel
+sudo cmake --install build
 ```
 
 # Building Celix Promises library standalone
 ```bash
 #bash
 git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/promises
-make -j
-sudo make install
+cd celix
+# Configure the build from the top-level source dir, but point CMake to the promises source
+cmake -S libs/promises -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --parallel
+sudo cmake --install build
 ```
 
 # Building Celix Push Streams library standalone
 ```bash
 #bash
 git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/pushstreams
-make -j
-sudo make install
+cd celix
+# Configure the build from the top-level source dir, but point CMake to the pushstreams source
+cmake -S libs/pushstreams -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build --parallel
+sudo cmake --install build
 ```
 
 # Further Reading

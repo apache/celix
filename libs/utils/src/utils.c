@@ -18,13 +18,16 @@
  */
 
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdarg.h>
 
-#include "utils.h"
 #include "celix_utils.h"
+#include "celix_errno.h"
+#include "celix_threads.h"
 #include "celix_utils_private_constants.h"
 
 #ifdef __APPLE__

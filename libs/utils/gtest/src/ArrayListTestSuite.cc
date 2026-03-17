@@ -507,3 +507,15 @@ TEST_F(ArrayListTestSuite, ElementTypeToStringTest) {
     EXPECT_STREQ("Undefined",
                  celix_arrayList_elementTypeToString((celix_array_list_element_type_t)100 /*non existing*/));
 }
+
+TEST_F(ArrayListTestSuite, InitialCapacityOptionTest) {
+    celix_array_list_create_options_t opts{};
+    opts.elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING;
+    opts.initialCapacity = 1; // smaller than number of elements we will add
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
+
+    // First add fits in initial capacity
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addString(list, "v1"));
+    // Second add requires realloc
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addString(list, "v2"));
+}
