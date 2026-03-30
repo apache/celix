@@ -40,7 +40,7 @@ if (RSA_JSON_RPC)
             )
 
     add_celix_bundle(rsa_json_rpc
-        VERSION 2.1.0
+        VERSION 2.0.0
         SYMBOLIC_NAME "apache_celix_rsa_json_rpc"
         NAME "Apache Celix Remote Service Admin JSON RPC"
         GROUP "Celix/RSA"
