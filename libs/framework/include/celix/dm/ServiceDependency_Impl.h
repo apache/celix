@@ -119,6 +119,12 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
 }
 
 template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setMinimalCardinality(size_t minimalCardinality) {
+    celix_dmServiceDependency_setMinimalCardinality(this->cServiceDependency(), minimalCardinality);
+    return *this;
+}
+
+template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     this->setDepStrategy(strategy);
     return *this;
@@ -467,8 +473,13 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
+template <class T, class I>
+ServiceDependency<T, I>& ServiceDependency<T, I>::setMinimalCardinality(size_t minimalCardinality) {
+    celix_dmServiceDependency_setMinimalCardinality(this->cServiceDependency(), minimalCardinality);
+    return *this;
+}
 
-template<class T, class I>
+template <class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     this->setDepStrategy(strategy);
     return *this;

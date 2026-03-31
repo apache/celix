@@ -90,6 +90,11 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_service_dependency_t, celix_dmService
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
 
 /**
+ * Specify the minimum number of services the service dependency requires before being available.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setMinimalCardinality(celix_dm_service_dependency_t *dependency, size_t minimalCardinality);
+
+/**
  * Specify if the service dependency update strategy.
  *
  * The DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING strategy notifies the component in case the dependencies set

@@ -59,6 +59,7 @@ struct celix_dm_service_dependency {
     long svcTrackerId;                 // active tracker id
     size_t nrOfActiveStoppingTrackers; // nr of async stop tracker still active (should be 0 or 1)
     size_t trackedSvcCount;
+    size_t minimalCardinality;         // minimal nr of service required for availability
     void* callbackHandle; // This handle can be set to be used instead of the component implementation
 };
 
