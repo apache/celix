@@ -72,9 +72,7 @@ typedef struct celix_exported_service_entry {
 
 typedef struct celix_imported_service_entry {
     endpoint_description_t* endpoint;
-    import_registration_t* registration;
-    long rsaSvcId;
-    long ranking;
+    celix_long_hash_map_t* imports; //key:rsa service id, val:import_registration_t*
 } celix_imported_service_entry_t;
 
 struct topology_manager {
@@ -88,7 +86,7 @@ struct topology_manager {
 
     celix_long_hash_map_t* exportedServices;//key:service id, val:celix_exported_service_entry_t*
 
-	celix_string_hash_map_t* importedServices;//key:the string of <endpoint-framework-uuid>-<service id>, val:celix_array_list_t<celix_imported_service_entry_t*>
+	celix_string_hash_map_t* importedServices;//key:the string of endpoint id, val:celix_imported_service_entry_t*
 
 	bool closed;
 
@@ -111,7 +109,8 @@ static celix_status_t topologyManager_addImportedService_nolock(void *handle, en
 static celix_status_t topologyManager_removeImportedService_nolock(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 static celix_status_t topologyManager_addExportedService_nolock(void * handle, service_reference_pt reference);
 static void topologyManager_removeExportedService_nolock(void * handle, service_reference_pt reference);
-static void topologyManager_closeImportRegistration(topology_manager_t* manager, celix_imported_service_entry_t* importedEntry);
+static void topologyManager_closeImportedService(topology_manager_t* manager, celix_imported_service_entry_t* importedEntry);
+static void topologyManager_importedServiceEntryDestroy(void* entryPtr);
 
 static celix_status_t parseRankingOffsetsString(const char* offsetsStr, celix_string_hash_map_t* rankingOffsets) {
     celix_autofree char* offsetsStrDup = celix_utils_strdup(offsetsStr);
@@ -205,7 +204,8 @@ celix_status_t topologyManager_create(celix_bundle_context_t *context, celix_log
     //TODO remove deprecated hashMap
 	(*manager)->listenerList = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
     celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = (void*)celix_arrayList_destroy;
+    opts.simpleRemovedCallback = topologyManager_importedServiceEntryDestroy;
+    opts.storeKeysWeakly = true;
     celix_autoptr(celix_string_hash_map_t) importedServices = tm->importedServices = celix_stringHashMap_createWithOptions(&opts);
     if (importedServices == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -277,11 +277,8 @@ celix_status_t topologyManager_closeImports(topology_manager_pt manager) {
     manager->closed = true;
 
     CELIX_STRING_HASH_MAP_ITERATE(manager->importedServices, iter) {
-        celix_array_list_t* imports = iter.value.ptrValue;
-        int size = celix_arrayList_size(imports);
-        for (int i = 0; i < size; ++i) {
-            topologyManager_closeImportRegistration(manager, celix_arrayList_get(imports, i));
-        }
+        celix_imported_service_entry_t* importedEntry = iter.value.ptrValue;
+        topologyManager_closeImportedService(manager, importedEntry);
     }
     celix_stringHashMap_clear(manager->importedServices);
 
@@ -579,68 +576,6 @@ static void topologyManager_removeDynamicIpEndpointsForExportedService(topology_
     return;
 }
 
-//XXX: call in locked section
-static void topologyManager_closeImportRegistration(topology_manager_t* manager, celix_imported_service_entry_t* importedEntry) {
-    if (importedEntry->registration != NULL) {
-        celix_rsa_service_entry_t* rsaSvcEntry = celix_longHashMap_get(manager->rsaMap, importedEntry->rsaSvcId);
-        remote_service_admin_service_t *rsa = rsaSvcEntry->rsa;
-        celix_status_t status = rsa->importRegistration_close(rsa->admin, importedEntry->registration);
-        if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error closing import registration for imported service (%s; %s), error:%d.", importedEntry->endpoint->serviceName, importedEntry->endpoint->id, status);
-        }
-        importedEntry->registration = NULL;
-        importedEntry->rsaSvcId = -1;
-    }
-}
-
-//XXX: call in locked section
-static void topologyManager_updateActiveImportedService(topology_manager_t* manager, const celix_array_list_t* imports, const char* removingEndpointId, long removingRsaSvcId) {
-    const int importsSize = celix_arrayList_size(imports);
-    const celix_imported_service_entry_t* highestRankingEntry = NULL;
-    for (int i = 0; i < importsSize; ++i) {
-        celix_imported_service_entry_t* entry = celix_arrayList_get(imports, i);
-        endpoint_description_t* ep = entry->endpoint;
-        if (entry->registration != NULL && entry->rsaSvcId != removingRsaSvcId
-            && !celix_utils_stringEquals(entry->endpoint->id, removingEndpointId)) {
-            highestRankingEntry = entry;//Imports are in descending order of ranking, so the first found is the highest ranking.
-            break;
-        }
-
-        if (entry->registration != NULL || !scope_allowImport(manager->scope, ep) ||
-                celix_utils_stringEquals(entry->endpoint->id, removingEndpointId)) {
-            continue;
-        }
-
-        CELIX_LONG_HASH_MAP_ITERATE(manager->rsaMap, iter) {
-            if (removingRsaSvcId == iter.key) {
-                continue;
-            }
-            celix_rsa_service_entry_t* rsaSvcEntry = iter.value.ptrValue;
-            import_registration_t* import = NULL;
-            remote_service_admin_service_t *rsa = rsaSvcEntry->rsa;
-            celix_status_t status = rsa->importService(rsa->admin, ep, &import);
-            if (status != CELIX_SUCCESS) {
-                celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error importing service (%s; %s), error:%d.", ep->serviceName, ep->id, status);
-            } else if (import != NULL) {
-                entry->registration = import;
-                entry->rsaSvcId = iter.key;
-                highestRankingEntry = entry;
-                break;
-            }
-        }
-        if (highestRankingEntry != NULL) {
-            break;
-        }
-    }
-
-    for (int i = 0; i < importsSize; ++i) {
-        celix_imported_service_entry_t* entry = celix_arrayList_get(imports, i);
-        if (highestRankingEntry != entry) {
-            topologyManager_closeImportRegistration(manager, entry);
-        }
-    }
-}
-
 celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt rsaSvcRef, void * service) {
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	celix_properties_t *serviceProperties = NULL;
@@ -674,8 +609,23 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt rsaS
 
     // add already imported services to new rsa
     CELIX_STRING_HASH_MAP_ITERATE(manager->importedServices, iter) {
-        celix_array_list_t* imports =  iter.value.ptrValue;
-        topologyManager_updateActiveImportedService(manager, imports, NULL, -1);
+        celix_imported_service_entry_t* importedEntry =  iter.value.ptrValue;
+        endpoint_description_t* endpoint = importedEntry->endpoint;
+        if(!scope_allowImport(manager->scope, importedEntry->endpoint)) {
+            celix_logHelper_info(manager->loghelper, "TOPOLOGY_MANAGER: Endpoint (%s; %s) is not allowed by scope, will not be imported to new RSA.", endpoint->serviceName, endpoint->id);
+            continue;
+        }
+        import_registration_t* import = NULL;
+        celix_status_t status = rsa->importService(rsa->admin, endpoint, &import);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error importing service (%s; %s), error:%d.", endpoint->serviceName, endpoint->id, status);
+        } else if (import != NULL) {
+            status = celix_longHashMap_put(importedEntry->imports, rsaSvcId, import);
+            if (status != CELIX_SUCCESS) {
+                celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error adding import registration to map for service (%s; %s).", endpoint->serviceName, endpoint->id);
+                rsa->importRegistration_close(rsa->admin, import);
+            }
+        }
     }
 
 	// add already exported services to new rsa
@@ -749,10 +699,14 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		}
 	}
 
-	CELIX_STRING_HASH_MAP_ITERATE(manager->importedServices, iter) {
-		celix_array_list_t* imports = iter.value.ptrValue;
-		topologyManager_updateActiveImportedService(manager, imports, NULL, rsaSvcId);
-	}
+    CELIX_STRING_HASH_MAP_ITERATE(manager->importedServices, iter) {
+        celix_imported_service_entry_t* importedEntry =  iter.value.ptrValue;
+        import_registration_t* import = celix_longHashMap_get(importedEntry->imports, rsaSvcId);
+        if (import != NULL) {
+            rsa->importRegistration_close(rsa->admin, import);
+            celix_longHashMap_remove(importedEntry->imports, rsaSvcId);
+        }
+    }
 
     free(celix_longHashMap_get(manager->rsaMap, rsaSvcId));
     celix_longHashMap_remove(manager->rsaMap, rsaSvcId);
@@ -823,6 +777,45 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 	return status;
 }
 
+//XXX: call in locked section
+static void topologyManager_closeImportedService(topology_manager_t* manager, celix_imported_service_entry_t* importedEntry) {
+    CELIX_LONG_HASH_MAP_ITERATE(importedEntry->imports, iter) {
+        import_registration_t* import = iter.value.ptrValue;
+        celix_rsa_service_entry_t* rsaSvcEntry = celix_longHashMap_get(manager->rsaMap, iter.key);
+        if (rsaSvcEntry != NULL) {
+            remote_service_admin_service_t *rsa = rsaSvcEntry->rsa;
+            rsa->importRegistration_close(rsa->admin, import);
+        }
+    }
+    celix_longHashMap_clear(importedEntry->imports);
+    return;
+}
+
+//XXX: call in locked section
+static void topologyManager_importService(topology_manager_t* manager, celix_imported_service_entry_t* importedEntry) {
+    endpoint_description_t* endpoint = importedEntry->endpoint;
+    if(!scope_allowImport(manager->scope, endpoint)) {
+        celix_logHelper_info(manager->loghelper, "TOPOLOGY_MANAGER: Endpoint (%s; %s) is not allowed by scope, will not be imported.", endpoint->serviceName, endpoint->id);
+        return;
+    }
+
+    CELIX_LONG_HASH_MAP_ITERATE(manager->rsaMap, iter) {
+        celix_rsa_service_entry_t* rsaSvcEntry = iter.value.ptrValue;
+        import_registration_t* import = NULL;
+        remote_service_admin_service_t *rsa = rsaSvcEntry->rsa;
+        celix_status_t status = rsa->importService(rsa->admin, endpoint, &import);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error importing service (%s; %s), error:%d.", endpoint->serviceName, endpoint->id, status);
+        } else if (import != NULL) {
+            status = celix_longHashMap_put(importedEntry->imports, iter.key, import);
+            if (status != CELIX_SUCCESS) {
+                celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error adding import registration to map for service (%s; %s).", endpoint->serviceName, endpoint->id);
+                rsa->importRegistration_close(rsa->admin, import);
+            }
+        }
+    }
+}
+
 celix_status_t topologyManager_importScopeChanged(void *handle, char *filterStr) {
     topology_manager_pt manager = (topology_manager_pt) handle;
     celix_autoptr(celix_filter_t) filter = celix_filter_create(filterStr);
@@ -835,18 +828,10 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *filterStr)
     celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&manager->lock);
 
     CELIX_STRING_HASH_MAP_ITERATE(manager->importedServices, iter) {
-        celix_array_list_t* imports = iter.value.ptrValue;
-        bool found = false;
-        int size = celix_arrayList_size(imports);
-        for (int i = 0; i < size; ++i) {
-            celix_imported_service_entry_t* entry = celix_arrayList_get(imports, i);
-            if (celix_filter_match(filter, entry->endpoint->properties)) {
-                topologyManager_closeImportRegistration(manager, entry);
-                found = true;
-            }
-        }
-        if (found) {
-            topologyManager_updateActiveImportedService(manager, imports, NULL, -1);
+        celix_imported_service_entry_t* importedEntry = iter.value.ptrValue;
+        if (celix_filter_match(filter, importedEntry->endpoint->properties)) {
+            topologyManager_closeImportedService(manager, importedEntry);
+            topologyManager_importService(manager, importedEntry);
         }
     }
 
@@ -929,14 +914,17 @@ static celix_imported_service_entry_t* topologyManager_createImportedServiceEntr
         celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error allocating import registration entry.");
         return NULL;
     }
-    entry->rsaSvcId = -1;
-    celix_autoptr(endpoint_description_t) adjustedRankingEP = entry->endpoint = topologyManager_createAdjustedRankingEndpoint(tm, endpoint);
-    if (adjustedRankingEP == NULL) {
+    celix_autoptr(celix_long_hash_map_t) imports = entry->imports = celix_longHashMap_create();
+    if (imports == NULL) {
+        celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error creating long hash map for import registrations.");
+        return NULL;
+    }
+    entry->endpoint = topologyManager_createAdjustedRankingEndpoint(tm, endpoint);
+    if (entry->endpoint == NULL) {
         celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error creating adjusted ranking endpoint description.");
         return NULL;
     }
-    entry->ranking = celix_properties_getAsLong(adjustedRankingEP->properties, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
-    celix_steal_ptr(adjustedRankingEP);
+    celix_steal_ptr(imports);
     return celix_steal_ptr(entry);
 }
 
@@ -944,67 +932,13 @@ static void topologyManager_importedServiceEntryDestroy(void* entryPtr) {
     celix_imported_service_entry_t* entry = entryPtr;
     if (entry != NULL) {
         endpointDescription_destroy(entry->endpoint);
+        assert(celix_longHashMap_size(entry->imports) == 0);//All import registrations should have been closed and removed before the entry is destroyed.
+        celix_longHashMap_destroy(entry->imports);
         free(entry);
     }
 }
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_imported_service_entry_t, topologyManager_importedServiceEntryDestroy)
-
-static int compareImportedServiceEntryRanking(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    long ranking1 = ((celix_imported_service_entry_t*)a.voidPtrVal)->ranking;
-    long ranking2 = ((celix_imported_service_entry_t*)b.voidPtrVal)->ranking;
-    return ranking1 == ranking2 ? 0 : (ranking1 < ranking2 ? 1 : -1);// descending sort
-}
-
-//XXX: call in locked section
-static celix_status_t topologyManager_addImportedServiceToMap(topology_manager_t* manager, const char* importsKey, celix_imported_service_entry_t* importedEntry) {
-    celix_autoptr(celix_imported_service_entry_t) importedEntryAutoPtr = importedEntry;
-    celix_array_list_t* imports = celix_stringHashMap_get(manager->importedServices, importsKey);
-    if (imports == NULL) {
-        celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-        opts.elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER;
-        opts.initialCapacity = 2;
-        opts.compareCallback = compareImportedServiceEntryRanking;
-        opts.simpleRemovedCallback = topologyManager_importedServiceEntryDestroy;
-        celix_autoptr(celix_array_list_t) importsAutoPtr = celix_arrayList_createWithOptions(&opts);
-        if (importsAutoPtr == NULL) {
-            celix_logHelper_logTssErrors(manager->loghelper, CELIX_LOG_LEVEL_ERROR);
-            celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error creating array list for imported service entries.");
-            return ENOMEM;
-        }
-        celix_status_t status = celix_stringHashMap_put(manager->importedServices, importsKey, importsAutoPtr);
-        if ( status != CELIX_SUCCESS) {
-            celix_logHelper_logTssErrors(manager->loghelper, CELIX_LOG_LEVEL_ERROR);
-            celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error adding imported service entries to map.");
-            return status;
-        }
-        imports = celix_steal_ptr(importsAutoPtr);
-    }
-    celix_status_t status = celix_arrayList_add(imports, celix_steal_ptr(importedEntryAutoPtr));
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_logTssErrors(manager->loghelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error adding imported service entry to list.");
-        return status;
-    }
-    celix_arrayList_sort(imports);
-    return CELIX_SUCCESS;
-}
-
-//XXX: call in locked section
-static void topologyManager_removeImportedServiceFromMap(topology_manager_t* manager, const char* importsKey, const char* endpointId) {
-    celix_array_list_t* imports = celix_stringHashMap_get(manager->importedServices, importsKey);
-    int size = celix_arrayList_size(imports);
-    for (int i = 0; i < size; ++i) {
-        celix_imported_service_entry_t* entry = celix_arrayList_get(imports, i);
-        if (celix_utils_stringEquals(entry->endpoint->id, endpointId)) {
-            celix_arrayList_removeAt(imports, i);
-            break;
-        }
-    }
-    if (celix_arrayList_size(imports) == 0) {
-        celix_stringHashMap_remove(manager->importedServices, importsKey);
-    }
-}
 
 static celix_status_t topologyManager_addImportedService_nolock(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -1023,19 +957,14 @@ static celix_status_t topologyManager_addImportedService_nolock(void *handle, en
         celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error creating import registration entry.");
         return ENOMEM;
     }
-    celix_autofree char* importsKey = NULL;
-    if (asprintf(&importsKey, "%s-%ld", importedEntry->endpoint->frameworkUUID, importedEntry->endpoint->serviceId) < 0) {
-        celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error allocating key for imported service entries.");
-        return ENOMEM;
-    }
-    status = topologyManager_addImportedServiceToMap(manager, importsKey, celix_steal_ptr(importedEntry));
+    status = celix_stringHashMap_put(manager->importedServices, importedEntry->endpoint->id, importedEntry);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error adding imported service entry to map.");
         return status;
     }
+    topologyManager_importService(manager, importedEntry);
 
-    celix_array_list_t* imports = celix_stringHashMap_get(manager->importedServices, importsKey);
-    topologyManager_updateActiveImportedService(manager, imports, NULL, -1);
+    celix_steal_ptr(importedEntry);
 
     return CELIX_SUCCESS;
 }
@@ -1060,19 +989,13 @@ static celix_status_t topologyManager_removeImportedService_nolock(void *handle,
 
     celix_logHelper_debug(manager->loghelper, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->serviceName, endpoint->id);
 
-    celix_autofree char* importsKey = NULL;
-    if (asprintf(&importsKey, "%s-%ld", endpoint->frameworkUUID, endpoint->serviceId) < 0) {
-        celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Error allocating key for imported service entries.");
-        return CELIX_ENOMEM;
-    }
-    celix_array_list_t* imports= celix_stringHashMap_get(manager->importedServices, importsKey);
-    if (imports == NULL) {
+    celix_imported_service_entry_t* importedEntry = celix_stringHashMap_get(manager->importedServices, endpoint->id);
+    if (importedEntry == NULL) {
         celix_logHelper_debug(manager->loghelper, "TOPOLOGY_MANAGER: No imported service entries found for service (%s; %s).", endpoint->serviceName, endpoint->id);
         return CELIX_SUCCESS;
     }
-    topologyManager_updateActiveImportedService(manager, imports, endpoint->id, -1);
-
-    topologyManager_removeImportedServiceFromMap(manager, importsKey, endpoint->id);
+    topologyManager_closeImportedService(manager, importedEntry);
+    celix_longHashMap_remove(importedEntry->imports, endpoint->serviceId);
 
     return CELIX_SUCCESS;
 }

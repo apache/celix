@@ -472,7 +472,46 @@ TEST_F(TopologyManagerTestSuite, ImportService2Test) {
     });
 }
 
-TEST_F(TopologyManagerTestSuite, ImportHigherRankingEndpointTest) {
+TEST_F(TopologyManagerTestSuite, ImportServiceFailureTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
+        //first add the rsa and then the import endpoint
+        remote_service_admin_service_t* rsa = (remote_service_admin_service_t*)rsaSvc;
+        rsa->importService = [](remote_service_admin_t*, endpoint_description_t*, import_registration_t**) -> celix_status_t {
+            return CELIX_BUNDLE_EXCEPTION;
+        };
+        auto status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerTestSuite, ImportServiceFailureWhenAddRsaTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
+        //first add the import endpoint and then the rsa
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        remote_service_admin_service_t* rsa = (remote_service_admin_service_t*)rsaSvc;
+        rsa->importService = [](remote_service_admin_t*, endpoint_description_t*, import_registration_t**) -> celix_status_t {
+            return CELIX_BUNDLE_EXCEPTION;
+        };
+        status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerTestSuite, ImportDifferentRankingEndpointTest) {
     setenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS", "tm_test_config_type=10,tm_test_config_type2=20", 1);
     tm.reset();
     void* scope = nullptr;
@@ -488,7 +527,7 @@ TEST_F(TopologyManagerTestSuite, ImportHigherRankingEndpointTest) {
         status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, status);
         celix_service_filter_options_t opts{};
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        opts.filter = (char *)"(&(service.imported.configs=tm_test_config_type)(service.ranking=10))";
         auto svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
         EXPECT_GE(svcId, 0);
 
@@ -498,67 +537,18 @@ TEST_F(TopologyManagerTestSuite, ImportHigherRankingEndpointTest) {
         importEndpoint2->id = celix_properties_get(importEndpoint2->properties, CELIX_RSA_ENDPOINT_ID, nullptr);
         status = topologyManager_addImportedService(tm, importEndpoint2, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        opts.filter = (char *)"(&(service.imported.configs=tm_test_config_type)(service.ranking=10))";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_EQ(svcId, -1);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type2)";
+        EXPECT_GE(svcId, 0);
+        opts.filter = (char *)"(&(service.imported.configs=tm_test_config_type2)(service.ranking=20))";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
         EXPECT_GE(svcId, 0);
 
         status = topologyManager_removeImportedService(tm, importEndpoint2, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
-        svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_GE(svcId, 0);
-
-        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
-        svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_EQ(svcId, -1);
-
-        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-    });
-
-    unsetenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS");
-}
-
-TEST_F(TopologyManagerTestSuite, ImportLowerRankingEndpointTest) {
-    setenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS", "tm_test_config_type=20,tm_test_config_type2=10", 1);
-    tm.reset();
-    void* scope = nullptr;
-    topology_manager_t* tmPtr{};
-    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
-    EXPECT_EQ(status, CELIX_SUCCESS);
-    tm = std::shared_ptr<topology_manager_t>{tmPtr, [](auto t) {topologyManager_destroy(t);}};
-
-    TestImportService([this](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
-        //first add the rsa and then the import endpoint
-        auto status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        celix_service_filter_options_t opts{};
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
-        auto svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_GE(svcId, 0);
-
-        celix_autoptr(endpoint_description_t) importEndpoint2 = endpointDescription_clone(importEndpoint);
-        celix_properties_set(importEndpoint2->properties, CELIX_RSA_ENDPOINT_ID, "319bddfa-0252-4654-a3bd-298354d30208");
-        celix_properties_set(importEndpoint2->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "tm_test_config_type2");
-        importEndpoint2->id = celix_properties_get(importEndpoint2->properties, CELIX_RSA_ENDPOINT_ID, nullptr);
-        status = topologyManager_addImportedService(tm, importEndpoint2, nullptr);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
-        svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_GE(svcId, 0);
         opts.filter = (char *)"(service.imported.configs=tm_test_config_type2)";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
         EXPECT_EQ(svcId, -1);
-
-        status = topologyManager_removeImportedService(tm, importEndpoint2, nullptr);
-        EXPECT_EQ(CELIX_SUCCESS, status);
         opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
         EXPECT_GE(svcId, 0);
@@ -609,10 +599,10 @@ TEST_F(TopologyManagerTestSuite, AddRsaAfterImportServiceWithMultiEndpointsTest)
 
         status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        opts.filter = (char *)"(&(service.imported.configs=tm_test_config_type)(service.ranking=10))";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
-        EXPECT_EQ(svcId, -1);
-        opts.filter = (char *)"(service.imported.configs=tm_test_config_type2)";
+        EXPECT_GE(svcId, 0);
+        opts.filter = (char *)"(&(service.imported.configs=tm_test_config_type2)(service.ranking=20))";
         svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
         EXPECT_GE(svcId, 0);
 
@@ -690,6 +680,36 @@ TEST_F(TopologyManagerTestSuite, ImportScopeChangedTest) {
         status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, status);
         status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerTestSuite, ImportedServiceNotInScopeTest) {
+    TestImportService([this](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
+        auto status = tm_addImportScope(tms.get(), (char*)"(service.imported.configs=tm_test_config_type2)");
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        celix_service_filter_options_t opts{};
+        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        auto svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
+        EXPECT_EQ(svcId, -1);
+
+        status = tm_addImportScope(tms.get(), (char*)"(service.imported.configs=tm_test_config_type)");
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
+        EXPECT_GE(svcId, 0);
+        status = tm_removeImportScope(tms.get(), (char*)"(service.imported.configs=tm_test_config_type)");
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = tm_removeImportScope(tms.get(), (char*)"(service.imported.configs=tm_test_config_type2)");
         EXPECT_EQ(CELIX_SUCCESS, status);
     });
 }
