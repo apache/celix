@@ -1277,3 +1277,62 @@ TEST_F(DependencyManagerTestSuite, TestPrintInfo) {
     ss << cmp;
     EXPECT_TRUE(strstr(ss.str().c_str(), "Cmp1"));
 }
+
+TEST_F(DependencyManagerTestSuite, TestCardinality) {
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp1 = dm.createComponent<Cmp1>().addInterface<TestService>();
+    cmp1.build();
+    auto& cmp3 = dm.createComponent<Cmp3>()
+                     .createServiceDependency<TestService>()
+                     .setRequired(true)
+                     .setMinimalCardinality(2);
+    cmp3.build();
+
+    dm.build();
+
+    {
+        auto info = dm.getInfo();
+        ASSERT_EQ(info.components.size(), 2);
+        auto& cmpInfo = info.components;
+        auto cmpIt =
+            std::find_if(cmpInfo.cbegin(), cmpInfo.cend(), [](const ComponentInfo& cmp) { return cmp.name == "Cmp3"; });
+        ASSERT_TRUE(cmpIt != cmpInfo.cend());
+
+        EXPECT_TRUE(!cmpIt->uuid.empty());
+        EXPECT_EQ(cmpIt->state, "WAITING_FOR_REQUIRED");
+        EXPECT_FALSE(cmpIt->isActive);
+        EXPECT_EQ(cmpIt->nrOfTimesStarted, 0);
+        EXPECT_EQ(cmpIt->nrOfTimesResumed, 0);
+
+        ASSERT_EQ(cmpIt->dependenciesInfo.size(), 1);
+        auto& dep = cmpIt->dependenciesInfo[0];
+        EXPECT_EQ(dep.serviceName, "TestService");
+        EXPECT_EQ(dep.isRequired, true);
+        EXPECT_EQ(dep.isAvailable, false);
+        EXPECT_EQ(dep.nrOfTrackedServices, 1);
+    }
+
+    auto& cmp2 = dm.createComponent(Cmp2{"c"}).addInterface<TestService>();
+    cmp2.build();
+
+    {
+        auto info = dm.getInfo();
+        ASSERT_EQ(info.components.size(), 3);
+        auto& cmpInfo = info.components;
+        auto cmpIt =
+            std::find_if(cmpInfo.cbegin(), cmpInfo.cend(), [](const ComponentInfo& cmp) { return cmp.name == "Cmp3"; });
+        ASSERT_TRUE(cmpIt != cmpInfo.cend());
+
+        EXPECT_TRUE(!cmpIt->uuid.empty());
+        EXPECT_TRUE(cmpIt->isActive);
+        EXPECT_EQ(cmpIt->nrOfTimesStarted, 1);
+        EXPECT_EQ(cmpIt->nrOfTimesResumed, 0);
+
+        ASSERT_EQ(cmpIt->dependenciesInfo.size(), 1);
+        auto& dep = cmpIt->dependenciesInfo[0];
+        EXPECT_EQ(dep.serviceName, "TestService");
+        EXPECT_EQ(dep.isRequired, true);
+        EXPECT_EQ(dep.isAvailable, true);
+        EXPECT_EQ(dep.nrOfTrackedServices, 2);
+    }
+}

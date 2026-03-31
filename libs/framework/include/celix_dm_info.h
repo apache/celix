@@ -43,6 +43,7 @@ struct celix_dm_service_dependency_info_struct {
     char *filter;
     char *versionRange;
     bool available;
+    size_t minimalCardinality;
     bool required;
     size_t count;
 };
