@@ -97,7 +97,9 @@ celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency
 }
 
 celix_status_t celix_dmServiceDependency_setMinimalCardinality(celix_dm_service_dependency_t *dependency, size_t minimalCardinality) {
-    dependency->minimalCardinality = minimalCardinality;
+    if (minimalCardinality > 0) {
+        dependency->minimalCardinality = minimalCardinality;
+    }
     return CELIX_SUCCESS;
 }
 
