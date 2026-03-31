@@ -995,7 +995,7 @@ static celix_status_t topologyManager_removeImportedService_nolock(void *handle,
         return CELIX_SUCCESS;
     }
     topologyManager_closeImportedService(manager, importedEntry);
-    celix_longHashMap_remove(importedEntry->imports, endpoint->serviceId);
+    celix_stringHashMap_remove(manager->importedServices, endpoint->id);
 
     return CELIX_SUCCESS;
 }
