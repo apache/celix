@@ -166,7 +166,7 @@ namespace celix { namespace dm {
         CServiceDependency<T,I>& setRequired(bool req);
 
         /**
-         * Specify if the minimum amount of services required for the service dependency to be available
+         * Specify the minimum amount of service dependencies required to be available
          *
          * @return the C service dependency reference for chaining (fluent API)
          */
@@ -417,7 +417,7 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& setRequired(bool req);
 
         /**
-         * Specify if the minimum amount of services required for the service dependency to be available
+         * Specify the minimum amount of service dependencies required to be available
          *
          * @return the service dependency reference for chaining (fluent API)
          */
