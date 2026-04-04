@@ -1108,6 +1108,7 @@ static void celix_dmComponent_printFullInfo(FILE *out, bool colors, celix_dm_com
         fprintf(out, "   |- %sDependency %i: %s%s\n", depStartColors, (depCnt+1), dependency->serviceName == NULL ? "(any)" : dependency->serviceName, endColors);
         fprintf(out, "      | %20s = %s\n", "Available", dependency->available ? "true " : "false");
         fprintf(out, "      | %20s = %lu\n", "Minimal Cardinality", dependency->minimalCardinality);
+        fprintf(out, "      | %20s = %lu\n", "Service Count", dependency->count);
         fprintf(out, "      | %20s = %s\n", "Required", dependency->required ? "true " : "false");
         fprintf(out, "      | %20s = %s\n", "Version Range", dependency->versionRange == NULL ? "N/A" : dependency->versionRange);
         fprintf(out, "      | %20s = %s\n", "Filter", dependency->filter == NULL ? "N/A" : dependency->filter);

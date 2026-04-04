@@ -352,19 +352,19 @@ celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_depen
 }
 
 dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_service_dependency_t* dep) {
-	celix_dm_service_dependency_info_t *info = calloc(1, sizeof(*info));
-	if (info != NULL) {
-		celixThreadMutex_lock(&dep->mutex);
-		info->available = dep->trackedSvcCount >= dep->minimalCardinality;
+    celix_dm_service_dependency_info_t* info = calloc(1, sizeof(*info));
+    if (info != NULL) {
+        celixThreadMutex_lock(&dep->mutex);
+        info->available = dep->trackedSvcCount >= dep->minimalCardinality;
         info->minimalCardinality = dep->minimalCardinality;
-		info->serviceName = celix_utils_strdup(dep->serviceName);
-		info->filter = celix_utils_strdup(dep->filter);
-		info->versionRange = celix_utils_strdup(dep->versionRange);
-		info->required = dep->required;
-		info->count = dep->trackedSvcCount;
-		celixThreadMutex_unlock(&dep->mutex);
-	}
-	return info;
+        info->serviceName = celix_utils_strdup(dep->serviceName);
+        info->filter = celix_utils_strdup(dep->filter);
+        info->versionRange = celix_utils_strdup(dep->versionRange);
+        info->required = dep->required;
+        info->count = dep->trackedSvcCount;
+        celixThreadMutex_unlock(&dep->mutex);
+    }
+    return info;
 }
 
 

@@ -473,6 +473,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
+
 template <class T, class I>
 ServiceDependency<T, I>& ServiceDependency<T, I>::setMinimalCardinality(size_t minimalCardinality) {
     celix_dmServiceDependency_setMinimalCardinality(this->cServiceDependency(), minimalCardinality);
