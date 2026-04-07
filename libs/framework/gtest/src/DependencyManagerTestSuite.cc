@@ -1299,7 +1299,7 @@ TEST_F(DependencyManagerTestSuite, TestCardinality) {
         ASSERT_TRUE(cmpIt != cmpInfo.cend());
 
         EXPECT_TRUE(!cmpIt->uuid.empty());
-        EXPECT_EQ(cmpIt->state, "WAITING_FOR_REQUIRED");
+        EXPECT_EQ(cmpIt->state, celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED));
         EXPECT_FALSE(cmpIt->isActive);
         EXPECT_EQ(cmpIt->nrOfTimesStarted, 0);
         EXPECT_EQ(cmpIt->nrOfTimesResumed, 0);
@@ -1334,5 +1334,29 @@ TEST_F(DependencyManagerTestSuite, TestCardinality) {
         EXPECT_EQ(dep.isRequired, true);
         EXPECT_EQ(dep.isAvailable, true);
         EXPECT_EQ(dep.nrOfTrackedServices, 2);
+    }
+
+    dm.removeComponent(cmp2.getUUID());
+
+    {
+        auto info = dm.getInfo();
+        ASSERT_EQ(info.components.size(), 2);
+        auto& cmpInfo = info.components;
+        auto cmpIt =
+            std::find_if(cmpInfo.cbegin(), cmpInfo.cend(), [](const ComponentInfo& cmp) { return cmp.name == "Cmp3"; });
+        ASSERT_TRUE(cmpIt != cmpInfo.cend());
+
+        EXPECT_TRUE(!cmpIt->uuid.empty());
+        EXPECT_EQ(cmpIt->state, celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED));
+        EXPECT_FALSE(cmpIt->isActive);
+        EXPECT_EQ(cmpIt->nrOfTimesStarted, 1);
+        EXPECT_EQ(cmpIt->nrOfTimesResumed, 0);
+
+        ASSERT_EQ(cmpIt->dependenciesInfo.size(), 1);
+        auto& dep = cmpIt->dependenciesInfo[0];
+        EXPECT_EQ(dep.serviceName, "TestService");
+        EXPECT_EQ(dep.isRequired, true);
+        EXPECT_EQ(dep.isAvailable, false);
+        EXPECT_EQ(dep.nrOfTrackedServices, 1);
     }
 }
