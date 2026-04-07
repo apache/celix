@@ -23,8 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 
-#include "celix_threads.h"
+#include "celix_errno.h"
 
 typedef struct celix_err {
     char buffer[CELIX_ERR_BUFFER_SIZE];
@@ -32,7 +33,7 @@ typedef struct celix_err {
 } celix_err_t;
 
 
-celix_tss_key_t celix_err_tssKey;
+pthread_key_t celix_err_tssKey;
 bool celix_err_tssKeyInitialized = false;
 
 static void celix_err_destroyTssErr(void* data) {
@@ -47,7 +48,7 @@ static celix_err_t* celix_err_getRawTssErr() {
     if (!celix_err_tssKeyInitialized) {
         return NULL;
     }
-    return celix_tss_get(celix_err_tssKey);
+    return pthread_getspecific(celix_err_tssKey);
 }
 
 
@@ -57,7 +58,7 @@ celix_err_t* celix_err_getTssErr() {
         return NULL;
     }
 
-    celix_err_t* err = celix_tss_get(celix_err_tssKey);
+    celix_err_t* err = pthread_getspecific(celix_err_tssKey);
     if (err) {
         return err;
     }
@@ -65,8 +66,8 @@ celix_err_t* celix_err_getTssErr() {
     err = malloc(sizeof(*err));
     if (err) {
         err->pos = 0; //no entry
-        celix_status_t status = celix_tss_set(celix_err_tssKey, err);
-        if (status != CELIX_SUCCESS) {
+        int rc = pthread_setspecific(celix_err_tssKey, err);
+        if (rc != 0) {
             fprintf(stderr, "Failed to set thread specific storage for celix_err\n");
             free(err);
             err = NULL;
@@ -78,8 +79,8 @@ celix_err_t* celix_err_getTssErr() {
 }
 
 __attribute__((constructor)) void celix_err_initThreadSpecificStorageKey() {
-    celix_status_t status = celix_tss_create(&celix_err_tssKey, celix_err_destroyTssErr);
-    if (status == CELIX_SUCCESS) {
+    int rc = pthread_key_create(&celix_err_tssKey, celix_err_destroyTssErr);
+    if (rc == 0) {
         celix_err_tssKeyInitialized = true;
     } else {
         fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
@@ -92,8 +93,8 @@ __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
         return;
     }
 
-    celix_status_t status = celix_tss_delete(celix_err_tssKey);
-    if (status != CELIX_SUCCESS) {
+    int rc = pthread_key_delete(celix_err_tssKey);
+    if (rc != 0) {
         fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
     }
 }
