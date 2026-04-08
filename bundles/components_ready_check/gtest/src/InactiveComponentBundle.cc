@@ -34,7 +34,7 @@ public:
         auto& cmp = ctx->getDependencyManager()->createComponent<CondComponent>();
         cmp.createServiceDependency<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
                 .setFilter("(condition.id=does-not-exists)")
-                .setRequired(true);
+                .setMinimalCardinality(1);
         cmp.build();
     }
 

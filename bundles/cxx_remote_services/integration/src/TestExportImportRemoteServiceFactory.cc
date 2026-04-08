@@ -340,11 +340,11 @@ private:
 
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
         cmp.createServiceDependency<celix::PromiseFactory>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ImportedCalculator::setPromiseFactory);
         cmp.createServiceDependency<celix::PushStreamProvider>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ImportedCalculator::setPushStreamProvider);
 
@@ -560,12 +560,12 @@ private:
             std::make_unique<ExportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
 
         cmp.createServiceDependency<celix::PromiseFactory>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ExportedCalculator::setPromiseFactory);
 
         cmp.createServiceDependency<ICalculator>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::suspend)
                 .setFilter(std::string{"("}.append(celix::SERVICE_ID).append("=").append(svcId).append(")"))
                 .setCallbacks(&ExportedCalculator::setICalculator);

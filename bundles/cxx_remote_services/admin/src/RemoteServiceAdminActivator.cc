@@ -32,15 +32,12 @@ public:
 
         auto& cmp = ctx->getDependencyManager()->createComponent(admin);
         cmp.createServiceDependency<celix::rsa::EndpointDescription>()
-                .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
                 .setCallbacks(&celix::rsa::RemoteServiceAdmin::addEndpoint, &celix::rsa::RemoteServiceAdmin::removeEndpoint);
         cmp.createServiceDependency<celix::rsa::IImportServiceFactory>()
-                .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
                 .setCallbacks(&celix::rsa::RemoteServiceAdmin::addImportedServiceFactory, &celix::rsa::RemoteServiceAdmin::removeImportedServiceFactory);
         cmp.createServiceDependency<celix::rsa::IExportServiceFactory>()
-                .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
                 .setCallbacks(&celix::rsa::RemoteServiceAdmin::addExportedServiceFactory, &celix::rsa::RemoteServiceAdmin::removeExportedServiceFactory);
         cmp.build();
