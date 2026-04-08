@@ -45,19 +45,18 @@ celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dependen
 }
 
 celix_dm_service_dependency_t* celix_dmServiceDependency_create() {
-	celix_dm_service_dependency_t *dep = calloc(1, sizeof(*dep));
-	dep->strategy = DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY;
-	dep->svcTrackerId = -1;
-    dep->minimalCardinality = 1;
-	celixThreadMutex_create(&dep->mutex, NULL);
+    celix_dm_service_dependency_t* dep = calloc(1, sizeof(*dep));
+    dep->strategy = DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY;
+    dep->svcTrackerId = -1;
+    celixThreadMutex_create(&dep->mutex, NULL);
     return dep;
 }
 
 celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dependency_ptr) {
-	if (dependency_ptr != NULL) {
-		celix_dmServiceDependency_destroy(*dependency_ptr);
-	}
-	return CELIX_SUCCESS;
+    if (dependency_ptr != NULL) {
+        celix_dmServiceDependency_destroy(*dependency_ptr);
+    }
+    return CELIX_SUCCESS;
 }
 
 void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep) {
@@ -78,54 +77,39 @@ void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep) {
     }
 }
 
-celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required) {
-	return celix_dmServiceDependency_setRequired(dependency, required);
-}
-
-celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->required = required;
-	}
-
-	return status;
-}
-
 celix_status_t celix_dmServiceDependency_setMinimalCardinality(celix_dm_service_dependency_t *dependency, size_t minimalCardinality) {
-    if (minimalCardinality > 0) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (!dependency) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
         dependency->minimalCardinality = minimalCardinality;
     }
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t serviceDependency_setStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t strategy) {
-	return celix_dmServiceDependency_setStrategy(dependency, strategy);
+    return celix_dmServiceDependency_setStrategy(dependency, strategy);
 }
 
 celix_status_t celix_dmServiceDependency_setStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t strategy) {
     dependency->strategy = strategy;
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t* strategy) {
-	celix_dm_service_dependency_strategy_t str = celix_dmServiceDependency_getStrategy(dependency);
-	if (strategy != NULL) {
-		*strategy = str;
-	}
-	return CELIX_SUCCESS;
+    celix_dm_service_dependency_strategy_t str = celix_dmServiceDependency_getStrategy(dependency);
+    if (strategy != NULL) {
+        *strategy = str;
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_dm_service_dependency_strategy_t celix_dmServiceDependency_getStrategy(celix_dm_service_dependency_t *dependency) {
-	return dependency->strategy;
+    return dependency->strategy;
 }
 
 celix_status_t serviceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) {
-	return celix_dmServiceDependency_setService(dependency, serviceName, serviceVersionRange, filter);
+    return celix_dmServiceDependency_setService(dependency, serviceName, serviceVersionRange, filter);
 }
 
 celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) {
@@ -145,15 +129,15 @@ celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_
 }
 
 celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *dependency, const char** filter) {
-	const char *f =  celix_dmServiceDependency_getFilter(dependency);
-	if (filter != NULL) {
-		*filter = f;
-	}
-	return CELIX_SUCCESS;
+    const char* f = celix_dmServiceDependency_getFilter(dependency);
+    if (filter != NULL) {
+        *filter = f;
+    }
+    return CELIX_SUCCESS;
 }
 
 const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *dependency) {
-	return (const char*)dependency->filter;
+    return (const char*)dependency->filter;
 }
 
 celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change CELIX_UNUSED, service_remove_fpt remove, service_swap_fpt swap  CELIX_UNUSED) {
@@ -164,57 +148,55 @@ celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dep
 }
 
 celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency_t *dependency, celix_dm_service_update_fp set) {
-	dependency->set = set;
-	return CELIX_SUCCESS;
+    dependency->set = set;
+    return CELIX_SUCCESS;
 }
-
 
 celix_status_t celix_dmServiceDependency_setCallbackWithProperties(celix_dm_service_dependency_t *dependency, celix_dm_service_update_with_props_fp set) {
-	dependency->setWithProperties = set;
-	return CELIX_SUCCESS;
+    dependency->setWithProperties = set;
+    return CELIX_SUCCESS;
 }
 
-
 celix_status_t celix_dmServiceDependency_setCallbacksWithOptions(celix_dm_service_dependency_t *dependency, const celix_dm_service_dependency_callback_options_t *opts) {
-	dependency->set = opts->set;
-	dependency->add = opts->add;
-	dependency->remove = opts->remove;
+    dependency->set = opts->set;
+    dependency->add = opts->add;
+    dependency->remove = opts->remove;
 
-	dependency->setWithProperties = opts->setWithProps;
-	dependency->addWithProperties = opts->addWithProps;
-	dependency->remWithProperties = opts->removeWithProps;
-	return CELIX_SUCCESS;
+    dependency->setWithProperties = opts->setWithProps;
+    dependency->addWithProperties = opts->addWithProps;
+    dependency->remWithProperties = opts->removeWithProps;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celix_dmServiceDependency_setComponent(celix_dm_service_dependency_t *dependency, celix_dm_component_t *component) {
     dependency->component = component;
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t* dependency) {
-        celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
+    celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
 
-        if (dependency->serviceName == NULL && dependency->filter == NULL) {
-                celix_bundleContext_log(
-                    ctx, CELIX_LOG_LEVEL_ERROR, "Cannot start a service dependency without a service name and filter");
-                return CELIX_ILLEGAL_ARGUMENT;
-        }
+    if (dependency->serviceName == NULL && dependency->filter == NULL) {
+        celix_bundleContext_log(
+            ctx, CELIX_LOG_LEVEL_ERROR, "Cannot start a service dependency without a service name and filter");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
-        celixThreadMutex_lock(&dependency->mutex);
-        if (dependency->svcTrackerId == -1L) {
-                celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-                opts.filter.filter = dependency->filter;
-                opts.filter.serviceName = dependency->serviceName;
-                opts.filter.versionRange = dependency->versionRange;
-                opts.callbackHandle = dependency;
-                opts.addWithProperties = serviceDependency_addServiceTrackerCallback;
-                opts.removeWithProperties = serviceDependency_removeServiceTrackerCallback;
-                opts.setWithProperties = serviceDependency_setServiceTrackerCallback;
-                dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
-        }
-        celixThreadMutex_unlock(&dependency->mutex);
+    celixThreadMutex_lock(&dependency->mutex);
+    if (dependency->svcTrackerId == -1L) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.filter.filter = dependency->filter;
+        opts.filter.serviceName = dependency->serviceName;
+        opts.filter.versionRange = dependency->versionRange;
+        opts.callbackHandle = dependency;
+        opts.addWithProperties = serviceDependency_addServiceTrackerCallback;
+        opts.removeWithProperties = serviceDependency_removeServiceTrackerCallback;
+        opts.setWithProperties = serviceDependency_setServiceTrackerCallback;
+        dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+    }
+    celixThreadMutex_unlock(&dependency->mutex);
 
-        return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 static void celix_serviceDependency_stopCallback(void *data) {
@@ -234,7 +216,7 @@ celix_status_t celix_dmServiceDependency_disable(celix_dm_service_dependency_t *
     }
     celixThreadMutex_unlock(&dependency->mutex);
 
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 bool celix_dmServiceDependency_isDisabled(celix_dm_service_dependency_t *dependency) {
@@ -318,13 +300,18 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {
     celixThreadMutex_lock(&dependency->mutex);
-    bool avail = dependency->trackedSvcCount >= dependency->minimalCardinality;
+    bool avail = false;
+    if (dependency->minimalCardinality == 0) {
+        avail = dependency->trackedSvcCount > 0;
+    } else {
+        avail = dependency->trackedSvcCount >= dependency->minimalCardinality;
+    }
     celixThreadMutex_unlock(&dependency->mutex);
     return avail;
 }
 
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dep) {
-    return dep->required;
+    return dep->minimalCardinality > 0;
 }
 
 bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency) {
@@ -345,10 +332,10 @@ bool celix_dmServiceDependency_isAddRemCallbacksConfigured(celix_dm_service_depe
 }
 
 celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t **out) {
-	if (out != NULL) {
-		*out = celix_dmServiceDependency_createInfo(dep);
-	}
-	return CELIX_SUCCESS;
+    if (out != NULL) {
+        *out = celix_dmServiceDependency_createInfo(dep);
+    }
+    return CELIX_SUCCESS;
 }
 
 dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_service_dependency_t* dep) {
@@ -360,7 +347,7 @@ dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_serv
         info->serviceName = celix_utils_strdup(dep->serviceName);
         info->filter = celix_utils_strdup(dep->filter);
         info->versionRange = celix_utils_strdup(dep->versionRange);
-        info->required = dep->required;
+        info->required = dep->minimalCardinality > 0;
         info->count = dep->trackedSvcCount;
         celixThreadMutex_unlock(&dep->mutex);
     }
@@ -369,24 +356,24 @@ dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_serv
 
 
 void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info) {
-	celix_dmServiceDependency_destroyInfo(NULL, info);
+    celix_dmServiceDependency_destroyInfo(NULL, info);
 }
 
 void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep CELIX_UNUSED, dm_service_dependency_info_t *info) {
-	if (info != NULL) {
-	    free(info->serviceName);
-		free(info->filter);
-		free(info->versionRange);
-	}
-	free(info);
+    if (info != NULL) {
+        free(info->serviceName);
+        free(info->filter);
+        free(info->versionRange);
+    }
+    free(info);
 }
 
 celix_status_t serviceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle) {
-	return celix_dmServiceDependency_setCallbackHandle(dependency, handle);
+    return celix_dmServiceDependency_setCallbackHandle(dependency, handle);
 }
 
 celix_status_t celix_dmServiceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle) {
-	dependency->callbackHandle = handle;
+    dependency->callbackHandle = handle;
     return CELIX_SUCCESS;
 }
 

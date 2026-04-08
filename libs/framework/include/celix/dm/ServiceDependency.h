@@ -159,14 +159,10 @@ namespace celix { namespace dm {
         CServiceDependency<T,I>& setFilter(const std::string &filter);
 
         /**
-         * Specify if the service dependency is required. Default is false
+         * Specify the minimum number of services the service dependency requires before being counted as available.
          *
-         * @return the C service dependency reference for chaining (fluent API)
-         */
-        CServiceDependency<T,I>& setRequired(bool req);
-
-        /**
-         * Specify the minimum amount of service dependencies required to be available
+         * The minimal cardinality also affects whether a service is required. By default, the minimal cardinality is 0,
+         * implying that a service is not required.
          *
          * @return the C service dependency reference for chaining (fluent API)
          */
@@ -410,14 +406,10 @@ namespace celix { namespace dm {
                 std::function<void(const std::shared_ptr<I>& service)> remove);
 
         /**
-         * Specify if the service dependency is required. Default is false
+         * Specify the minimum number of services the service dependency requires before being counted as available.
          *
-         * @return the service dependency reference for chaining (fluent API)
-         */
-        ServiceDependency<T,I>& setRequired(bool req);
-
-        /**
-         * Specify the minimum amount of service dependencies required to be available
+         * The minimal cardinality also affects whether a service is required. By default, the minimal cardinality is 0,
+         * implying that a service is not required.
          *
          * @return the service dependency reference for chaining (fluent API)
          */

@@ -28,13 +28,12 @@ public:
                 .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
         cmp.createServiceDependency<IAnotherExample>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::locking)
                 .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
                 .setCallbacks(&Baz::addAnotherExample, &Baz::removeAnotherExample);
 
         cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
-                .setRequired(false)
                 .setStrategy(DependencyUpdateStrategy::locking)
                 .setVersionRange(EXAMPLE_CONSUMER_RANGE)
                 .setCallbacks(&Baz::addExample, &Baz::removeExample);

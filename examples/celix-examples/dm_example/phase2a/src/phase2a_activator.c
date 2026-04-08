@@ -56,7 +56,7 @@ static celix_status_t activator_start(struct phase2a_activator_struct *act, celi
         celix_dmServiceDependency_setService(dep, PHASE1_NAME, PHASE1_RANGE_ALL, NULL);
         celix_dmServiceDependency_setCallback(dep, (void*)phase2a_setPhase1);
         celix_dmServiceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-        celix_dmServiceDependency_setRequired(dep, true);
+        celix_dmServiceDependency_setMinimalCardinality(dep, 1);
         celix_dmComponent_addServiceDependency(cmp, dep);
 
         celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
