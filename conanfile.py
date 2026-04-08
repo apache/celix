@@ -141,6 +141,67 @@ class CelixConan(ConanFile):
         self.validate_config_option_is_positive_number("celix_properties_optimization_string_buffer_size")
         self.validate_config_option_is_positive_number("celix_properties_optimization_entries_buffer_size")
 
+        # Helper function to safely get dependency option value
+        def _get_dependency_option_value(self, dep_name, option_name):
+            """Safely get dependency option value, handling get_safe vs direct attribute access"""
+            if dep_name in self.dependencies:
+                dep = self.dependencies[dep_name]
+                # First try get_safe, if that fails try direct attribute access
+                value = dep.options.get_safe(option_name)
+                if value is None:
+                    # Try direct attribute access
+                    try:
+                        value = getattr(dep.options, option_name)
+                    except AttributeError:
+                        # Option does not exist
+                        return None
+                return value
+            return None
+
+        # Validate dependency shared options based on Celix options
+        # Split OR conditions into individual checks with detailed error messages
+        from collections import namedtuple
+        
+        ValidationRule = namedtuple('ValidationRule', ['condition', 'dep_name', 'option_name', 'expected_value', 'condition_desc'])
+        
+        validation_rules = [
+            ValidationRule(self.options.build_utils, 'libzip', "shared", True, 'build_utils=True'),
+            ValidationRule(self.options.build_utils, 'libuv', "shared", True, 'build_utils=True'),
+            ValidationRule(self.options.build_framework, 'util-linux-libuuid', "shared", True, 'build_framework=True'),
+            ValidationRule(self.options.build_framework and self.options.framework_curlinit, 'libcurl', "shared", True, 'build_framework=True and framework_curlinit=True'),
+            ValidationRule(self.options.build_framework and self.options.framework_curlinit, 'openssl', "shared", True, 'build_framework=True and framework_curlinit=True'),
+            ValidationRule(self.options.build_celix_etcdlib, 'libcurl', "shared", True, 'build_celix_etcdlib=True'),
+            ValidationRule(self.options.build_celix_etcdlib, 'openssl', "shared", True, 'build_celix_etcdlib=True'),
+            ValidationRule(self.options.build_rsa_discovery_common, 'libcurl', "shared", True, 'build_rsa_discovery_common=True'),
+            ValidationRule(self.options.build_rsa_discovery_common, 'openssl', "shared", True, 'build_rsa_discovery_common=True'),
+            ValidationRule(self.options.build_rsa_remote_service_admin_dfi, 'libcurl', "shared", True, 'build_rsa_remote_service_admin_dfi=True'),
+            ValidationRule(self.options.build_rsa_remote_service_admin_dfi, 'openssl', "shared", True, 'build_rsa_remote_service_admin_dfi=True'),
+            ValidationRule(self.options.build_launcher, 'libcurl', "shared", True, 'build_launcher=True'),
+            ValidationRule(self.options.build_launcher, 'openssl', "shared", True, 'build_launcher=True'),
+            ValidationRule(self.options.enable_testing, 'gtest', "shared", True, 'enable_testing=True'),
+            ValidationRule(self.options.enable_benchmarking, 'benchmark', "shared", True, 'enable_benchmarking=True'),
+            ValidationRule(self.options.build_rsa_discovery_common, 'libxml2', "shared", True, 'build_rsa_discovery_common=True'),
+            ValidationRule(self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing, 'libxml2', "shared", True, 'build_rsa_remote_service_admin_dfi=True and enable_testing=True'),
+            ValidationRule(self.options.build_http_admin, 'civetweb', "shared", True, 'build_http_admin=True'),
+            ValidationRule(self.options.build_http_admin, 'openssl', "shared", True, 'build_http_admin=True'),
+            ValidationRule(self.options.build_rsa_discovery_common, 'civetweb', "shared", True, 'build_rsa_discovery_common=True'),
+            ValidationRule(self.options.build_rsa_discovery_common, 'openssl', "shared", True, 'build_rsa_discovery_common=True'),
+            ValidationRule(self.options.build_rsa_remote_service_admin_dfi, 'civetweb', "shared", True, 'build_rsa_remote_service_admin_dfi=True'),
+            ValidationRule(self.options.build_rsa_remote_service_admin_dfi, 'openssl', "shared", True, 'build_rsa_remote_service_admin_dfi=True'),
+            ValidationRule(self.options.build_celix_dfi, 'libffi', "shared", True, 'build_celix_dfi=True'),
+            ValidationRule(self.options.build_utils, 'jansson', "shared", True, 'build_utils=True'),
+            ValidationRule(self.options.build_celix_dfi, 'jansson', "shared", True, 'build_celix_dfi=True'),
+            ValidationRule(self.options.build_celix_etcdlib, 'jansson', "shared", True, 'build_celix_etcdlib=True'),
+            ValidationRule(self.options.build_event_admin_remote_provider_mqtt, 'jansson', "shared", True, 'build_event_admin_remote_provider_mqtt=True'),
+            ValidationRule(self.options.build_event_admin_remote_provider_mqtt and self.options.enable_testing, "mosquitto", "broker", True, "build_event_admin_remote_provider_mqtt=True and enable_testing=True"),
+        ]
+        
+        for rule in validation_rules:
+            if rule.condition and rule.dep_name in self.dependencies:
+                actual_value = _get_dependency_option_value(self, rule.dep_name, rule.option_name)
+                if actual_value is not None and actual_value != rule.expected_value:
+                    raise ConanInvalidConfiguration(f"Celix configuration `{rule.condition_desc}` requires {rule.dep_name}/*:{rule.option_name}={rule.expected_value}")
+
     def package_id(self):
         del self.info.options.build_all
         # the followings are not installed
@@ -304,39 +365,6 @@ class CelixConan(ConanFile):
             setattr(self.options, opt, options[opt])
         del options
 
-        # Conan 2 does not support set dependency option in requirements()
-        # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
-        if self.options.build_utils:
-            self.options['libzip'].shared = True
-            self.options['libuv'].shared = True
-        if self.options.build_framework:
-            self.options['util-linux-libuuid'].shared = True
-        if ((self.options.build_framework and self.options.framework_curlinit)
-                or self.options.build_celix_etcdlib
-                or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
-                or self.options.build_launcher):
-            self.options['libcurl'].shared = True
-            self.options['openssl'].shared = True
-        if self.options.enable_testing:
-            self.options['gtest'].shared = True
-        if self.options.enable_benchmarking:
-            self.options['benchmark'].shared = True
-        if (self.options.build_rsa_discovery_common
-                or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
-            self.options['libxml2'].shared = True
-        if self.options.build_http_admin or self.options.build_rsa_discovery_common \
-                or self.options.build_rsa_remote_service_admin_dfi:
-            self.options['civetweb'].shared = True
-            self.options['openssl'].shared = True
-        if self.options.build_celix_dfi:
-            self.options['libffi'].shared = True
-        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib or self.options.build_event_admin_remote_provider_mqtt:
-            self.options['jansson'].shared = True
-        if self.options.build_event_admin_remote_provider_mqtt:
-            self.options['mosquitto'].shared = True
-            if self.options.enable_testing:
-                self.options['mosquitto'].broker = True
-
     def requirements(self):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
@@ -371,7 +399,7 @@ class CelixConan(ConanFile):
         self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
-        self.validate()
+
 
     def layout(self):
         cmake_layout(self)
@@ -425,7 +453,5 @@ class CelixConan(ConanFile):
         # enable imports() of conanfile.py to collect bundles from the local cache using @bindirs
         # check https://docs.conan.io/en/latest/reference/conanfile/methods.html#imports
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
-        self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
-        self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake",
-                                                                              "Celix", "CelixConfig.cmake"))
-        self.cpp_info.set_property("cmake_build_modules", [os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake")])
+        self.cpp_info.builddirs.append(os.path.join("lib", "cmake", "Celix"))
+        self.cpp_info.set_property("cmake_find_mode", "none")

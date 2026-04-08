@@ -41,6 +41,7 @@ jobs:
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:enable_undefined_sanitizer=True
             -o celix/*:celix_err_buffer_size=5120
+            -o *:shared=True
         run: conan build -c tools.cmake.cmaketoolchain:generator=Ninja ${CONAN_BUILD_OPTIONS} -b missing
       - name: Set fuzzer run time
         id: set-runtime

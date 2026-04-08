@@ -86,12 +86,15 @@ conan install . --build=missing --profile:build default --profile:host debug \
     -o "celix/*:build_all=True" \
     -o "celix/*:enable_testing=True" \
     -o "celix/*:enable_ccache=True" \
+    -o "mosquitto/*:broker=True" \
+    -o "*:shared=True" \
     --conf tools.cmake.cmaketoolchain:generator=Ninja
 ```
 
 Notes:
 - Use `--profile:host debug` or `--profile:host default` depending on the host (target) profile you want to generate builds for.
 - Replace or add `-o` options to selectively enable/disable bundles (see below).
+- Celix validates dependency options rather than autoconfigures them to avoid [dependency graph inconsistencies](https://github.com/conan-io/conan/issues/19692); incompatible options will cause validation errors.
 
 Configure and build using the generated CMake preset (Conan will create presets named like `conan-debug` when 
 using `--profile:host debug`, assuming the build_type is `Debug`):
@@ -110,7 +113,8 @@ For example, to only build the framework and utils libraries:
 ```bash
 conan install . --build=missing --profile:build default --profile:host debug \
     -o "celix/*:build_framework=True" \
-    -o "celix/*:build_utils=True"
+    -o "celix/*:build_utils=True" \
+    -o "*:shared=True"
  cmake --build --preset conan-debug --parallel
 ```
 
