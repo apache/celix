@@ -94,7 +94,7 @@ static celix_status_t componentWithServiceDependencyActivator_start(component_wi
     celix_dm_service_dependency_t* dep1 = celix_dmServiceDependency_create(); // <-----------------------------------<4>
     celix_dmServiceDependency_setService(dep1, CELIX_SHELL_COMMAND_SERVICE_NAME, NULL, NULL); // <-------------------<5>
     celix_dmServiceDependency_setStrategy(dep1, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND); // <------------------------<6>
-    celix_dmServiceDependency_setRequired(dep1, true); // <----------------------------------------------------------<7>
+    celix_dmServiceDependency_setMinimalCardinality(dep1, 1); // <----------------------------------------------------------<7>
     celix_dm_service_dependency_callback_options_t opts1 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS; // <--<8>
     opts1.set = (void*)componentWithServiceDependency_setHighestRankingShellCommand; // <----------------------------<9>
     celix_dmServiceDependency_setCallbacksWithOptions(dep1, &opts1); // <-------------------------------------------<10>
@@ -104,7 +104,7 @@ static celix_status_t componentWithServiceDependencyActivator_start(component_wi
     celix_dm_service_dependency_t* dep2 = celix_dmServiceDependency_create();
     celix_dmServiceDependency_setService(dep2, CELIX_SHELL_COMMAND_SERVICE_NAME, NULL, NULL);
     celix_dmServiceDependency_setStrategy(dep2, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);  // <----------------------<12>
-    celix_dmServiceDependency_setRequired(dep2, false); // <--------------------------------------------------------<13>
+    celix_dmServiceDependency_setMinimalCardinality(dep2, 0); // <--------------------------------------------------------<13>
     celix_dm_service_dependency_callback_options_t opts2 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
     opts2.addWithProps = (void*)componentWithServiceDependency_addShellCommand;  // <-------------------------------<14>
     opts2.removeWithProps = (void*)componentWithServiceDependency_removeShellCommand;

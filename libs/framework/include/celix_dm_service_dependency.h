@@ -85,12 +85,10 @@ CELIX_FRAMEWORK_EXPORT void celix_dmServiceDependency_destroy(celix_dm_service_d
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_service_dependency_t, celix_dmServiceDependency_destroy);
 
 /**
- * Specify if the service dependency is required. default is false
- */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
-
-/**
- * Specify the minimum number of services the service dependency requires before being available.
+ * Specify the minimum number of services the service dependency requires before being counted as available.
+ *
+ * The minimal cardinality also affects whether a service is required. By default, the minimal cardinality is 0,
+ * implying that a service is not required.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setMinimalCardinality(celix_dm_service_dependency_t *dependency, size_t minimalCardinality);
 

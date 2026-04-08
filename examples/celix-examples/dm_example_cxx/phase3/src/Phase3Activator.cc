@@ -26,7 +26,6 @@ using namespace celix::dm;
 
 Phase3Activator::Phase3Activator(std::shared_ptr<DependencyManager> mng) : Phase3BaseActivator{mng} {
     cmp.createServiceDependency<IPhase2>()
-             .setRequired(false)
              .setFilter("(&(name=phase2a)(non-existing=*))")
              .setCallbacks(&Phase3Cmp::setPhase2a);
 }

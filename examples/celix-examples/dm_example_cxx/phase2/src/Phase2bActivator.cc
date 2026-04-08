@@ -32,11 +32,10 @@ public:
                 .addInterface<IPhase2>(IPHASE2_VERSION, props);
 
         cmp.createServiceDependency<IPhase1>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setCallbacks(&Phase2Cmp::setPhase1);
 
         cmp.createCServiceDependency<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
-                .setRequired(false)
                 .setCallbacks(&Phase2Cmp::setLogService);
     }
 };

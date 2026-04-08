@@ -47,7 +47,7 @@ static celix_status_t activator_start(struct phase3_activator_struct *act, celix
         opts.add = (void*)phase3_addPhase2;
         opts.remove = (void*)phase3_removePhase2;
         celix_dmServiceDependency_setCallbacksWithOptions(dep, &opts);
-        celix_dmServiceDependency_setRequired(dep, true);
+        celix_dmServiceDependency_setMinimalCardinality(dep, 1);
         celix_dmComponent_addServiceDependency(cmp, dep);
 
         celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);

@@ -51,7 +51,6 @@ struct celix_dm_service_dependency {
     char* serviceName;
     char* filter;
     char* versionRange;
-    bool required;
     dm_service_dependency_strategy_t strategy;
     celix_dm_component_t* component;
 

@@ -60,12 +60,11 @@ public:
 
         cmp.createServiceDependency<celix::IShellCommand>()
                 .setCallbacks(&Cmp::setHighestRankingShellCommand)
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setStrategy(DependencyUpdateStrategy::suspend);
 
         cmp.createServiceDependency<celix_shell_command_t>(CELIX_SHELL_COMMAND_SERVICE_NAME)
                 .setCallbacks(&Cmp::addCShellCmd, &Cmp::removeCShellCmd)
-                .setRequired(false)
                 .setStrategy(DependencyUpdateStrategy::locking);
 
         cmp.build(); // <--------------------------------------------------------------------------------------------<8>

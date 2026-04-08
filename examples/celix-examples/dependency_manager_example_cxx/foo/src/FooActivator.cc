@@ -29,12 +29,11 @@ public:
                 .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
 
         cmp.createServiceDependency<IAnotherExample>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
                 .setCallbacks(&Foo::setAnotherExample);
 
         cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
-                .setRequired(false)
                 .setVersionRange(EXAMPLE_CONSUMER_RANGE)
                 .setCallbacks(&Foo::setExample);
     }

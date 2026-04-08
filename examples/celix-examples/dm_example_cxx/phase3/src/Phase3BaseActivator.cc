@@ -26,6 +26,6 @@ Phase3BaseActivator::Phase3BaseActivator(std::shared_ptr<DependencyManager> mng)
     cmp.setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
 
     cmp.createServiceDependency<IPhase2>()
-            .setRequired(true)
+            .setMinimalCardinality(1)
             .setCallbacks(&Phase3Cmp::addPhase2, &Phase3Cmp::removePhase2);
 }

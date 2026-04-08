@@ -71,11 +71,6 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_create(celix_
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep);
 
 /**
- * Specify if the service dependency is required. default is false
- */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
-
-/**
  * Specify if the service dependency update strategy.
  *
  * The DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING strategy notifies the component in case the dependencies set
