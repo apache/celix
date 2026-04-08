@@ -122,7 +122,7 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
         if (status != CELIX_SUCCESS) {
             return status;
         }
-        celix_dmServiceDependency_setRequired(eventAdminDep, true);
+        celix_dmServiceDependency_setMinimalCardinality(eventAdminDep, 1);
         celix_dmServiceDependency_setStrategy(eventAdminDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
         celix_dm_service_dependency_callback_options_t opts2 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
         opts2.set = celix_eventAdapter_setEventAdminService;

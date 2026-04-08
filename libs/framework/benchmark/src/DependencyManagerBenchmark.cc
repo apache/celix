@@ -94,7 +94,7 @@ static void createAndDestroyComponentTest(benchmark::State& state, bool cTest) {
             // This code gets timed
             auto& cmp = man->createComponent<TestComponent>();
             cmp.createProvidedService<IService>(IService::NAME);
-            cmp.createServiceDependency<IService>(IService::NAME).setRequired(true);
+            cmp.createServiceDependency<IService>(IService::NAME).setMinimalCardinality(1);
             man->buildAsync();
             man->wait();
             assert(cmp.getState() == ComponentState::TRACKING_OPTIONAL);

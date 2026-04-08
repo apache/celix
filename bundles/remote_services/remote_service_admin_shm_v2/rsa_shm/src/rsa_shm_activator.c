@@ -46,7 +46,7 @@ celix_status_t celix_rsaShmActivator_addRpcFactorySvcDependency(celix_dm_compone
     if (status != CELIX_SUCCESS) {
         return status;
     }
-    celix_dmServiceDependency_setRequired(rpcFactoryDep, true);
+    celix_dmServiceDependency_setMinimalCardinality(rpcFactoryDep, 1);
     celix_dmServiceDependency_setStrategy(rpcFactoryDep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
     celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
     opts.addWithProps = celix_rsaShm_addRpcFactorySvc;

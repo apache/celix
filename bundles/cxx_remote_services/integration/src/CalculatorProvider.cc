@@ -91,10 +91,10 @@ public:
     explicit CalculatorProviderActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_shared<CalculatorImpl>());
         cmp.createServiceDependency<celix::PromiseFactory>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setCallbacks(&CalculatorImpl::setFactory);
         cmp.createServiceDependency<celix::PushStreamProvider>()
-            .setRequired(true)
+            .setMinimalCardinality(1)
             .setCallbacks(&CalculatorImpl::setPushStreamProvider);
         cmp.createProvidedService<ICalculator>()
                 .addProperty("service.exported.interfaces", celix::typeName<ICalculator>())

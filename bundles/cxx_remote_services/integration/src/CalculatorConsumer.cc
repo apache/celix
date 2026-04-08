@@ -55,7 +55,7 @@ public:
     explicit CalculatorConsumerActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_shared<CalculatorConsumer>());
         cmp.createServiceDependency<ICalculator>()
-                .setRequired(true)
+                .setMinimalCardinality(1)
                 .setCallbacks(&CalculatorConsumer::setCalculator);
         cmp.createProvidedService<celix::IShellCommand>()
                 .addProperty(celix::IShellCommand::COMMAND_NAME, "calc");
