@@ -188,6 +188,7 @@ static celix::dm::DependencyManagerInfo createDepManInfoFromC(celix_dependency_m
             depInfo.versionRange = std::string{cDepInfo->versionRange == nullptr ? "" : cDepInfo->versionRange};
             depInfo.isAvailable = cDepInfo->available;
             depInfo.isRequired = cDepInfo->required;
+            depInfo.minimalCardinality = cDepInfo->minimalCardinality;
             depInfo.nrOfTrackedServices = cDepInfo->count;
             cmpInfo.dependenciesInfo.emplace_back(std::move(depInfo));
         }

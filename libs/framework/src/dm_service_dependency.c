@@ -300,12 +300,8 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {
     celixThreadMutex_lock(&dependency->mutex);
-    bool avail = false;
-    if (dependency->minimalCardinality == 0) {
-        avail = dependency->trackedSvcCount > 0;
-    } else {
-        avail = dependency->trackedSvcCount >= dependency->minimalCardinality;
-    }
+    bool avail = (dependency->minimalCardinality == 0) ? (dependency->trackedSvcCount > 0)
+                                                       : (dependency->trackedSvcCount >= dependency->minimalCardinality);
     celixThreadMutex_unlock(&dependency->mutex);
     return avail;
 }
@@ -342,7 +338,7 @@ dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_serv
     celix_dm_service_dependency_info_t* info = calloc(1, sizeof(*info));
     if (info != NULL) {
         celixThreadMutex_lock(&dep->mutex);
-        info->available = dep->trackedSvcCount >= dep->minimalCardinality;
+        info->available = (dep->minimalCardinality == 0) ? (dep->trackedSvcCount > 0) : dep->trackedSvcCount >= dep->minimalCardinality;
         info->minimalCardinality = dep->minimalCardinality;
         info->serviceName = celix_utils_strdup(dep->serviceName);
         info->filter = celix_utils_strdup(dep->filter);

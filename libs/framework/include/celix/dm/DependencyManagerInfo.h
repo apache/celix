@@ -70,6 +70,11 @@ namespace celix { namespace dm {
         bool isRequired{};
 
         /**
+         * Minimal amount of dependencies needed for the service to be available
+         */
+        std::size_t minimalCardinality{0};
+
+        /**
          * Nummer tracker services.
          */
         std::size_t nrOfTrackedServices{0};
