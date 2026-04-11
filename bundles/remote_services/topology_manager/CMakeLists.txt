@@ -22,7 +22,7 @@ add_celix_bundle(rsa_topology_manager
         src/topology_manager.c
         src/scope.c
         src/activator.c
-    VERSION 0.9.0
+    VERSION 0.10.0
     SYMBOLIC_NAME "apache_celix_rs_topology_manager"
     GROUP "Celix/RSA"
     NAME "Apache Celix RS Topology Manager"

@@ -26,6 +26,9 @@
 #include "celix_properties_ei.h"
 #include "celix_utils_ei.h"
 #include "celix_threads_ei.h"
+#include "celix_string_hash_map_ei.h"
+#include "celix_filter_ei.h"
+#include "asprintf_ei.h"
 
 class TopologyManagerCreatingErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -45,6 +48,10 @@ public:
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
         celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_putLong(nullptr, 1, 0);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -54,6 +61,42 @@ public:
 
 TEST_F(TopologyManagerCreatingErrorInjectionTestSuite, AllocingMemoryErrorTest) {
     celix_ei_expect_calloc((void*)topologyManager_create, 0, nullptr);
+    void *scope{};
+    topology_manager_t *tmPtr{};
+    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(TopologyManagerCreatingErrorInjectionTestSuite, CreatingImportedServiceRankingOffsetMapErrorTest) {
+    celix_ei_expect_celix_stringHashMap_create((void*)topologyManager_create, 0, nullptr);
+    void *scope{};
+    topology_manager_t *tmPtr{};
+    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(TopologyManagerCreatingErrorInjectionTestSuite, ImportedServiceRankingOffsetStringDuplicationErrorTest) {
+    setenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS", "configType1=10,configType2=20", 1);
+    celix_ei_expect_celix_utils_strdup((void*)topologyManager_create, 1, nullptr);
+    void *scope{};
+    topology_manager_t *tmPtr{};
+    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+    unsetenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS");
+}
+
+TEST_F(TopologyManagerCreatingErrorInjectionTestSuite, AddingImportedServiceRankingOffsetErrorTest) {
+    setenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS", "configType1=10,configType2=20", 1);
+    celix_ei_expect_celix_stringHashMap_putLong((void*)topologyManager_create, 1, ENOMEM);
+    void *scope{};
+    topology_manager_t *tmPtr{};
+    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
+    EXPECT_EQ(ENOMEM, status);
+    unsetenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS");
+}
+
+TEST_F(TopologyManagerCreatingErrorInjectionTestSuite, CreatingImportedServiceMapErrorTest) {
+    celix_ei_expect_celix_stringHashMap_createWithOptions((void*)topologyManager_create, 0, nullptr);
     void *scope{};
     topology_manager_t *tmPtr{};
     auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
@@ -121,6 +164,12 @@ public:
         celix_ei_expect_celix_properties_set(nullptr, 0, 0);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, 0);
+        celix_ei_expect_celix_filter_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_getAsStringArrayList(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_setLong(nullptr, 0, 0);
+        celix_ei_expect_asprintf(nullptr, 0, 0);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
     }
 
     void TestExportServiceFailure(void (*errorInject)(void)) {
@@ -263,5 +312,118 @@ TEST_F(TopologyManagerErrorInjectionTestSuite, AddDynamicIpEndpointToListErrorTe
     });
 }
 
+TEST_F(TopologyManagerErrorInjectionTestSuite, CreatingFilterErrorWhenImportScopeChangedTest) {
+    celix_ei_expect_celix_filter_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    auto status = tm_addImportScope(tms.get(), (char*)"(service.imported.configs=tm_test_config_type)");
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, AllocingMemoryForImportedServiceEntryErrorTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_ENOMEM, status);
+
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, GettingServiceImportedConfigsErrorTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_celix_properties_getAsStringArrayList(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(ENOMEM, status);
+
+        celix_properties_unset(importEndpoint->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
+        status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_ENOMEM, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, CopyImportedServicePropertiesErrorTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_celix_properties_copy(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);//called in endpointDescription_clone
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(ENOMEM, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, SettingImportedServiceRankingErrorTest) {
+    setenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS", "tm_test_config_type=10", 1);
+    tm.reset();
+    void* scope = nullptr;
+    topology_manager_t* tmPtr{};
+    auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    tm = std::shared_ptr<topology_manager_t>{tmPtr, [](auto t) {topologyManager_destroy(t);}};
+
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_celix_properties_setLong(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);//called in endpointDescription_clone
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(ENOMEM, status);
+    });
+
+    unsetenv("CELIX_RSA_IMPORTED_SERVICE_RANKING_OFFSETS");
+}
 
 
+TEST_F(TopologyManagerErrorInjectionTestSuite, CreatingImportsMapFailureTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_celix_longHashMap_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(ENOMEM, status);
+
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, AddingImportedServiceToMapFailureTest) {
+    TestImportService([](topology_manager_t* tm, service_reference_pt, void*, endpoint_description_t *importEndpoint) {
+        celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(ENOMEM, status);
+
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, AddingImportedRegistrationToMapFailureTest) {
+    TestImportService([this](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
+        auto status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        celix_ei_expect_celix_longHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+        status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        celix_service_filter_options_t opts{};
+        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        auto svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
+        EXPECT_EQ(svcId, -1);
+
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
+TEST_F(TopologyManagerErrorInjectionTestSuite, AddingImportedRegistrationToMapFailureWhenAddRsaTest) {
+    TestImportService([this](topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint) {
+        auto status = topologyManager_addImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        celix_ei_expect_celix_longHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM, 2);
+        status = topologyManager_rsaAdded(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        celix_service_filter_options_t opts{};
+        opts.filter = (char *)"(service.imported.configs=tm_test_config_type)";
+        auto svcId = celix_bundleContext_findServiceWithOptions(ctx.get(), &opts);
+        EXPECT_EQ(svcId, -1);
+
+        status = topologyManager_rsaRemoved(tm, rsaSvcRef, rsaSvc);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = topologyManager_removeImportedService(tm, importEndpoint, nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}

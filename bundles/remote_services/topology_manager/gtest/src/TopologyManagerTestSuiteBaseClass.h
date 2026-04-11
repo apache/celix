@@ -24,6 +24,8 @@ extern "C" {
 #endif
 
 #include <cstdlib>
+#include <string>
+#include <map>
 #include <gtest/gtest.h>
 #include "celix_errno.h"
 #include "celix_constants.h"
@@ -38,6 +40,7 @@ extern "C" {
 
 struct import_registration {
     endpoint_description_t *endpoint;
+    long proxyServiceId;
 };
 
 struct export_reference {
@@ -71,6 +74,7 @@ public:
         auto status = topologyManager_create(ctx.get(), logHelper.get(), &tmPtr, &scope);
         EXPECT_EQ(status, CELIX_SUCCESS);
         tm = std::shared_ptr<topology_manager_t>{tmPtr, [](auto t) {topologyManager_destroy(t);}};
+        tms = std::unique_ptr<void, void(*)(void*)>{scope, [](void*) {}};
     }
 
     ~TopologyManagerTestSuiteBaseClass() = default;
@@ -217,7 +221,7 @@ public:
         }
     }
 
-    void TestImportService(void (*testBody)(topology_manager_t* tm, service_reference_pt rsaSvcRef, void* rsaSvc, endpoint_description_t *importEndpoint)) {
+    void TestImportService(const std::function<void(topology_manager_t*, service_reference_pt, void*, endpoint_description_t*)> &testBody) {
         remote_service_admin_t rsa{};
         rsa.ctx = ctx.get();
         remote_service_admin_service_t rsaSvc{};
@@ -227,10 +231,18 @@ public:
             auto importReg = (import_registration_t*)calloc(1, sizeof(import_registration_t));
             importReg->endpoint = endpoint;
             *registration = importReg;
+            static struct TmTestService {
+                void* handle;
+            } tmTestService;
+            celix_properties_t* props = celix_properties_copy(endpoint->properties);
+            EXPECT_NE(nullptr, props);
+            importReg->proxyServiceId = celix_bundleContext_registerService(admin->ctx, &tmTestService, "tmTestImportedService", props);
+            EXPECT_GE(importReg->proxyServiceId, 0);
             return CELIX_SUCCESS;
         };
         rsaSvc.importRegistration_close = [](remote_service_admin_t* admin, import_registration_t* registration) -> celix_status_t {
             (void)admin;
+            celix_bundleContext_unregisterService(admin->ctx, registration->proxyServiceId);
             free(registration);
             return CELIX_SUCCESS;
         };
@@ -265,6 +277,7 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<celix_log_helper_t> logHelper{};
     std::shared_ptr<topology_manager_t> tm{};
+    std::unique_ptr<void, void(*)(void*)> tms{nullptr, [](void*) {}};
 };
 
 #ifdef __cplusplus
