@@ -42,10 +42,10 @@ struct celix_dm_service_dependency_info_struct {
     char *serviceName;
     char *filter;
     char *versionRange;
-    bool available;
-    size_t minimalCardinality;
-    bool required;
     size_t count;
+    size_t minimalCardinality;
+    bool available;
+    bool required;
 };
 typedef struct celix_dm_service_dependency_info_struct *dm_service_dependency_info_pt;  //deprecated
 typedef struct celix_dm_service_dependency_info_struct dm_service_dependency_info_t;  //deprecated
@@ -56,8 +56,8 @@ struct celix_dm_component_info_struct {
     char* bundleSymbolicName;
     char* id;
     char* name;
-    bool active;
     char* state;
+    bool active;
     size_t nrOfTimesStarted;
     size_t nrOfTimesResumed;
     celix_array_list_t *interfaces;   // type dm_interface_info_t*

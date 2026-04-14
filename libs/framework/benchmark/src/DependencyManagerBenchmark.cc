@@ -17,8 +17,6 @@
  * under the License.
  */
 
-#include "../../include/celix_dm_service_dependency.h"
-
 #include "celix/FrameworkFactory.h"
 #include <benchmark/benchmark.h>
 

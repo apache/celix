@@ -33,6 +33,7 @@ static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc,
 static void serviceDependency_removeServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props);
 static void serviceDependency_setServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props);
 static void* serviceDependency_getCallbackHandle(celix_dm_service_dependency_t *dep);
+static bool serviceDependency_isAvailable(celix_dm_service_dependency_t *dep);
 
 celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dependency_ptr) {
     celix_dm_service_dependency_t *dep = celix_dmServiceDependency_create();
@@ -300,8 +301,7 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {
     celixThreadMutex_lock(&dependency->mutex);
-    bool avail = (dependency->minimalCardinality == 0) ? (dependency->trackedSvcCount > 0)
-                                                       : (dependency->trackedSvcCount >= dependency->minimalCardinality);
+    bool avail = serviceDependency_isAvailable(dependency);
     celixThreadMutex_unlock(&dependency->mutex);
     return avail;
 }
@@ -338,7 +338,7 @@ dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_serv
     celix_dm_service_dependency_info_t* info = calloc(1, sizeof(*info));
     if (info != NULL) {
         celixThreadMutex_lock(&dep->mutex);
-        info->available = (dep->minimalCardinality == 0) ? (dep->trackedSvcCount > 0) : dep->trackedSvcCount >= dep->minimalCardinality;
+        info->available = serviceDependency_isAvailable(dep);
         info->minimalCardinality = dep->minimalCardinality;
         info->serviceName = celix_utils_strdup(dep->serviceName);
         info->filter = celix_utils_strdup(dep->filter);
@@ -375,4 +375,12 @@ celix_status_t celix_dmServiceDependency_setCallbackHandle(celix_dm_service_depe
 
 static void* serviceDependency_getCallbackHandle(celix_dm_service_dependency_t *dependency) {
     return dependency->callbackHandle == NULL ? component_getImplementation(dependency->component) : dependency->callbackHandle;
+}
+
+static bool serviceDependency_isAvailable(celix_dm_service_dependency_t* dep) {
+    if (dep->minimalCardinality == 0) {
+        return dep->trackedSvcCount > 0;
+    }
+
+    return dep->trackedSvcCount >= dep->minimalCardinality;
 }
