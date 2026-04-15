@@ -85,10 +85,12 @@ limitations under the License.
   The old manifest attribute names are also no longer defined in `celix_constants.h`.
 - Using jar to packaging bundles is no longer support. Jar was used to ensure the MANIFEST.MF was the first
   entry in a bundle zip file, but MANIFEST.MF is no longer used (replaced by MANIFEST.json).
+- It is no longer to set required or optional dependencies via `celix_dmServiceDependency_setRequired` or `setRequired`. This is now possible by using the new `celix_dmServiceDependency_setMinimalCardinality` or `setMinimalCardinality` function.
 
 ## New Features
 
 - Type support for value in celix Properties, including support for arrays.
+- Support for minimal cardinality of service dependencies. Setting a minimal cardinality will determine the amount of services that are required before a service dependency is available. 
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
