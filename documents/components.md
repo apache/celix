@@ -477,7 +477,7 @@ Remarks for the C example:
    to fine tune the tracked service by providing a service version range and/or service filter.
 6. Configures the update strategy for the service dependency to suspend-strategy.
 7. Configures the service dependency as a required service dependency by setting the minimalCardinality to at least `1`.
-   Setting the minimalCardinality determines howmany services are required for the service dependency to be available.
+   Setting the minimalCardinality determines how many services are required for the service dependency to be available.
 8. Creates an empty service dependency callback options struct. This struct can be used to configure different
    service dependency callbacks.
 9. Configures the `set` service dependency callback to `componentWithServiceDependency_setHighestRankingShellCommand`
@@ -625,7 +625,7 @@ Remarks for the C++ example:
    is called without provided a service name, the service name will be inferred using the `celix::typeName`.
 5. Configures the service dependency set callback.
 6. Configures the service dependency as a required service dependency by setting the minimalCardinality to at least `1`.
-   Setting the minimalCardinality determines howmany services are required for the service dependency to be available.
+   Setting the minimalCardinality determines how many services are required for the service dependency to be available.
 7. Configures the update strategy for the service dependency to suspend-strategy.
 8. Creates another new DM service dependency object and in this case also explicitly provides the service name
    to use (`CELIX_SHELL_COMMAND_SERVICE_NAME`).
