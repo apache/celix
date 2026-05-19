@@ -20,6 +20,7 @@
 #include "celix_json_utils_private.h"
 #include "celix_err.h"
 #include "celix_utils.h"
+#include "celix_convert_utils.h"
 #include "celix_stdlib_cleanup.h"
 
 #include <string.h>
@@ -103,4 +104,54 @@ celix_status_t celix_utils_jsonErrorToStatus(enum json_error_code error) {
         default:
             return CELIX_ILLEGAL_ARGUMENT;
     }
+}
+
+celix_status_t celix_utils_binaryToJson(const void* data, size_t size, json_t** out) {
+    assert(data != NULL);
+    assert(out != NULL);
+    *out = NULL;
+
+    celix_autofree char* base64 = celix_utils_binaryToBase64String(data, size);
+    if (!base64) {
+        celix_err_push("Failed to allocate memory for base64 encoding.");
+        return ENOMEM;
+    }
+    *out = json_sprintf("base64<%s>", (const char*)base64);
+    if (!*out) {
+        celix_err_push("Failed to create json string for binary.");
+        return ENOMEM;
+    }
+    return CELIX_SUCCESS;
+}
+
+celix_status_t celix_utils_jsonToBinary(const json_t* json, void** data, size_t* size) {
+    assert(json != NULL);
+    assert(data != NULL);
+    assert(size != NULL);
+    *data = NULL;
+    *size = 0;
+    if (!celix_utils_isBinaryJsonString(json)) {
+        celix_err_push("Failed to convert json to binary, json is not a binary string.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    const char* value = json_string_value(json);
+    assert(value != NULL);
+    char buf[256];
+    char* extracted = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)strlen(value) - 8, value + 7);
+    celix_auto(celix_utils_string_guard_t) guard = celix_utils_stringGuard_init(buf, extracted);
+    if (!extracted) {
+        celix_err_push("Failed to create extracted base64 string.");
+        return ENOMEM;
+    }
+    return celix_utils_convertBase64StringToBinary(extracted, 0, NULL, size, data);
+}
+
+bool celix_utils_isBinaryJsonString(const json_t* string)
+{
+    if (!json_is_string(string)) {
+        return false;
+    }
+    const char* value = json_string_value(string);
+    assert(value != NULL);
+    return strncmp(value, "base64<", 7) == 0 && value[strlen(value) - 1] == '>';
 }

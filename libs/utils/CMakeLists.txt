@@ -20,6 +20,7 @@ if (UTILS)
     find_package(libzip REQUIRED)
     find_package(jansson REQUIRED)
     find_package(libuv REQUIRED)
+    find_package(OpenSSL REQUIRED)
 
     set(MEMSTREAM_SOURCES )
     set(MEMSTREAM_INCLUDES )
@@ -46,7 +47,7 @@ if (UTILS)
             src/celix_json_utils.c
             ${MEMSTREAM_SOURCES}
             )
-    set(UTILS_PRIVATE_DEPS libzip::zip jansson::jansson)
+    set(UTILS_PRIVATE_DEPS libzip::zip jansson::jansson OpenSSL::Crypto)
     set(UTILS_PUBLIC_DEPS libuv::uv)
 
     add_library(utils SHARED ${UTILS_SRC})

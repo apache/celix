@@ -60,6 +60,8 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         celix_properties_setDouble(props, "key4", 4.0);
         celix_properties_setBool(props, "key5", true);
         celix_properties_assignVersion(props, "key6", celix_version_create(1, 2, 3, "qualifier"));
+        char bin[1]={0};
+        celix_properties_setBinary(props, "key7", bin, sizeof(bin));
 
         //And an in-memory stream
         celix_autofree char* buf = nullptr;
@@ -78,6 +80,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         EXPECT_NE(nullptr, strstr(buf, R"("key4":4.0)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key5":true)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key6":"version<1.2.3.qualifier>")")) << "JSON: " << buf;
+        EXPECT_NE(nullptr, strstr(buf, R"("key7":"base64<AA==>")")) << "JSON: " << buf;
 
         //And the buf is a valid JSON object
         json_error_t error;
@@ -538,7 +541,8 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
         "longKey":42,
         "doubleKey":2.0,
         "boolKey":true,
-        "versionKey":"version<1.2.3.qualifier>"
+        "versionKey":"version<1.2.3.qualifier>",
+        "binKey":"base64<AA==>"
     })";
 
     //And a stream with the JSON object
@@ -550,7 +554,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object contains the single values
-    EXPECT_EQ(5, celix_properties_size(props));
+    EXPECT_EQ(6, celix_properties_size(props));
     EXPECT_STREQ("strValue", celix_properties_getString(props, "strKey"));
     EXPECT_EQ(42, celix_properties_getLong(props, "longKey", -1));
     EXPECT_DOUBLE_EQ(2.0, celix_properties_getDouble(props, "doubleKey", NAN));
@@ -559,6 +563,11 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
     ASSERT_NE(nullptr, v);
     celix_autofree char* vStr = celix_version_toString(v);
     EXPECT_STREQ("1.2.3.qualifier", vStr);
+    size_t binSize = 0;
+    const void* bin = celix_properties_getBinary(props, "binKey", &binSize);
+    ASSERT_NE(nullptr, bin);
+    EXPECT_EQ(1, binSize);
+    EXPECT_EQ(0, static_cast<const unsigned char *>(bin)[0]);
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithArrayListsTest) {
@@ -1134,4 +1143,16 @@ TEST_F(PropertiesSerializationTestSuite, KeyCollision) {
     EXPECT_STREQ(R"({"a":{"b":{"c":"value1"}}})", output);
     std::cout << output << std::endl;
     EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidBinaryValueTest) {
+    const char* jsonInput = R"({
+        "strKey":"strValue",
+        "longKey":42,
+        "binKey":"base64<invalid>"
+    })";
+    celix_properties_t* props = nullptr;
+    auto status = celix_properties_loadFromString(jsonInput, 0, &props);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_EQ(nullptr, props);
 }

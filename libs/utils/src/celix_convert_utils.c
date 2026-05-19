@@ -25,6 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <limits.h>
+#include <openssl/evp.h>
 
 #include "celix_array_list.h"
 #include "celix_err.h"
@@ -387,4 +390,92 @@ char* celix_utils_arrayListToString(const celix_array_list_t* list) {
         default:
             return NULL;
     }
+}
+
+char* celix_utils_binaryToBase64String(const void* data, size_t size) {
+    if (!data || size == 0) {
+        celix_err_push("Input data is NULL or size is 0.");
+        return NULL;
+    }
+    //Calculate encoded size: 4 * ceil(size/3) + 1 for null terminator
+    uint64_t encodedSize = UINT64_C(4) * ((size + 2) / 3) + 1;
+    if (encodedSize > INT_MAX) {
+        celix_err_push("Encoded base64 size is too large.");
+        return NULL;
+    }
+    celix_autofree char* base64 = malloc(encodedSize);
+    if (!base64) {
+        celix_err_push("Failed to allocate memory for base64 encoding.");
+        return NULL;
+    }
+    int encodedLen = EVP_EncodeBlock((unsigned char*)base64, data, (int)size);
+    if (encodedLen < 0) {
+        celix_err_push("Failed to base64 encode data.");
+        return NULL;
+    }
+    /* Ensure null termination and guard against unexpected overflow */
+    if ((size_t)encodedLen >= encodedSize) {
+        celix_err_push("Base64 encoded length exceeds buffer.");
+        return NULL;
+    }
+    base64[encodedLen] = '\0';
+    return celix_steal_ptr(base64);
+}
+
+celix_status_t celix_utils_convertBase64StringToBinary(const char* val, size_t defaultSize, const void* defaultVal, size_t* size, void** bin) {
+    assert(size != NULL);
+    assert(bin != NULL);
+
+    celix_status_t status = CELIX_SUCCESS;
+    *size = 0;
+    *bin = NULL;
+    do {
+        if (val == NULL) {
+            celix_err_push("Input string is NULL.");
+            status =  CELIX_ILLEGAL_ARGUMENT;
+            break;
+        }
+
+        size_t base64Len = strlen(val);
+        if (base64Len > INT_MAX || base64Len == 0) {
+            celix_err_push("Invalid base64 string length.");
+            status = CELIX_ILLEGAL_ARGUMENT;
+            break;
+        }
+        // Calculate maximum decoded size: ((base64Len + 3) / 4) * 3
+        size_t decodedSize = ((base64Len + UINT64_C(3)) / 4) * 3;
+        celix_autofree unsigned char* decoded = malloc(decodedSize);
+        if (!decoded) {
+            celix_err_push("Failed to allocate memory for base64 decoding.");
+            status = ENOMEM;
+            break;
+        }
+        int decodedLen = EVP_DecodeBlock(decoded, (const unsigned char*)val, (int)base64Len);
+        if (decodedLen < 0) {
+            celix_err_push("Failed to decode base64.");
+            status = CELIX_ILLEGAL_ARGUMENT;
+            break;
+        }
+        /* EVP_DecodeBlock returns the length ignoring padding; however it may include \0 from padding - adjust for '=' padding */
+        int actualLen = decodedLen;
+        if (base64Len >= 1 && val[base64Len-1] == '=') actualLen--;
+        if (base64Len >= 2 && val[base64Len-2] == '=') actualLen--;
+        if (actualLen < 0) actualLen = 0;
+        if (actualLen != 0) {
+            *bin = celix_steal_ptr(decoded);
+        }
+        *size = (size_t)actualLen;
+    } while (0);
+
+    if (status == CELIX_ILLEGAL_ARGUMENT && defaultSize && defaultVal) {
+        *bin = malloc(defaultSize);
+        if (*bin == NULL) {
+            celix_err_push("Failed to allocate memory for binary data.");
+            return ENOMEM;
+        }
+        *size = defaultSize;
+        memcpy(*bin, defaultVal, defaultSize);
+    }
+
+    return status;
 }

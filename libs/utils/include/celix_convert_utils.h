@@ -221,7 +221,39 @@ celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
 CELIX_UTILS_EXPORT
 char* celix_utils_arrayListToString(const celix_array_list_t* list);
 
+/**
+ * @brief Convert binary data to a base64 encoded string.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] data The binary data to convert.
+ * @param[in] size The size of the binary data.
+ * @return The base64 encoded string. The returned string is allocated and should be freed.
+ * @returnvalue NULL if the data is NULL or if the size is 0 or if memory could not be allocated.
+ */
+CELIX_UTILS_EXPORT
+char* celix_utils_binaryToBase64String(const void* data, size_t size);
 
+/**
+ * @brief Convert a base64 encoded string to binary data.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The base64 encoded string to convert.
+ * @param[in] defaultSize The default size if the string is not a valid base64 encoded string.
+ * @param[in] defaultVal The default value if the string is not a valid base64 encoded string. The default value is expected
+ *                       to be of size defaultSize. Note that the defaultVal is copied if the string is not a valid
+ *                       base64 encoded string.
+ * @param[out] size The size of the converted binary data. If the string is not a valid base64 encoded string, the size will
+ *                  be set to defaultSize. Must be not NULL.
+ * @param[out] bin The converted binary data. If the string is not a valid base64 encoded string, the bin will be set to a
+ *                 copy of defaultVal. The returned binary data should be freed by the caller. Must be not NULL.
+ * @return CELIX_SUCCESS if the string is a valid base64 encoded string, CELIX_ILLEGAL_ARGUMENT if the string is not a
+ * valid base64 encoded string and CELIX_ENOMEM if memory could not be allocated. Note that on a CELIX_ILLEGAL_ARGUMENT
+ * the bin will be set to a copy of defaultVal and size will be set to defaultSize.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertBase64StringToBinary(const char* val, size_t defaultSize, const void* defaultVal, size_t* size, void** bin);
 
 #ifdef __cplusplus
 }

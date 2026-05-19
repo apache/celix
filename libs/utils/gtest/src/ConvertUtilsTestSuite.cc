@@ -23,8 +23,10 @@
 
 #include <string>
 #include <cmath>
+#include <limits>
 
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 class ConvertUtilsTestSuite : public ::testing::Test {
   public:
@@ -574,4 +576,114 @@ TEST_F(ConvertUtilsTestSuite, InvalidArgumentsForArrayToStringTest) {
     EXPECT_EQ(nullptr, celix_utils_arrayListToString(list1));
     celix_autoptr(celix_array_list_t) list2 = celix_arrayList_createPointerArray(); //unsupported pointer type
     EXPECT_EQ(nullptr, celix_utils_arrayListToString(list2));
+}
+
+TEST_F(ConvertUtilsTestSuite, BinaryToStringTest) {
+    {
+        char bin[3]= {0};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        ASSERT_TRUE(base64String != nullptr);
+        ASSERT_STREQ("AAAA", base64String);
+    }
+
+    {
+        char bin[2]= {0};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        ASSERT_TRUE(base64String != nullptr);
+        ASSERT_STREQ("AAA=", base64String);
+    }
+
+    {
+        char bin[1]= {0};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        ASSERT_TRUE(base64String != nullptr);
+        ASSERT_STREQ("AA==", base64String);
+    }
+}
+
+TEST_F(ConvertUtilsTestSuite, InvalidArgsForBinaryToStringTest) {
+    char bin[3]= {0};
+    EXPECT_EQ(nullptr,celix_utils_binaryToBase64String(nullptr, sizeof(bin)));
+    EXPECT_EQ(nullptr,celix_utils_binaryToBase64String(bin, 0));
+    EXPECT_EQ(nullptr,celix_utils_binaryToBase64String(bin, std::numeric_limits<int>::max()));
+}
+
+TEST_F(ConvertUtilsTestSuite, ConvertStringToBinaryTest) {
+    {
+        char bin[3]= {1, 2, 3};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_convertBase64StringToBinary(base64String,  0, nullptr, &size, &data);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(sizeof(bin), size);
+        ASSERT_EQ(0, memcmp(bin, data, size));
+    }
+
+    {
+        char bin[2]= {1, 2};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_convertBase64StringToBinary(base64String,  0, nullptr, &size, &data);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(sizeof(bin), size);
+        ASSERT_EQ(0, memcmp(bin, data, size));
+    }
+
+    {
+        char bin[1]= {1};
+        celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_convertBase64StringToBinary(base64String,  0, nullptr, &size, &data);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(sizeof(bin), size);
+        ASSERT_EQ(0, memcmp(bin, data, size));
+    }
+}
+
+TEST_F(ConvertUtilsTestSuite, WrongBase64StringToBinaryTest) {
+    celix_autofree void* data = nullptr;
+    size_t size = 0;
+    auto status = celix_utils_convertBase64StringToBinary("invalid",  0, nullptr, &size, &data);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_EQ(nullptr, data);
+
+    char bin[3]= {1, 2, 3};
+    status = celix_utils_convertBase64StringToBinary("invalid",  sizeof(bin), bin, &size, &data);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_NE(nullptr, data);
+    ASSERT_EQ(sizeof(bin), size);
+    ASSERT_EQ(0, memcmp(bin, data, size));
+}
+
+TEST_F(ConvertUtilsTestSuite, InvalidArgsForBase64StringToBinaryTest) {
+    celix_autofree void* data = nullptr;
+    size_t size = 0;
+    auto status = celix_utils_convertBase64StringToBinary(nullptr,  0, nullptr, &size, &data);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_EQ(nullptr, data);
+
+    celix_autofree void* data1 = nullptr;
+    char bin[3]= {1, 2, 3};
+    status = celix_utils_convertBase64StringToBinary(nullptr,  sizeof(bin), bin, &size, &data1);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_NE(nullptr, data1);
+    ASSERT_EQ(sizeof(bin), size);
+    ASSERT_EQ(0, memcmp(bin, data1, size));
+
+    status = celix_utils_convertBase64StringToBinary("",  0, nullptr, &size, &data);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_EQ(nullptr, data);
+
+    celix_autofree void* data2 = nullptr;
+    status = celix_utils_convertBase64StringToBinary("",  sizeof(bin), bin, &size, &data2);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    ASSERT_NE(nullptr, data2);
+    ASSERT_EQ(sizeof(bin), size);
+    ASSERT_EQ(0, memcmp(bin, data2, size));
 }

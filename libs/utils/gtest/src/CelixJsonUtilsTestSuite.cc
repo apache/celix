@@ -18,6 +18,9 @@
  */
 #include <gtest/gtest.h>
 
+#include <limits>
+
+#include "celix_stdlib_cleanup.h"
 #include "celix_json_utils_private.h"
 #include "celix_err.h"
 
@@ -103,3 +106,129 @@ TEST_F(CelixJsonUtilsTestSuite, JsonErrorToCelixStatusTest) {
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_jsonErrorToStatus(json_error_index_out_of_range));
 }
 
+TEST_F(CelixJsonUtilsTestSuite, BinaryToJsonTest) {
+    {
+        char bin[3]= {1,2,3};
+        json_auto_t* json = nullptr;
+        auto status = celix_utils_binaryToJson(bin, sizeof(bin), &json);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(json != nullptr);
+        ASSERT_STREQ("base64<AQID>", json_string_value(json));
+    }
+
+    {
+        char bin[2]= {1,2};
+        json_auto_t* json = nullptr;
+        auto status = celix_utils_binaryToJson(bin, sizeof(bin), &json);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(json != nullptr);
+        ASSERT_STREQ("base64<AQI=>", json_string_value(json));
+    }
+
+    {
+        char bin[1]= {1};
+        json_auto_t* json = nullptr;
+        auto status = celix_utils_binaryToJson(bin, sizeof(bin), &json);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(json != nullptr);
+        ASSERT_STREQ("base64<AQ==>", json_string_value(json));
+    }
+
+    {
+        char bin[1];
+        json_auto_t* json = nullptr;
+        auto status = celix_utils_binaryToJson(bin, std::numeric_limits<int>::max(), &json);
+        ASSERT_EQ(ENOMEM, status);
+        ASSERT_EQ(nullptr, json);
+    }
+}
+
+TEST_F(CelixJsonUtilsTestSuite, JsonToBinaryTest) {
+    {
+        json_auto_t* json = json_string("base64<AQID>");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(3, size);
+        char* bin = (char*)data;
+        ASSERT_EQ(1, bin[0]);
+        ASSERT_EQ(2, bin[1]);
+        ASSERT_EQ(3, bin[2]);
+    }
+
+    {
+        json_auto_t* json = json_string("base64<AQI=>");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(2, size);
+        char* bin = (char*)data;
+        ASSERT_EQ(1, bin[0]);
+        ASSERT_EQ(2, bin[1]);
+    }
+
+    {
+        json_auto_t* json = json_string("base64<AQ==>");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_TRUE(data != nullptr);
+        ASSERT_EQ(1, size);
+        char* bin = (char*)data;
+        ASSERT_EQ(1, bin[0]);
+    }
+}
+
+TEST_F(CelixJsonUtilsTestSuite, WrongBinaryJsonToBinaryTest) {
+    {
+        json_auto_t* json = json_string("base64<Invalid>");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        ASSERT_TRUE(data == nullptr);
+    }
+
+    {
+        json_auto_t* json = json_string("base64<AQID");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        ASSERT_TRUE(data == nullptr);
+    }
+
+    {
+        json_auto_t* json = json_string("base64<>");
+        celix_autofree void* data = nullptr;
+        size_t size = 0;
+        auto status = celix_utils_jsonToBinary(json, &data, &size);
+        ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        ASSERT_TRUE(data == nullptr);
+    }
+}
+
+TEST_F(CelixJsonUtilsTestSuite, InvalidBinaryJsonTest) {
+    {
+        json_auto_t* json = json_string("base64<AQID");
+        auto result = celix_utils_isBinaryJsonString(json);
+        ASSERT_FALSE(result);
+    }
+
+    {
+        json_auto_t* json = json_string("base64AQID>");
+        auto result = celix_utils_isBinaryJsonString(json);
+        ASSERT_FALSE(result);
+    }
+
+    {
+        json_auto_t* json = json_integer(1);
+        auto result = celix_utils_isBinaryJsonString(json);
+        ASSERT_FALSE(result);
+    }
+}

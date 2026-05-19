@@ -33,6 +33,7 @@
  *  - double
  *  - bool
  *  - celix_version_t*
+ *  - binary data
  */
 
 #ifndef CELIX_PROPERTIES_H_
@@ -67,6 +68,7 @@ typedef enum celix_properties_value_type {
               CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG,
               CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE, CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
               CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION. */
+    CELIX_PROPERTIES_VALUE_TYPE_BINARY = 7,  /**< Property value is binary data. */
 } celix_properties_value_type_e;
 
 /**
@@ -85,6 +87,10 @@ typedef struct celix_properties_entry {
         const celix_version_t* versionValue; /**< The Celix version value of the entry. */
         const celix_array_list_t*
             arrayValue; /**< The array list of longs, doubles, bools, strings or versions value of the entry. */
+        struct {
+            const void* data;                /**< The binary data of the entry. */
+            size_t size;                     /**< The size of the binary data. */
+        } binaryValue;                       /**< The binary value of the entry. */
     } typed;            /**< The typed values of the entry. Only valid if valueType
                              is not CELIX_PROPERTIES_VALUE_TYPE_UNSET and only the matching
                              value types should be used. E.g typed.boolValue if valueType is
@@ -1012,6 +1018,8 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * - CELIX_PROPERTIES_TYPE_ARRAY: The value is encoded as a JSON array, with each element encoded according to its type.
  * - CELIX_PROPERTIES_TYPE_VERSION: The value is encoded as a JSON string with a "version<" prefix and a ">" suffix
  * (e.g. "version<1.2.3>").
+ * - CELIX_PROPERTIES_TYPE_BINARY: The value is encoded as a JSON string with "base64<" prefix and ">" suffix
+ * (e.g. "base64<SGVsbG8=>").
  *
  * For a overview of the possible encode flags, see the CELIX_PROPERTIES_ENCODE_* flags documentation.
  * The default encoding style is a compact and flat JSON representation.
@@ -1170,6 +1178,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  * - JSON boolean values are decoded as boolean properties entries.
  * - jSON string values with a "version<" prefix and a ">" suffix are decoded as version properties entries (e.g.
  * "version<1.2.3>").
+ * - JSON string values with a "base64<" prefix and a ">" suffix are decoded as binary properties entries (e.g.
+ * "base64<SGVsbG8=>").
  * - JSON array values are decoded as array properties entries. The array can contain any of the above types, but mixed
  * arrays are not supported.
  * - JSON null values are ignored.
@@ -1236,6 +1246,56 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_load(const char* filename,
 CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromString(const char* input,
                                                                    int decodeFlags,
                                                                    celix_properties_t** out);
+
+/**
+ * @brief Set the value of a property to binary data.
+ *
+ * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_BINARY.
+ *
+ * This function will make a copy of the provided binary data and store it in the property set.
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] data The binary data to set. The function will make a copy of this data and store it in the property set.
+ * @param[in] size The size of the binary data.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or data is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setBinary(celix_properties_t* properties, const char* key, const void* data, size_t size);
+
+/**
+ * @brief Assign the value of a property to binary data, taking ownership of the provided data.
+ *
+ * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_BINARY.
+ *
+ * The function will take ownership of the provided binary data and free it when the property is destroyed. This means that the caller should not modify or free the provided data after calling this function.
+ *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] data The binary data to set. The function will take ownership of this data and free it when the property is destroyed. The caller should ensure that the memory of data can be freed by 'free' function.
+ * @param[in] size The size of the binary data.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or data is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assignBinary(celix_properties_t* properties, const char* key, void* data, size_t size);
+
+/**
+ * @brief Get the binary data value of a property without copying.
+ *
+ * This function provides a non-owning, read-only access to binary data contained in the properties.
+ * It returns a const pointer to the binary data associated with the specified key.
+ * This function does not perform any conversion from a string property value to binary data.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[out] size The size of the binary data. If the property is not set or the value is not binary data, this is set to 0.
+ * @return A const pointer to the binary data if it is present and valid, or NULL if the
+ * property is not set or the value is not binary data. The returned pointer should not be modified or freed.
+ */
+CELIX_UTILS_EXPORT const void* celix_properties_getBinary(const celix_properties_t* properties, const char* key, size_t* size);
 
 #ifdef __cplusplus
 }

@@ -144,6 +144,8 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
         entry->value = entry->typed.boolValue ? CELIX_PROPERTIES_BOOL_TRUE_STRVAL : CELIX_PROPERTIES_BOOL_FALSE_STRVAL;
     } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST) {
         entry->value = celix_utils_arrayListToString(entry->typed.arrayValue);
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BINARY) {
+        entry->value = celix_utils_binaryToBase64String(entry->typed.binaryValue.data, entry->typed.binaryValue.size);
     } else /*string value*/ {
         assert(entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING);
         entry->value = entry->typed.strValue;
@@ -198,6 +200,10 @@ static void celix_properties_freeTypedEntry(celix_properties_t* properties, celi
     } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST) {
         celix_arrayList_destroy((celix_array_list_t*)entry->typed.arrayValue);
         entry->typed.arrayValue = NULL;
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BINARY) {
+        free((void*)entry->typed.binaryValue.data);
+        entry->typed.binaryValue.data = NULL;
+        entry->typed.binaryValue.size = 0;
     } else {
         // nop
     }
@@ -438,6 +444,8 @@ celix_properties_setEntry(celix_properties_t* properties, const char* key, const
             return celix_properties_setBool(properties, key, entry->typed.boolValue);
         case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
             return celix_properties_setVersion(properties, key, entry->typed.versionValue);
+        case CELIX_PROPERTIES_VALUE_TYPE_BINARY:
+            return celix_properties_setBinary(properties, key, entry->typed.binaryValue.data, entry->typed.binaryValue.size);
         default: //CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST
             return celix_properties_setArrayList(properties, key, entry->typed.arrayValue);
         }
@@ -462,6 +470,9 @@ static bool celix_properties_entryEquals(const celix_properties_entry_t* entry1,
         return entry1->typed.boolValue == entry2->typed.boolValue;
     case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
         return celix_version_compareTo(entry1->typed.versionValue, entry2->typed.versionValue) == 0;
+    case CELIX_PROPERTIES_VALUE_TYPE_BINARY:
+        return entry1->typed.binaryValue.size == entry2->typed.binaryValue.size &&
+               memcmp(entry1->typed.binaryValue.data, entry2->typed.binaryValue.data, entry1->typed.binaryValue.size) == 0;
     default: //CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST
         return celix_arrayList_equals(entry1->typed.arrayValue, entry2->typed.arrayValue);
     }
@@ -910,4 +921,49 @@ celix_properties_statistics_t celix_properties_getStatistics(const celix_propert
     stats.fillEntriesOptimizationBufferPercentage = (double)properties->currentEntriesBufferIndex / CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE;
     stats.mapStatistics = celix_stringHashMap_getStatistics(properties->map);
     return stats;
+}
+
+celix_status_t celix_properties_setBinary(celix_properties_t* properties, const char* key, const void* data, size_t size) {
+    if (!data || size == 0) {
+        celix_err_push("Cannot set binary property with NULL data or size 0");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    void* copy = malloc(size);
+    if (!copy) {
+        celix_err_push("Failed to allocate memory for binary property");
+        return ENOMEM;
+    }
+    memcpy(copy, data, size);
+    celix_properties_entry_t prototype = {0};
+    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BINARY;
+    prototype.typed.binaryValue.data = copy;
+    prototype.typed.binaryValue.size = size;
+    return celix_properties_createAndSetEntry(properties, key, &prototype);
+}
+
+const void* celix_properties_getBinary(const celix_properties_t* properties, const char* key, size_t* size) {
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    if (entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BINARY) {
+        if (size) {
+            *size = entry->typed.binaryValue.size;
+        }
+        return entry->typed.binaryValue.data;
+    }
+    if (size) {
+        *size = 0;
+    }
+    return NULL;
+}
+
+celix_status_t celix_properties_assignBinary(celix_properties_t* properties, const char* key, void* data, size_t size) {
+    if (!data || size == 0) {
+        free(data); // Free the data if key or data is NULL
+        celix_err_push("Cannot assign binary property with NULL data or size 0");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    celix_properties_entry_t prototype = {0};
+    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BINARY;
+    prototype.typed.binaryValue.data = data;
+    prototype.typed.binaryValue.size = size;
+    return celix_properties_createAndSetEntry(properties, key, &prototype);
 }

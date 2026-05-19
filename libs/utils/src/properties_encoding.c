@@ -90,6 +90,8 @@ celix_properties_entryValueToJson(const char* key, const celix_properties_entry_
         return celix_utils_versionToJson(entry->typed.versionValue, out);
     case CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST:
         return celix_properties_arrayEntryValueToJson(key, entry, flags, out);
+    case CELIX_PROPERTIES_VALUE_TYPE_BINARY:
+        return celix_utils_binaryToJson(entry->typed.binaryValue.data, entry->typed.binaryValue.size, out);
     default:
         // LCOV_EXCL_START
         celix_err_pushf("Unexpected properties entry type %d.", entry->valueType);
@@ -303,6 +305,11 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         celix_version_t* version;
         status = celix_utils_jsonToVersion(jsonValue, &version);
         status = CELIX_DO_IF(status, celix_properties_assignVersion(props, key, version));
+    } else if (celix_utils_isBinaryJsonString(jsonValue)) {
+        void* data = NULL;
+        size_t size = 0;
+        status = celix_utils_jsonToBinary(jsonValue, &data, &size);
+        status = CELIX_DO_IF(status, celix_properties_assignBinary(props, key, data, size));
     } else if (json_is_string(jsonValue)) {
         status = celix_properties_setString(props, key, json_string_value(jsonValue));
     } else if (json_is_integer(jsonValue)) {

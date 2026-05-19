@@ -343,3 +343,13 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetVersionFailureTest) {
     ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();
 }
+
+TEST_F(PropertiesErrorInjectionTestSuite, SetBinaryFailureTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_ei_expect_malloc((void*)celix_properties_setBinary, 0, nullptr);
+    char bin[2] = {1,1};
+    auto status = celix_properties_setBinary(props, "key", bin, sizeof(bin));
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+}

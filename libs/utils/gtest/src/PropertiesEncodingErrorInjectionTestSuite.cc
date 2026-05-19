@@ -29,6 +29,7 @@
 #include "jansson_ei.h"
 #include "malloc_ei.h"
 #include "stdio_ei.h"
+#include "celix_string_hash_map_ei.h"
 
 class PropertiesEncodingErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -44,6 +45,7 @@ class PropertiesEncodingErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addString(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
         celix_err_resetErrors();
     }
 };
@@ -210,6 +212,18 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeVersionErrorTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeBinaryErrorTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    char bin[1]={0};
+    celix_properties_setBinary(props, "key", bin, sizeof(bin));
+    celix_ei_expect_json_sprintf((void*)celix_properties_saveToString, 4, nullptr);
+    char* out;
+    auto status = celix_properties_saveToString(props, 0, &out);
+    EXPECT_EQ(ENOMEM, status);
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
+}
+
 TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeDumpfErrorTest) {
     // Given a dummy properties object
     celix_autoptr(celix_properties_t) props = celix_properties_create();
@@ -313,6 +327,16 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeVersionErrorTest) {
     // And I expect 1 error message in celix_err
     EXPECT_EQ(1, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
+}
+
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeBinaryErrorTest) {
+    const char* json = R"({"key":"base64<AA==>"})";
+
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_loadFromString, 5, ENOMEM);
+
+    celix_properties_t* props;
+    auto status = celix_properties_loadFromString(json, 0, &props);
+    EXPECT_EQ(ENOMEM, status);
 }
 
 TEST_F(PropertiesEncodingErrorInjectionTestSuite, SaveCxxPropertiesErrorTest) {

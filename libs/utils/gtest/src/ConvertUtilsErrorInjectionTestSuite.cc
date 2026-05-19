@@ -23,7 +23,10 @@
 #include "celix_convert_utils.h"
 #include "celix_version_ei.h"
 #include "stdio_ei.h"
+#include "malloc_ei.h"
+#include "openssl_ei.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 class ConvertUtilsWithErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -37,6 +40,8 @@ public:
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fputs(nullptr, 0, 0);
         celix_ei_expect_fputc(nullptr, 0, 0);
+        celix_ei_expect_malloc(nullptr, 0, nullptr);
+        celix_ei_expect_EVP_EncodeBlock(nullptr, 0, 0);
 
         celix_err_printErrors(stderr, nullptr, nullptr);
     }
@@ -177,4 +182,46 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, StringArrayToStringTest) {
     result = celix_utils_arrayListToString(list);
     //Then the result is null
     EXPECT_EQ(nullptr, result);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, AllocMemoryErrorWhenConvertingBinaryToStringTest) {
+    celix_ei_expect_malloc((void*)&celix_utils_binaryToBase64String, 0, nullptr);
+    char bin[3]= {1,2,3};
+    char* base64 =  celix_utils_binaryToBase64String(bin, sizeof(bin));
+    ASSERT_EQ(nullptr, base64);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, EncodeBase64ErrorWhenConvertingBinaryToStringTest) {
+    celix_ei_expect_EVP_EncodeBlock((void*)&celix_utils_binaryToBase64String, 0, -1);
+    char bin[3]= {1,2,3};
+    char* base64 =  celix_utils_binaryToBase64String(bin, sizeof(bin));
+    ASSERT_EQ(nullptr, base64);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, EncodedBase64LenErrorWhenConvertingBinaryToStringTest) {
+    char bin[3]= {1,2,3};
+    celix_ei_expect_EVP_EncodeBlock((void*)&celix_utils_binaryToBase64String, 0, sizeof(bin)/3 * 4 + 1);
+    char* base64 =  celix_utils_binaryToBase64String(bin, sizeof(bin));
+    ASSERT_EQ(nullptr, base64);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, AllocMemoryErrorWhenConvertingStringToBinaryTest) {
+    char bin[3]= {1, 2, 3};
+    celix_autofree char* base64String = celix_utils_binaryToBase64String(bin, sizeof(bin));
+    celix_autofree void* data = nullptr;
+    size_t size = 0;
+    celix_ei_expect_malloc((void*)&celix_utils_convertBase64StringToBinary, 0, nullptr);
+    auto status = celix_utils_convertBase64StringToBinary(base64String,  0, nullptr, &size, &data);
+    ASSERT_EQ(ENOMEM, status);
+    ASSERT_EQ(nullptr, data);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, AllocMemoryErrorForDeafultValueWhenConvertingStringToBinaryTest) {
+    char bin[3]= {1, 2, 3};
+    celix_autofree void* data = nullptr;
+    size_t size = 0;
+    celix_ei_expect_malloc((void*)&celix_utils_convertBase64StringToBinary, 0, nullptr);
+    auto status = celix_utils_convertBase64StringToBinary(nullptr,  sizeof(bin), bin, &size, &data);
+    ASSERT_EQ(ENOMEM, status);
+    ASSERT_EQ(nullptr, data);
 }

@@ -20,6 +20,7 @@
 
 #include "celix_json_utils_private.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_version_ei.h"
 #include "jansson_ei.h"
 #include "asprintf_ei.h"
@@ -59,4 +60,24 @@ TEST_F(CelixJsonUtilsErrorInjectionTestSuite, ExtractVersionErrorWhenConvertingJ
     celix_autoptr(celix_version_t) version = nullptr;
     auto status = celix_utils_jsonToVersion(json, &version);
     ASSERT_EQ(ENOMEM, status);
+}
+
+TEST_F(CelixJsonUtilsErrorInjectionTestSuite, JsonSprintfErrorWhenConvertingBinaryToStringTest) {
+    celix_ei_expect_json_sprintf((void*)&celix_utils_binaryToJson, 0, nullptr);
+    char bin[3]= {1,2,3};
+    json_auto_t* json = nullptr;
+    auto status = celix_utils_binaryToJson(bin, sizeof(bin), &json);
+    ASSERT_EQ(ENOMEM, status);
+    ASSERT_TRUE(json == nullptr);
+}
+
+TEST_F(CelixJsonUtilsErrorInjectionTestSuite, ExtractBinaryErrorWhenConvertingJsonToBinaryTest) {
+    celix_ei_expect_vasprintf((void*)&celix_utils_jsonToBinary, 2, -1);
+    std::string base64(512,'A');
+    json_auto_t* json = json_string(("base64<" + base64 + ">").c_str());
+    celix_autofree void* data = nullptr;
+    size_t size = 0;
+    auto status = celix_utils_jsonToBinary(json, &data, &size);
+    ASSERT_EQ(ENOMEM, status);
+    ASSERT_TRUE(data == nullptr);
 }

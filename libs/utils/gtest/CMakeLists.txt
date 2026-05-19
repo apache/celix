@@ -163,6 +163,7 @@ if (EI_TESTS)
             Celix::version_ei
             Celix::array_list_ei
             Celix::jansson_ei
+            Celix::openssl_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)

@@ -275,6 +275,12 @@ TEST_F(PropertiesTestSuite, GetSetOverwrite) {
     EXPECT_EQ(false, celix_properties_getAsBool(props, "key", true));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignVersion(props, "key", version));
     EXPECT_EQ(version, celix_properties_getVersion(props, "key"));
+    char bin[3] = {0};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(props, "key", bin, sizeof(bin)));
+    size_t binarySize = 0;
+    const void* binaryData = celix_properties_getBinary(props, "key", &binarySize);
+    EXPECT_EQ(sizeof(bin), binarySize);
+    EXPECT_EQ(0, memcmp(bin, binaryData, sizeof(bin)));
     celix_properties_set(props, "key", "last");
 
     celix_properties_destroy(props);
@@ -315,8 +321,10 @@ TEST_F(PropertiesTestSuite, GetTypeAndCopyTest) {
     celix_arrayList_addLong(longList, 2);
     celix_arrayList_addLong(longList, 3);
     celix_properties_setArrayList(props, "array", longList);
+    char bin[1] = {0};
+    celix_properties_setBinary(props, "binary", bin, sizeof(bin));
 
-    EXPECT_EQ(6, celix_properties_size(props));
+    EXPECT_EQ(7, celix_properties_size(props));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, celix_properties_getType(props, "string"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, celix_properties_getType(props, "long"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(props, "double"));
@@ -325,9 +333,14 @@ TEST_F(PropertiesTestSuite, GetTypeAndCopyTest) {
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, celix_properties_getType(props, "missing"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST, celix_properties_getType(props, "array"));
     EXPECT_TRUE(celix_arrayList_equals(longList, celix_properties_getArrayList(props, "array")));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BINARY, celix_properties_getType(props, "binary"));
+    size_t binarySize = 0;
+    const void* binaryData = celix_properties_getBinary(props, "binary", &binarySize);
+    EXPECT_EQ(sizeof(bin), binarySize);
+    EXPECT_EQ(0, memcmp(bin, binaryData, sizeof(bin)));
 
     auto* copy = celix_properties_copy(props);
-    EXPECT_EQ(6, celix_properties_size(copy));
+    EXPECT_EQ(7, celix_properties_size(copy));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, celix_properties_getType(copy, "string"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, celix_properties_getType(copy, "long"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(copy, "double"));
@@ -335,6 +348,11 @@ TEST_F(PropertiesTestSuite, GetTypeAndCopyTest) {
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(copy, "version"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST, celix_properties_getType(copy, "array"));
     EXPECT_TRUE(celix_arrayList_equals(longList, celix_properties_getArrayList(copy, "array")));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BINARY, celix_properties_getType(copy, "binary"));
+    size_t copyBinarySize = 0;
+    const void* copyBinaryData = celix_properties_getBinary(copy, "binary", &copyBinarySize);
+    EXPECT_EQ(sizeof(bin), copyBinarySize);
+    EXPECT_EQ(0, memcmp(bin, copyBinaryData, sizeof(bin)));
 
     celix_version_destroy(version);
     celix_properties_destroy(props);
@@ -349,6 +367,8 @@ TEST_F(PropertiesTestSuite, GetEntryTest) {
     celix_properties_setBool(props, "key4", true);
     auto* version = celix_version_create(1, 2, 3, nullptr);
     celix_properties_setVersion(props, "key5", version);
+    char bin[2] = {0};
+    celix_properties_setBinary(props, "key6", bin, sizeof(bin));
 
     auto* entry = celix_properties_getEntry(props, "key1");
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, entry->valueType);
@@ -378,6 +398,13 @@ TEST_F(PropertiesTestSuite, GetEntryTest) {
     EXPECT_EQ(3, celix_version_getMicro(entry->typed.versionValue));
 
     entry = celix_properties_getEntry(props, "key6");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BINARY, entry->valueType);
+    size_t binarySize = 0;
+    const void* binaryData = celix_properties_getBinary(props, "key6", &binarySize);
+    EXPECT_EQ(sizeof(bin), binarySize);
+    EXPECT_EQ(0, memcmp(bin, binaryData, sizeof(bin)));
+
+    entry = celix_properties_getEntry(props, "key7");
     EXPECT_EQ(nullptr, entry);
 
     celix_version_destroy(version);
@@ -565,19 +592,22 @@ TEST_F(PropertiesTestSuite, SetEntryTest) {
     celix_arrayList_addLong(longList, 2);
     celix_arrayList_addLong(longList, 3);
     celix_properties_setArrayList(props1, "key6", longList);
+    char bin[3] = {0};
+    celix_properties_setBinary(props1, "key7", bin, sizeof(bin));
 
     CELIX_PROPERTIES_ITERATE(props1, visit) {
         celix_properties_setEntry(props2, visit.key, &visit.entry);
         celix_properties_setEntry(nullptr, visit.key, &visit.entry);
     }
-    celix_properties_setEntry(props2, "key7", nullptr);
-    EXPECT_EQ(6, celix_properties_size(props2));
+    celix_properties_setEntry(props2, "key8", nullptr);
+    EXPECT_EQ(7, celix_properties_size(props2));
     EXPECT_STREQ("value1", celix_properties_getAsString(props2, "key1", nullptr));
     EXPECT_EQ(123, celix_properties_getAsLong(props2, "key2", -1L));
     EXPECT_EQ(true, celix_properties_getAsBool(props2, "key3", false));
     EXPECT_EQ(3.14, celix_properties_getAsDouble(props2, "key4", -1.0));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props2, "key5"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST, celix_properties_getType(props2, "key6"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BINARY, celix_properties_getType(props2, "key7"));
     EXPECT_TRUE(celix_properties_equals(props1, props2));
 
     celix_properties_destroy(props1);
@@ -650,6 +680,10 @@ TEST_F(PropertiesTestSuite, PropertiesNullArgumentsTest) {
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignVersion(nullptr, "key", celix_version_copy(version)));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_setArrayList(nullptr, "key", list));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignArrayList(nullptr, "key", celix_arrayList_copy(list)));
+    char bin[1] = {0};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(nullptr, "key", bin, sizeof(bin)));
+    void *bin2 = malloc(1);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignBinary(nullptr, "key", bin2, 1));
     celix_autoptr(celix_properties_t) copy = celix_properties_copy(nullptr);
     EXPECT_NE(nullptr, copy);
 }
@@ -687,6 +721,16 @@ TEST_F(PropertiesTestSuite, InvalidArgumentsTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignArrayList(props, "list", nullptr));
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignArrayList(props, "list", celix_steal_ptr(list1)));
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignArrayList(props, "list", celix_steal_ptr(list3)));
+
+    char bin[1] = {0};
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setBinary(props, nullptr, bin, sizeof(bin)));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setBinary(props, "version", nullptr, sizeof(bin)));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setBinary(props, "version", bin, 0));
+    void *bin2 = malloc(1);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignBinary(props, nullptr, bin2, 1));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignBinary(props, "version", nullptr, 1));
+    void *bin3 = malloc(1);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignBinary(props, "version", bin3, 0));
 }
 
 TEST_F(PropertiesTestSuite, GetStatsTest) {
@@ -951,4 +995,50 @@ TEST_F(PropertiesTestSuite, EmptyStringKeyTest) {
     celix_properties_set(props, "", "value"); // "" is a valid key (nullptr is not)
     EXPECT_EQ(1, celix_properties_size(props));
     EXPECT_STREQ("value", celix_properties_getString(props, ""));
+}
+
+TEST_F(PropertiesTestSuite, BinaryPropertiesEqualsTest) {
+    celix_autoptr(celix_properties_t) prop1 = celix_properties_create();
+    celix_autoptr(celix_properties_t) prop2 = celix_properties_create();
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    char bin1[2] = {1,1};
+    char bin2[2] = {1,1};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(prop1, "key", bin1, sizeof(bin1)));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(prop2, "key", bin2, sizeof(bin2)));
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    char bin3[2] = {1,2};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(prop2, "key", bin3, sizeof(bin3)));
+    EXPECT_FALSE(celix_properties_equals(prop1, prop2));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(prop1, "key", bin3, sizeof(bin3)));
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    char bin4[3] = {1, 2, 3};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(prop2, "key", bin4, sizeof(bin4)));
+    EXPECT_FALSE(celix_properties_equals(prop1, prop2));
+}
+
+TEST_F(PropertiesTestSuite, GetBinaryTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    char bin[2] = {1,1};
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBinary(props, "key", bin, sizeof(bin)));
+    EXPECT_EQ(1, celix_properties_size(props));
+
+    size_t outSize;
+    const void* outBin = celix_properties_getBinary(props, "key", &outSize);
+    EXPECT_EQ(sizeof(bin), outSize);
+    EXPECT_EQ(0, memcmp(bin, outBin, sizeof(bin)));
+    EXPECT_NE(nullptr, celix_properties_getBinary(props, "key", nullptr));
+
+    EXPECT_EQ(nullptr, celix_properties_getBinary(props, "non-existing", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getBinary(props, "non-existing", &outSize));
+    EXPECT_EQ(0, outSize);
+
+    celix_properties_unset(props, "key");
+    EXPECT_EQ(nullptr, celix_properties_getBinary(props, "key", &outSize));
+
+    celix_properties_setLong(props, "longKey", 42);
+    EXPECT_EQ(nullptr, celix_properties_getBinary(props, "longKey", &outSize));
 }
