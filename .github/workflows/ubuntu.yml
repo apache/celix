@@ -122,6 +122,7 @@ jobs:
           libavahi-compat-libdnssd-dev \
           libcivetweb-dev \
           civetweb \
+          libssl-dev \
           ccache
     - name: Prepare ccache timestamp
       id: ccache_cache_timestamp

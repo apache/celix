@@ -167,6 +167,7 @@ class CelixConan(ConanFile):
         validation_rules = [
             ValidationRule(self.options.build_utils, 'libzip', "shared", True, 'build_utils=True'),
             ValidationRule(self.options.build_utils, 'libuv', "shared", True, 'build_utils=True'),
+            ValidationRule(self.options.build_utils, 'openssl', "shared", True, 'build_utils=True'),
             ValidationRule(self.options.build_framework, 'util-linux-libuuid', "shared", True, 'build_framework=True'),
             ValidationRule(self.options.build_framework and self.options.framework_curlinit, 'libcurl', "shared", True, 'build_framework=True and framework_curlinit=True'),
             ValidationRule(self.options.build_framework and self.options.framework_curlinit, 'openssl', "shared", True, 'build_framework=True and framework_curlinit=True'),
@@ -369,6 +370,7 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
             self.requires("libuv/[>=1.49.2 <2.0.0]")
+            self.requires("openssl/[>=3.2.0]")
         if self.options.build_framework:
             self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
             if self.settings.os == "Macos":
@@ -394,7 +396,7 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        self.requires("openssl/[>=3.2.0]", override=True)
+
         # Fix zlib to 1.3.1, 'libzip/1.10.1' and 'libcurl/7.64.1' requires different zlib versions causing conflicts
         self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
