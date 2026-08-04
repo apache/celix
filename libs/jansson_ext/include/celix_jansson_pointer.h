@@ -60,7 +60,7 @@ typedef struct celix_json_pointer_t {
  * @param ptr_str  RFC 6901 pointer string (e.g., "/foo/bar/0")
  * @return New pointer, or NULL on error.  Free with celix_json_pointer_destroy().
  */
-celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str);
+CELIX_JANSSON_EXT_EXPORT celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str);
 
 /**
  * Initialize a stack-allocated pointer from a string.
@@ -78,7 +78,7 @@ celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str);
  * @param ptr_str  RFC 6901 pointer string (must start with '/', or be "" for root)
  * @return 0 on success, -1 on parse failure or allocation error
  */
-int celix_json_pointer_init(celix_json_pointer_t* ptr, const char* ptr_str);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_init(celix_json_pointer_t* ptr, const char* ptr_str);
 
 /**
  * Create a deep copy of a pointer.
@@ -86,33 +86,33 @@ int celix_json_pointer_init(celix_json_pointer_t* ptr, const char* ptr_str);
  * @param src  The pointer to copy
  * @return New copy, or NULL on error.  Free with celix_json_pointer_destroy().
  */
-celix_json_pointer_t* celix_json_pointer_copy(const celix_json_pointer_t* src);
+CELIX_JANSSON_EXT_EXPORT celix_json_pointer_t* celix_json_pointer_copy(const celix_json_pointer_t* src);
 
 /**
  * Free a heap-allocated pointer created by celix_json_pointer_create() or
  * celix_json_pointer_copy().  Does nothing if @p ptr is NULL.
  */
-void celix_json_pointer_destroy(celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT void celix_json_pointer_destroy(celix_json_pointer_t* ptr);
 
 /**
  * Release all resources held by a stack-allocated pointer.
  * Does not free the struct itself.
  */
-void celix_json_pointer_clear(celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT void celix_json_pointer_clear(celix_json_pointer_t* ptr);
 
 /* ── Inspection ────────────────────────────────────────────────────────── */
 
 /**
  * Return the number of tokens in this pointer.
  */
-size_t celix_json_pointer_depth(const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT size_t celix_json_pointer_depth(const celix_json_pointer_t* ptr);
 
 /**
  * Get the token at the given index (0-based).
  * Returns NULL if @p index is out of range.
  * The returned string is unescaped and owned by the pointer — do not free it.
  */
-const char* celix_json_pointer_token(const celix_json_pointer_t* ptr, size_t index);
+CELIX_JANSSON_EXT_EXPORT const char* celix_json_pointer_token(const celix_json_pointer_t* ptr, size_t index);
 
 /* ── Mutation ──────────────────────────────────────────────────────────── */
 
@@ -123,13 +123,13 @@ const char* celix_json_pointer_token(const celix_json_pointer_t* ptr, size_t ind
  * @param token  Unescaped token string (e.g., "foo bar")
  * @return 0 on success, -1 on error
  */
-int celix_json_pointer_push(celix_json_pointer_t* ptr, const char* token);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_push(celix_json_pointer_t* ptr, const char* token);
 
 /**
  * Remove the last token from the pointer.
  * Does nothing if the pointer is empty (has depth 0).
  */
-void celix_json_pointer_pop(celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT void celix_json_pointer_pop(celix_json_pointer_t* ptr);
 
 /* ── Serialization ─────────────────────────────────────────────────────── */
 
@@ -139,7 +139,7 @@ void celix_json_pointer_pop(celix_json_pointer_t* ptr);
  * Tokens are escaped: '~' → "~0", '/' → "~1".
  * Returns a malloc'd string, or NULL on error.  Caller must free().
  */
-char* celix_json_pointer_to_string(const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT char* celix_json_pointer_to_string(const celix_json_pointer_t* ptr);
 
 /* ── Document access ───────────────────────────────────────────────────── */
 
@@ -150,7 +150,7 @@ char* celix_json_pointer_to_string(const celix_json_pointer_t* ptr);
  * @param ptr  The pointer to check
  * @return 1 if the path exists, 0 otherwise.  Never throws/errors.
  */
-int celix_json_pointer_contains(json_t* doc, const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_contains(json_t* doc, const celix_json_pointer_t* ptr);
 
 /* ── Document access ───────────────────────────────────────────────────── */
 
@@ -165,7 +165,7 @@ int celix_json_pointer_contains(json_t* doc, const celix_json_pointer_t* ptr);
  * @param ptr   The pointer to resolve
  * @return The resolved json_t*, borrowed, or NULL
  */
-json_t* celix_json_pointer_get(json_t* doc, const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT json_t* celix_json_pointer_get(json_t* doc, const celix_json_pointer_t* ptr);
 
 /**
  * Like celix_json_pointer_get(), but if the path does not exist, creates
@@ -179,7 +179,7 @@ json_t* celix_json_pointer_get(json_t* doc, const celix_json_pointer_t* ptr);
  * @return The resolved/created json_t*, new reference — caller must json_decref(),
  *         or NULL on error
  */
-json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t* ptr);
 
 /**
  * Set a value at the given pointer in a document.
@@ -192,13 +192,13 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
  * @param value  The value to set (ownership is taken — "steal" semantics)
  * @return 0 on success, -1 on error
  */
-int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
 
 /**
  * Set a value at the given pointer, incrementing the reference.
  * Like celix_json_pointer_set() but json_incref()s @p value instead of stealing it.
  */
-int celix_json_pointer_set_new(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_set_new(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
 
 /**
  * Remove the value at this pointer from the document.
@@ -207,7 +207,7 @@ int celix_json_pointer_set_new(json_t* doc, const celix_json_pointer_t* ptr, jso
  * @param ptr  The pointer to remove
  * @return 0 on success, -1 if the path does not exist
  */
-int celix_json_pointer_remove(json_t* doc, const celix_json_pointer_t* ptr);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_remove(json_t* doc, const celix_json_pointer_t* ptr);
 
 /* ── Token escaping utilities ──────────────────────────────────────────── */
 
@@ -217,7 +217,7 @@ int celix_json_pointer_remove(json_t* doc, const celix_json_pointer_t* ptr);
  * Replaces '~' with "~0" and '/' with "~1".
  * Returns a malloc'd string.  Caller must free().
  */
-char* celix_json_pointer_escape(const char* token);
+CELIX_JANSSON_EXT_EXPORT char* celix_json_pointer_escape(const char* token);
 
 /**
  * Unescape a single token from a JSON Pointer string fragment.
@@ -225,7 +225,7 @@ char* celix_json_pointer_escape(const char* token);
  * Replaces "~1" with '/' and "~0" with '~'.
  * Returns a malloc'd string.  Caller must free().
  */
-char* celix_json_pointer_unescape(const char* token);
+CELIX_JANSSON_EXT_EXPORT char* celix_json_pointer_unescape(const char* token);
 
 /* ── Navigation ────────────────────────────────────────────────────────── */
 
@@ -238,7 +238,7 @@ char* celix_json_pointer_unescape(const char* token);
  *         Returns NULL if the pointer is already at the root.
  *         If allocated, free with celix_json_pointer_destroy().
  */
-celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr, celix_json_pointer_t* out);
+CELIX_JANSSON_EXT_EXPORT celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr, celix_json_pointer_t* out);
 
 /**
  * Append all tokens from @p suffix to @p ptr.
@@ -247,7 +247,7 @@ celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr,
  * @param suffix  Tokens to append
  * @return 0 on success, -1 on error
  */
-int celix_json_pointer_concat(celix_json_pointer_t* ptr, const celix_json_pointer_t* suffix);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_concat(celix_json_pointer_t* ptr, const celix_json_pointer_t* suffix);
 
 /* ── Comparison ────────────────────────────────────────────────────────── */
 
@@ -256,7 +256,7 @@ int celix_json_pointer_concat(celix_json_pointer_t* ptr, const celix_json_pointe
  *
  * @return 0 if equal, non-zero otherwise
  */
-int celix_json_pointer_equals(const celix_json_pointer_t* a, const celix_json_pointer_t* b);
+CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_equals(const celix_json_pointer_t* a, const celix_json_pointer_t* b);
 
 #ifdef __cplusplus
 }

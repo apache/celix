@@ -40,7 +40,7 @@ extern "C" {
  * @param value     The value to set at the path (ownership is taken)
  * @return 0 on success, -1 if @p patch is NULL or not an array
  */
-int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value);
+CELIX_JANSSON_EXT_EXPORT int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value);
 
 /**
  * Append a "replace" operation (RFC 6902) to the patch array.
@@ -54,7 +54,7 @@ int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value);
  * @param value     The new value (ownership is taken)
  * @return 0 on success, -1 if @p patch is NULL or not an array
  */
-int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value);
+CELIX_JANSSON_EXT_EXPORT int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value);
 
 /**
  * Append a "remove" operation (RFC 6902) to the patch array.
@@ -63,7 +63,7 @@ int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value)
  * @param path_str  JSON Pointer path of the value to remove
  * @return 0 on success, -1 if @p patch is NULL or not an array
  */
-int celix_json_patch_remove(json_t* patch, const char* path_str);
+CELIX_JANSSON_EXT_EXPORT int celix_json_patch_remove(json_t* patch, const char* path_str);
 
 /**
  * Truncate the patch array back to @p old_size entries.
@@ -75,7 +75,7 @@ int celix_json_patch_remove(json_t* patch, const char* path_str);
  * @param patch     The JSON Patch array (json_t* array, modified in-place)
  * @param old_size  Target number of entries to retain
  */
-void celix_json_patch_truncate(json_t* patch, size_t old_size);
+CELIX_JANSSON_EXT_EXPORT void celix_json_patch_truncate(json_t* patch, size_t old_size);
 
 #ifdef __cplusplus
 }

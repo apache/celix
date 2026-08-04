@@ -73,7 +73,7 @@ enum celix_jansson_schema_error_e {
 };
 
 /** Returns a human-readable description for an error code. */
-const char* celix_jansson_schema_strerror(int err);
+CELIX_JANSSON_EXT_EXPORT const char* celix_jansson_schema_strerror(int err);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Callback typedefs
@@ -154,7 +154,7 @@ typedef void (*celix_jansson_schema_error_fn)(const char* json_pointer,
  * The @p user_data parameter is ignored (may be NULL).
  * This matches the celix_jansson_schema_format_checker_fn signature.
  */
-int celix_jansson_schema_default_format_check(const char* format, const char* value, void* user_data);
+CELIX_JANSSON_EXT_EXPORT int celix_jansson_schema_default_format_check(const char* format, const char* value, void* user_data);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Validator handle (opaque)
@@ -180,7 +180,7 @@ typedef struct celix_jansson_schema_validator_t celix_jansson_schema_validator_t
  * @param content_ud User data for content callback
  * @return New validator, or NULL on allocation failure
  */
-celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_jansson_schema_loader_fn loader,
+CELIX_JANSSON_EXT_EXPORT celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_jansson_schema_loader_fn loader,
                                                                         void* loader_ud,
                                                                         celix_jansson_schema_format_checker_fn format,
                                                                         void* format_ud,
@@ -188,7 +188,7 @@ celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_ja
                                                                         void* content_ud);
 
 /** Free a validator and all compiled schemas. */
-void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v);
+CELIX_JANSSON_EXT_EXPORT void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Schema compilation
@@ -206,7 +206,7 @@ void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v)
  *         (caller must free *errmsg) and may be NULL if the caller does not
  *         need a detailed message
  */
-int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, json_t* schema, char** errmsg);
+CELIX_JANSSON_EXT_EXPORT int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, json_t* schema, char** errmsg);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Validation
@@ -227,7 +227,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
  *                   if the caller does not need defaults.
  * @return The number of validation errors (0 = valid)
  */
-int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
+CELIX_JANSSON_EXT_EXPORT int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
                                   json_t* instance,
                                   celix_jansson_schema_error_fn on_error,
                                   void* error_ud,
@@ -247,7 +247,7 @@ int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
  * @param patch_out    Output: JSON Patch array (may be NULL)
  * @return Number of validation errors (0 = valid)
  */
-int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
+CELIX_JANSSON_EXT_EXPORT int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
                                       json_t* instance,
                                       const char* initial_uri,
                                       celix_jansson_schema_error_fn on_error,
@@ -271,7 +271,7 @@ int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
  * @return A new json_t* with the patch applied, or NULL on error.
  *         The caller must json_decref() the result.
  */
-json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch);
+CELIX_JANSSON_EXT_EXPORT json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Built-in draft-7 meta-schema
@@ -283,7 +283,7 @@ json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch);
  * Useful as the return value for a schema_loader when the requested URI is
  * "http://json-schema.org/draft-07/schema".
  */
-json_t* celix_jansson_schema_draft7_meta_schema(void);
+CELIX_JANSSON_EXT_EXPORT json_t* celix_jansson_schema_draft7_meta_schema(void);
 
 #ifdef __cplusplus
 }

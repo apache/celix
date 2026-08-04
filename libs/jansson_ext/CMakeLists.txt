@@ -35,6 +35,7 @@ if (JANSSON_EXT)
         OUTPUT_NAME "celix_jansson_ext"
         VERSION 0.1.0
         SOVERSION 0)
+    celix_target_hide_symbols(jansson_ext)
     target_link_libraries(jansson_ext
         PUBLIC jansson::jansson Threads::Threads
         PRIVATE m)
