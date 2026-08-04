@@ -63,8 +63,8 @@ static int check_date_part(const char* s) {
     return 0;
 }
 
-static int check_time_part(const char* s) {
-    /* HH:MM:SS[.fraction] */
+static int parse_time_part(const char* s, int* out_hour, int* out_min, int* out_sec) {
+    /* HH:MM:SS[.fraction] — parse components, return 0 on success */
     int hour, min, sec;
     double frac = 0.0;
     int n = 0;
@@ -81,22 +81,41 @@ static int check_time_part(const char* s) {
         return -1;
     if (min < 0 || min > 59)
         return -1;
-
-    /* Leap seconds: sec 60 is always accepted (timezone normalization omitted for simplicity) */
-    if (sec == 60) {
-        /* always accept */
-    } else if (sec < 0 || sec > 59) {
+    if (sec < 0 || sec > 60)
         return -1;
-    }
 
+    *out_hour = hour;
+    *out_min = min;
+    *out_sec = sec;
     return 0;
 }
 
-static int check_timezone(const char* s) {
+static int check_leap_second(int hour, int min, int sec, int offset_hour, int offset_min) {
+    /* Per RFC 3339, a leap second (sec == 60) is only valid when the
+     * UTC-normalized time equals 23:59:60.  Normalize local time to UTC
+     * day-minutes and check. */
+    if (sec != 60)
+        return 0;
+
+    int day_minutes = hour * 60 + min - (offset_hour * 60 + offset_min);
+    /* Wrap into [0, 1440) */
+    while (day_minutes < 0)
+        day_minutes += 24 * 60;
+    day_minutes %= (24 * 60);
+
+    int utc_hour = day_minutes / 60;
+    int utc_min = day_minutes % 60;
+    return (utc_hour == 23 && utc_min == 59) ? 0 : -1;
+}
+
+static int parse_timezone(const char* s, int* out_hh, int* out_mm) {
     if (!s || *s == '\0')
         return -1;
-    if (*s == 'Z' || *s == 'z')
+    if (*s == 'Z' || *s == 'z') {
+        *out_hh = 0;
+        *out_mm = 0;
         return 0;
+    }
     /* ±HH:MM */
     int hh, mm;
     char sign;
@@ -108,6 +127,12 @@ static int check_timezone(const char* s) {
         return -1;
     if (mm < 0 || mm > 59)
         return -1;
+    if (sign == '-') {
+        hh = -hh;
+        mm = -mm;
+    }
+    *out_hh = hh;
+    *out_mm = mm;
     return 0;
 }
 
@@ -130,21 +155,32 @@ int celix_jansson_check_date_time(const char* value) {
     /* Check time part + timezone */
     const char* time_str = t + 1;
     const char* plus = strpbrk(time_str, "+-Zz");
-    if (!plus && *time_str) {
-        /* No timezone marker — invalid */
+    if (!plus) {
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     }
 
-    size_t time_only_len = plus ? (size_t)(plus - time_str) : 0;
+    size_t time_only_len = (size_t)(plus - time_str);
     if (time_only_len == 0 || time_only_len >= 32)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
 
     char time_part[33] = {0};
     memcpy(time_part, time_str, time_only_len);
-    if (check_time_part(time_part) != 0)
+
+    int h, m, s;
+    if (parse_time_part(time_part, &h, &m, &s) != 0)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
 
-    if (!plus || check_timezone(plus) != 0)
+    int off_h = 0, off_m = 0;
+    if (parse_timezone(plus, &off_h, &off_m) != 0)
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    /* Reject trailing garbage after timezone */
+    if (*plus == 'Z' || *plus == 'z') {
+        if (plus[1] != '\0') return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    } else {
+        if (plus[6] != '\0') return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (check_leap_second(h, m, s, off_h, off_m) != 0)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
 
     return CELIX_JANSSON_SCHEMA_OK;
@@ -167,10 +203,30 @@ int celix_jansson_check_time(const char* value) {
 
     char time_part[33] = {0};
     memcpy(time_part, value, time_len);
-    if (check_time_part(time_part) != 0)
+
+    int h, m, s;
+    if (parse_time_part(time_part, &h, &m, &s) != 0)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
 
-    if (plus && check_timezone(plus) != 0)
+    int off_h = 0, off_m = 0;
+    if (plus) {
+        if (parse_timezone(plus, &off_h, &off_m) != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+        /* Reject trailing garbage after timezone (e.g., "Z+00:30") */
+        if (*plus == 'Z' || *plus == 'z') {
+            if (plus[1] != '\0')
+                return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+        } else {
+            /* ±HH:MM — 6 chars total */
+            if (plus[6] != '\0')
+                return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+        }
+    } else {
+        /* No timezone — invalid per RFC 3339 */
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (check_leap_second(h, m, s, off_h, off_m) != 0)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
 
     return CELIX_JANSSON_SCHEMA_OK;
@@ -274,6 +330,49 @@ int celix_jansson_check_ipv6(const char* value) {
 
 /* ── URI (absolute) ────────────────────────────────────────────────────── */
 
+/* RFC 3986 §2.3: unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" */
+static bool uri_is_unreserved(int c) {
+    return isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~';
+}
+
+/* RFC 3986 §2.2: sub-delims = "!" / "$" / "&" / "'" / "(" / ")"
+ *                           / "*" / "+" / "," / ";" / "=" */
+static bool uri_is_sub_delims(int c) {
+    return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' ||
+           c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
+}
+
+/* Validate percent-encoded octet: % HEXDIG HEXDIG.  Returns 3 (bytes
+ * consumed) on success, -1 on failure. */
+static int uri_check_pct_encoded(const char* p) {
+    if (p[0] != '%' || !isxdigit((unsigned char)p[1]) || !isxdigit((unsigned char)p[2]))
+        return -1;
+    return 3;
+}
+
+/* Validate a path/query/fragment segment character-by-character.
+ * @p extra_chars  additional allowed characters beyond pchar (e.g., "/?" for query).
+ * Returns 0 if all characters up to @p stop_chars are valid, -1 on invalid char. */
+static int uri_validate_segment(const char** pp, const char* stop_chars, const char* extra_chars) {
+    const char* p = *pp;
+    while (*p && !strchr(stop_chars, *p)) {
+        if (*p == '%') {
+            int n = uri_check_pct_encoded(p);
+            if (n < 0) return -1;
+            p += n; continue;
+        }
+        if (uri_is_unreserved(*p) || uri_is_sub_delims(*p) ||
+            *p == ':' || *p == '@' || *p == '/')
+            { p++; continue; }
+        /* Check extra chars (e.g., '?' for query/fragment) */
+        if (extra_chars && strchr(extra_chars, *p))
+            { p++; continue; }
+        return -1;
+    }
+    *pp = p;
+    return 0;
+}
+
 int celix_jansson_check_uri(const char* value) {
     /* Hand-rolled RFC 3986 absolute URI parser */
     if (!value || *value == '\0')
@@ -287,73 +386,93 @@ int celix_jansson_check_uri(const char* value) {
     while (isalnum((unsigned char)*p) || *p == '+' || *p == '-' || *p == '.')
         p++;
 
-    /* Must have :// */
-    if (p[0] != ':' || p[1] != '/' || p[2] != '/')
+    /* Must have ':' after scheme */
+    if (p[0] != ':')
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
-    p += 3;
+    p++; /* skip ':' */
 
-    /* Authority: may be empty */
-    const char* auth_end = strpbrk(p, "/?#");
-    if (!auth_end)
-        auth_end = p + strlen(p);
+    /* hier-part: "//" authority path-abempty / path-* */
+    bool has_authority = (p[0] == '/' && p[1] == '/');
+    const char* auth_end = p;
 
-    /* Basic authority validation */
-    if (auth_end > p) {
-        /* Host part is present */
-        const char* at = memchr(p, '@', (size_t)(auth_end - p));
-        if (at) {
-            /* Skip userinfo */
-            p = at + 1;
-        }
+    if (has_authority) {
+        p += 2; /* skip "//" */
+        auth_end = strpbrk(p, "/?#");
+        if (!auth_end)
+            auth_end = p + strlen(p);
 
-        size_t host_len = (size_t)(auth_end - p);
-        /* Allow IPv6 literal [...] */
-        if (*p == '[') {
-            const char* bracket = memchr(p, ']', host_len);
-            if (!bracket)
-                return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
-            /* Validate inner IPv6 */
-            size_t ip6_len = (size_t)(bracket - p - 1);
-            if (ip6_len > 0) {
-                /* Basic check — skip full validation */
+        /* Basic authority validation */
+        if (auth_end > p) {
+            /* Host part is present */
+            const char* at = memchr(p, '@', (size_t)(auth_end - p));
+            if (at) {
+                /* Skip userinfo */
+                p = at + 1;
             }
-            p = bracket + 1;
-            /* Optional port */
-            if (p < auth_end && *p == ':')
-                p = auth_end;
-        } else {
-            /* reg-name or IPv4 */
-            const char* colon = memchr(p, ':', host_len);
-            if (colon) {
-                /* Port must be digits */
-                for (const char* c = colon + 1; c < auth_end; c++) {
-                    if (!isdigit((unsigned char)*c))
-                        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+
+            size_t host_len = (size_t)(auth_end - p);
+            /* Allow IPv6 literal [...] */
+            if (*p == '[') {
+                const char* bracket = memchr(p, ']', host_len);
+                if (!bracket)
+                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+                /* Validate inner IPv6 */
+                size_t ip6_len = (size_t)(bracket - p - 1);
+                if (ip6_len > 0) {
+                    /* Basic check — skip full validation */
+                }
+                p = bracket + 1;
+                /* Optional port */
+                if (p < auth_end && *p == ':')
+                    p = auth_end;
+            } else {
+                /* reg-name or IPv4: validate characters */
+                const char* colon = memchr(p, ':', host_len);
+                const char* host_part_end = colon ? colon : auth_end;
+                for (const char* c = p; c < host_part_end; c++) {
+                    if (*c == '%') {
+                        int n = uri_check_pct_encoded(c);
+                        if (n < 0) return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+                        c += 2; continue;
+                    }
+                    if (uri_is_unreserved(*c) || uri_is_sub_delims(*c))
+                        continue;
+                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+                }
+                p = host_part_end;
+                if (colon) {
+                    /* Port must be digits */
+                    for (const char* c = colon + 1; c < auth_end; c++) {
+                        if (!isdigit((unsigned char)*c))
+                            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+                    }
+                    p = auth_end;
                 }
             }
         }
+        p = auth_end;
     }
 
-    p = auth_end;
-
-    /* Path (optional): segment *( "/" segment ) */
-    if (*p == '/') {
-        while (*p && *p != '?' && *p != '#')
-            p++;
+    /* Path (optional): segment *( "/" segment )
+     * For authority-based URIs this starts with '/'.
+     * For scheme-only URIs (mailto:, tel:, news:) the rest is a path-rootless. */
+    if (*p == '/' || (!has_authority && *p != '?' && *p != '#' && *p != '\0')) {
+        if (uri_validate_segment(&p, "?#", NULL) != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     }
 
-    /* Query (optional): ? */
+    /* Query (optional): ? *( pchar / "/" / "?" ) */
     if (*p == '?') {
         p++;
-        while (*p && *p != '#')
-            p++;
+        if (uri_validate_segment(&p, "#", "?") != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     }
 
-    /* Fragment (optional): # */
+    /* Fragment (optional): # *( pchar / "/" / "?" ) */
     if (*p == '#') {
         p++;
-        while (*p)
-            p++;
+        if (uri_validate_segment(&p, "", "?") != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     }
 
     return CELIX_JANSSON_SCHEMA_OK;

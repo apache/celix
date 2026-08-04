@@ -99,3 +99,54 @@ TEST(FormatCheckTest, Regex) {
     /* Unbalanced bracket should fail to compile */
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_default_format_check("regex", "[", nullptr));
 }
+
+TEST(FormatCheckTest, TimeLeapSecond) {
+    /* Leap second only valid when UTC-normalized time is 23:59:60 */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "23:59:60Z", nullptr));
+    /* Normalizes to UTC 23:59:60 */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "01:29:60+01:30", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "15:59:60-08:00", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "23:29:60+23:30", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "00:29:60-23:30", nullptr));
+    /* Invalid: wrong hour after normalization */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "22:59:60Z", nullptr));
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "23:59:60+01:00", nullptr));
+    /* Invalid: wrong minute after normalization */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "23:58:60Z", nullptr));
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("time", "23:59:60-00:30", nullptr));
+}
+
+TEST(FormatCheckTest, UriInvalidChars) {
+    /* Valid URIs */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com/path/segment", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com/path%20encoded", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com?q=search&k=v", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com#fragment", nullptr));
+    /* Percent-encoded query/fragment chars */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://a.b?q=%3F%2F%23", nullptr));
+    /* Invalid: space in path */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com/path with spaces", nullptr));
+    /* Invalid: bad percent encoding */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com/path%ZZ", nullptr));
+    /* Invalid: bare double quote in path (not pct-encoded) */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com/path\"quote", nullptr));
+}

@@ -43,15 +43,11 @@ static bool is_expected_fail(const std::string& fn) {
                                  "uri-template",
                                  "unicode",
                                  "content",
-                                 "unknownKeyword",
                                  "zeroTerminatedFloats",
                                  /* Format checkers with known limitations */
                                  "email",
                                  "idn-email",
-                                 "time",
-                                 "uri",
-                                 "format",
-                                 "format-unknown",
+                                 "bignum",
                                  "ref.json",
                                  "bignum",
                                  NULL};
