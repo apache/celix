@@ -80,6 +80,8 @@ class CelixConan(ConanFile):
         "build_experimental": False,
         "build_celix_dfi": False,
         "build_framework": False,
+        "build_jansson_ext": False,
+        "build_jansson_ext_examples": False,
         "build_rcm": False,
         "build_utils": False,
         "build_event_admin": False,
@@ -193,6 +195,7 @@ class CelixConan(ConanFile):
             ValidationRule(self.options.build_celix_dfi, 'jansson', "shared", True, 'build_celix_dfi=True'),
             ValidationRule(self.options.build_celix_etcdlib, 'jansson', "shared", True, 'build_celix_etcdlib=True'),
             ValidationRule(self.options.build_event_admin_remote_provider_mqtt, 'jansson', "shared", True, 'build_event_admin_remote_provider_mqtt=True'),
+            ValidationRule(self.options.build_jansson_ext, 'jansson', "shared", True, 'build_jansson_ext=True'),
             ValidationRule(self.options.build_event_admin_remote_provider_mqtt and self.options.enable_testing, "mosquitto", "broker", True, "build_event_admin_remote_provider_mqtt=True and enable_testing=True"),
         ]
         
@@ -343,6 +346,12 @@ class CelixConan(ConanFile):
         if options["build_rcm"]:
             options["build_utils"] = True
 
+        if options["build_jansson_ext_examples"]:
+            options["build_jansson_ext"] = True
+
+        if options["build_jansson_ext"]:
+            options["build_utils"] = True
+
         if options["build_launcher"]:
             options["build_framework"] = True
 
@@ -388,7 +397,7 @@ class CelixConan(ConanFile):
             self.requires("civetweb/1.16")
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
-        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib or self.options.build_event_admin_remote_provider_mqtt:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib or self.options.build_event_admin_remote_provider_mqtt or self.options.build_jansson_ext:
             self.requires("jansson/[>=2.12 <3.0.0]")
         if self.options.build_rsa_discovery_zeroconf:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder

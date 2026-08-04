@@ -15,22 +15,5 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#utils, dfi and etcdlib are standalone
-#(e.g. no dependency on celix framework
-add_subdirectory(utils)
-add_subdirectory(rcm)
-add_subdirectory(jansson_ext)
-add_subdirectory(dfi)
-add_subdirectory(etcdlib)
-add_subdirectory(promises)
-add_subdirectory(pushstreams)
-
-add_subdirectory(framework)
-
-#launcher
-add_subdirectory(launcher)
-
-# Error Injectors
-if (ENABLE_TESTING AND EI_TESTS)
-    add_subdirectory(error_injector)
-endif ()
+add_executable(json_schema_validate json_schema_validate.c)
+target_link_libraries(json_schema_validate PRIVATE Celix::jansson_ext)

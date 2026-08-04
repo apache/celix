@@ -21,6 +21,11 @@ limitations under the License.
 
 # Noteworthy Changes for 3.0.0 (TBD)
 
+## New features
+
+- New `libs/jansson_ext` library providing JSON Schema draft-7 validation,
+  JSON Pointer (RFC 6901) and JSON Patch (RFC 6902) support, built on Jansson.
+
 ## Backwards incompatible changes
 
 - Deployment Admin bundle has been removed and is no longer supported.

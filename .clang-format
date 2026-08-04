@@ -27,7 +27,7 @@ DerivePointerAlignment: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 PointerAlignment: Left
 SpacesBeforeTrailingComments: 1
-SortIncludes: true
+# SortIncludes: true
 ---
 #Include regroup disabled by default.
 #IncludeBlocks: Regroup

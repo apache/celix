@@ -1,0 +1,2078 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+#include "celix_jansson_schema.h"
+#include "celix_json_patch.h"
+#include "celix_jansson_uri.h"
+#include "celix_schema.h"
+#include "celix_string_format_check.h"
+#include "celix_util.h"
+#include <math.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Error codes
+ * ════════════════════════════════════════════════════════════════════════ */
+
+const char* celix_jansson_schema_strerror(int err) {
+    switch (err) {
+    case CELIX_JANSSON_SCHEMA_OK:
+        return "success";
+    case CELIX_JANSSON_SCHEMA_ERROR_NOMEM:
+        return "allocation failure";
+    case CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA:
+        return "schema must be boolean or object";
+    case CELIX_JANSSON_SCHEMA_ERROR_SCHEMA_PARSE:
+        return "JSON parse error";
+    case CELIX_JANSSON_SCHEMA_ERROR_URI:
+        return "malformed URI";
+    case CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED:
+        return "unresolved $ref";
+    case CELIX_JANSSON_SCHEMA_ERROR_LOADER:
+        return "schema loader failed or absent";
+    case CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER:
+        return "format checker required but not provided";
+    case CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER:
+        return "content checker required but not provided";
+    case CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI:
+        return "duplicate URI";
+    case CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN:
+        return "invalid regex pattern";
+    case CELIX_JANSSON_SCHEMA_ERROR_NO_ROOT_SCHEMA:
+        return "no root schema set";
+    case CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT:
+        return "invalid argument";
+    default:
+        return "unknown error";
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Path stack
+ * ════════════════════════════════════════════════════════════════════════ */
+
+void celix_jansson_path_init(celix_jansson_path_t* p) { memset(p, 0, sizeof(*p)); }
+
+int celix_jansson_path_push(celix_jansson_path_t* p, const char* token) {
+    if (p->len >= p->cap) {
+        size_t nc = p->cap ? p->cap * 2 : 8;
+        char** nt = (char**)realloc(p->tokens, nc * sizeof(char*));
+        if (!nt)
+            return -1;
+        p->tokens = nt;
+        p->cap = nc;
+    }
+    p->tokens[p->len] = celix_jansson_strdup(token);
+    if (!p->tokens[p->len])
+        return -1;
+    p->len++;
+    free(p->cached);
+    p->cached = NULL;
+    return 0;
+}
+
+void celix_jansson_path_pop(celix_jansson_path_t* p) {
+    if (p->len > 0) {
+        p->len--;
+        free(p->tokens[p->len]);
+        p->tokens[p->len] = NULL;
+    }
+    free(p->cached);
+    p->cached = NULL;
+}
+
+const char* celix_jansson_path_str(celix_jansson_path_t* p) {
+    if (!p->cached) {
+        celix_jansson_strbuf_t sb;
+        celix_jansson_strbuf_init(&sb);
+        for (size_t i = 0; i < p->len; i++) {
+            celix_jansson_strbuf_appendc(&sb, '/');
+            for (const char* c = p->tokens[i]; *c; c++) {
+                if (*c == '~')
+                    celix_jansson_strbuf_appends(&sb, "~0");
+                else if (*c == '/')
+                    celix_jansson_strbuf_appends(&sb, "~1");
+                else
+                    celix_jansson_strbuf_appendc(&sb, *c);
+            }
+        }
+        p->cached = celix_jansson_strbuf_detach(&sb);
+        if (!p->cached)
+            p->cached = celix_jansson_strdup("");
+    }
+    return p->cached;
+}
+
+void celix_jansson_path_free(celix_jansson_path_t* p) {
+    for (size_t i = 0; i < p->len; i++)
+        free(p->tokens[i]);
+    free(p->tokens);
+    free(p->cached);
+    memset(p, 0, sizeof(*p));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Reference counting
+ * ════════════════════════════════════════════════════════════════════════ */
+
+celix_jansson_schema_node_t* celix_jansson_schema_ref(celix_jansson_schema_node_t* n) {
+    if (n)
+        __atomic_fetch_add(&n->refcount, 1, __ATOMIC_SEQ_CST);
+    return n;
+}
+
+void celix_jansson_schema_unref(celix_jansson_schema_node_t* n) {
+    if (!n)
+        return;
+    if (__atomic_fetch_sub(&n->refcount, 1, __ATOMIC_SEQ_CST) == 1) {
+        if (n->vtable && n->vtable->destroy)
+            n->vtable->destroy(n);
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Error sinks (user, first-error, collecting)
+ * ════════════════════════════════════════════════════════════════════════ */
+
+static void
+emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, va_list ap) {
+    char buf[1024];
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+    const char* ps = path ? celix_jansson_path_str(path) : "";
+    ctx->sink->emit(ctx->sink, ps, NULL, buf);
+}
+
+static void emit_error(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    emit_error_v(ctx, path, fmt, ap);
+    va_end(ap);
+}
+
+/* -- user sink -- */
+typedef struct {
+    celix_jansson_error_sink_t base;
+    celix_jansson_schema_error_fn fn;
+    void* ud;
+    int count;
+} user_sink_t;
+static void user_emit(celix_jansson_error_sink_t* s, const char* p, json_t* i, const char* m) {
+    user_sink_t* us = (user_sink_t*)s;
+    if (us->fn)
+        us->fn(p, i, m, us->ud);
+    us->count++;
+}
+static void user_destroy(celix_jansson_error_sink_t* s) { free(s); }
+
+/* -- first-error sink -- */
+typedef struct {
+    celix_jansson_error_sink_t base;
+    bool got;
+    char* ptr;
+    json_t* inst;
+    char* msg;
+} first_sink_t;
+static void first_emit(celix_jansson_error_sink_t* s, const char* p, json_t* i, const char* m) {
+    first_sink_t* fs = (first_sink_t*)s;
+    if (!fs->got) {
+        fs->got = true;
+        fs->ptr = celix_jansson_strdup(p);
+        fs->msg = celix_jansson_strdup(m);
+        fs->inst = i;
+        json_incref(i);
+    }
+}
+static void first_destroy(celix_jansson_error_sink_t* s) {
+    first_sink_t* fs = (first_sink_t*)s;
+    free(fs->ptr);
+    json_decref(fs->inst);
+    free(fs->msg);
+    free(fs);
+}
+
+/* -- collecting sink -- */
+typedef struct {
+    celix_jansson_error_sink_t base;
+    celix_jansson_error_list_t list;
+} collecting_sink_t;
+static void coll_emit(celix_jansson_error_sink_t* s, const char* p, json_t* i, const char* m) {
+    collecting_sink_t* cs = (collecting_sink_t*)s;
+    celix_jansson_error_list_add(&cs->list, p, i, m);
+}
+static void coll_destroy(celix_jansson_error_sink_t* s) {
+    collecting_sink_t* cs = (collecting_sink_t*)s;
+    celix_jansson_error_list_clear(&cs->list);
+    free(cs);
+}
+static void coll_propagate(collecting_sink_t* cs, celix_jansson_error_sink_t* parent, const char* prefix) {
+    for (size_t i = 0; i < cs->list.len; i++) {
+        celix_jansson_error_entry_t* e = &cs->list.entries[i];
+        celix_jansson_strbuf_t sb;
+        celix_jansson_strbuf_init(&sb);
+        if (prefix)
+            celix_jansson_strbuf_appends(&sb, prefix);
+        celix_jansson_strbuf_appends(&sb, e->message);
+        char* full = celix_jansson_strbuf_detach(&sb);
+        parent->emit(parent, e->ptr, e->instance, full ? full : e->message);
+        free(full);
+    }
+}
+
+static collecting_sink_t* coll_new(void) {
+    collecting_sink_t* cs = (collecting_sink_t*)calloc(1, sizeof(*cs));
+    if (!cs)
+        return NULL;
+    cs->base.emit = coll_emit;
+    cs->base.destroy = coll_destroy;
+    celix_jansson_error_list_init(&cs->list);
+    return cs;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Helpers
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* Cross-type numeric equality (integer vs float only) */
+static bool jss_json_equal(json_t* a, json_t* b) {
+    if (json_equal(a, b))
+        return true;
+    /* Integer vs real: compare numeric values (e.g., 0 == 0.0) */
+    if ((json_is_integer(a) && json_is_real(b)) || (json_is_real(a) && json_is_integer(b))) {
+        double va = json_is_real(a) ? json_real_value(a) : (double)json_integer_value(a);
+        double vb = json_is_real(b) ? json_real_value(b) : (double)json_integer_value(b);
+        return va == vb;
+    }
+    return false;
+}
+
+int celix_jansson_type_index(json_t* value) {
+    switch (json_typeof(value)) {
+    case JSON_NULL:
+        return 0;
+    case JSON_OBJECT:
+        return 1;
+    case JSON_ARRAY:
+        return 2;
+    case JSON_STRING:
+        return 3;
+    case JSON_TRUE:
+    case JSON_FALSE:
+        return 4;
+    case JSON_INTEGER:
+        return 5;
+    case JSON_REAL:
+        return 6;
+    default:
+        return -1;
+    }
+}
+
+__attribute__((unused)) static const char* type_name(int slot) {
+    static const char* names[] = {"null", "object", "array", "string", "boolean", "integer", "number"};
+    return (slot >= 0 && slot < 7) ? names[slot] : "unknown";
+}
+
+/* UTF-8 code point count (count non-continuation bytes) */
+static size_t utf8_length(const char* s, size_t len) {
+    size_t n = 0;
+    for (size_t i = 0; i < len; i++)
+        if ((s[i] & 0xC0) != 0x80)
+            n++;
+    return n;
+}
+
+/* Floating-point multipleOf check with epsilon */
+static bool violates_multiple(double x, double m) {
+    if (m == 0.0)
+        return false;
+    double r = remainder(x, m);
+    double mult = fabs(x / m);
+    if (mult > 1.0)
+        r /= mult;
+    double eps = fabs(nextafter(x, 0.0) - x);
+    return fabs(r) > fabs(eps);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Validation destructors
+ * ════════════════════════════════════════════════════════════════════════ */
+
+static void d_boolean(celix_jansson_schema_node_t* n) { free(n); }
+static void d_null(celix_jansson_schema_node_t* n) { free(n); }
+static void d_booltype(celix_jansson_schema_node_t* n) { free(n); }
+
+static void d_required(celix_jansson_schema_node_t* n) {
+    for (size_t i = 0; i < n->u.required.len; i++)
+        free(n->u.required.names[i]);
+    free(n->u.required.names);
+    free(n);
+}
+
+static void d_ref(celix_jansson_schema_node_t* n) {
+    free(n->u.ref.id);
+    celix_jansson_schema_unref(n->u.ref.target_strong);
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_type(celix_jansson_schema_node_t* n) {
+    for (int i = 0; i < 7; i++)
+        celix_jansson_schema_unref(n->u.type_schema.type_slots[i]);
+    for (size_t i = 0; i < n->u.type_schema.logic_len; i++)
+        celix_jansson_schema_unref(n->u.type_schema.logic[i]);
+    free(n->u.type_schema.logic);
+    celix_jansson_schema_unref(n->u.type_schema.if_schema);
+    celix_jansson_schema_unref(n->u.type_schema.then_schema);
+    celix_jansson_schema_unref(n->u.type_schema.else_schema);
+    json_decref(n->u.type_schema.enum_values);
+    json_decref(n->u.type_schema.const_value);
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_str(celix_jansson_schema_node_t* n) {
+    if (n->u.string.has_pattern)
+        regfree(&n->u.string.pattern);
+    free(n->u.string.pattern_str);
+    free(n->u.string.format);
+    free(n->u.string.content_encoding);
+    free(n->u.string.content_media_type);
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_numeric(celix_jansson_schema_node_t* n) {
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_object(celix_jansson_schema_node_t* n) {
+    for (size_t i = 0; i < n->u.object.required_len; i++)
+        free(n->u.object.required[i]);
+    free(n->u.object.required);
+    celix_jansson_hash_table_destroy(&n->u.object.properties,
+                                     (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    for (size_t i = 0; i < n->u.object.pp_len; i++) {
+        regfree(&n->u.object.pattern_properties[i].re);
+        celix_jansson_schema_unref(n->u.object.pattern_properties[i].sch);
+    }
+    free(n->u.object.pattern_properties);
+    celix_jansson_schema_unref(n->u.object.additional_properties);
+    celix_jansson_hash_table_destroy(&n->u.object.dependencies,
+                                     (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    celix_jansson_schema_unref(n->u.object.property_names);
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_array(celix_jansson_schema_node_t* n) {
+    celix_jansson_schema_unref(n->u.array.items_schema);
+    for (size_t i = 0; i < n->u.array.items_len; i++)
+        celix_jansson_schema_unref(n->u.array.items[i]);
+    free(n->u.array.items);
+    celix_jansson_schema_unref(n->u.array.additional_items);
+    celix_jansson_schema_unref(n->u.array.contains);
+    json_decref(n->default_value);
+    free(n);
+}
+
+static void d_not(celix_jansson_schema_node_t* n) {
+    celix_jansson_schema_unref(n->u.not_schema.sub);
+    free(n);
+}
+
+static void d_comb(celix_jansson_schema_node_t* n) {
+    for (size_t i = 0; i < n->u.combination.len; i++)
+        celix_jansson_schema_unref(n->u.combination.items[i]);
+    free(n->u.combination.items);
+    free(n);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Per-kind validators
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* -- boolean -- */
+static int v_boolean(const celix_jansson_schema_node_t* n,
+                     json_t* inst,
+                     celix_jansson_path_t* p,
+                     celix_jansson_validation_context_t* ctx) {
+    if (!n->u.boolean.value)
+        emit_error(ctx, p, "instance invalid as per false-schema");
+    return n->u.boolean.value ? 0 : 1;
+}
+static const json_t* dv_boolean(const celix_jansson_schema_node_t* n,
+                                celix_jansson_path_t* p,
+                                const json_t* inst,
+                                celix_jansson_validation_context_t* ctx) {
+    (void)p;
+    (void)inst;
+    (void)ctx;
+    return n->default_value;
+}
+
+static const schema_vtable vt_boolean = {v_boolean, dv_boolean, d_boolean};
+
+/* -- null -- */
+static int v_null(const celix_jansson_schema_node_t* n,
+                  json_t* inst,
+                  celix_jansson_path_t* p,
+                  celix_jansson_validation_context_t* ctx) {
+    (void)n;
+    if (!json_is_null(inst)) {
+        emit_error(ctx, p, "expected instance to be null");
+        return 1;
+    }
+    return 0;
+}
+static const schema_vtable vt_null = {v_null, NULL, d_null};
+
+/* -- boolean_type -- */
+static int v_booltype(const celix_jansson_schema_node_t* n,
+                      json_t* inst,
+                      celix_jansson_path_t* p,
+                      celix_jansson_validation_context_t* ctx) {
+    (void)n;
+    if (!json_is_boolean(inst)) {
+        emit_error(ctx, p, "expected instance to be boolean");
+        return 1;
+    }
+    return 0;
+}
+static const schema_vtable vt_booltype = {v_booltype, NULL, d_booltype};
+
+/* -- ref -- */
+static int v_ref(const celix_jansson_schema_node_t* n,
+                 json_t* inst,
+                 celix_jansson_path_t* p,
+                 celix_jansson_validation_context_t* ctx) {
+    celix_jansson_schema_node_t* t = n->u.ref.target_weak ? n->u.ref.target_weak : n->u.ref.target_strong;
+    if (!t) {
+        /* Handle "#" self-reference */
+        if (n->u.ref.id && strcmp(n->u.ref.id, "#") == 0 && n->root && n->root->root) {
+            t = n->root->root;
+        } else {
+            emit_error(ctx, p, "unresolved or freed schema-reference");
+            return 1;
+        }
+    }
+    return t->vtable->validate(t, inst, p, ctx);
+}
+static const json_t* dv_ref(const celix_jansson_schema_node_t* n,
+                            celix_jansson_path_t* p,
+                            const json_t* inst,
+                            celix_jansson_validation_context_t* ctx) {
+    if (n->default_value)
+        return n->default_value;
+    celix_jansson_schema_node_t* t = n->u.ref.target_weak ? n->u.ref.target_weak : n->u.ref.target_strong;
+    if (!t && n->u.ref.id && strcmp(n->u.ref.id, "#") == 0 && n->root)
+        t = n->root->root;
+    if (t && t->vtable->default_value)
+        return t->vtable->default_value(t, p, inst, ctx);
+    return NULL;
+}
+static const schema_vtable vt_ref = {v_ref, dv_ref, d_ref};
+
+/* -- required -- */
+static int v_required(const celix_jansson_schema_node_t* n,
+                      json_t* inst,
+                      celix_jansson_path_t* p,
+                      celix_jansson_validation_context_t* ctx) {
+    (void)p;
+    (void)ctx;
+    if (!json_is_object(inst))
+        return 0;
+    int errs = 0;
+    for (size_t i = 0; i < n->u.required.len; i++) {
+        json_t* v = json_object_get(inst, n->u.required.names[i]);
+        if (!v) {
+            celix_jansson_path_t pp;
+            celix_jansson_path_init(&pp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&pp, p->tokens[pi]);
+            celix_jansson_path_push(&pp, n->u.required.names[i]);
+            emit_error(ctx, &pp, "required property '%s' not found in object", n->u.required.names[i]);
+            celix_jansson_path_free(&pp);
+            errs++;
+        }
+    }
+    return errs;
+}
+static const schema_vtable vt_required = {v_required, NULL, d_required};
+
+/* -- string -- */
+static int v_string(const celix_jansson_schema_node_t* n,
+                    json_t* inst,
+                    celix_jansson_path_t* p,
+                    celix_jansson_validation_context_t* ctx) {
+    if (!json_is_string(inst)) {
+        /* Binary handled elsewhere, but if it reaches here it's a string type check */
+        emit_error(ctx, p, "expected instance to be string");
+        return 1;
+    }
+    const char* s = json_string_value(inst);
+    size_t len = strlen(s);
+    int errs = 0;
+
+    if (n->u.string.has_min_len) {
+        size_t cplen = utf8_length(s, len);
+        if (cplen < n->u.string.min_len) {
+            emit_error(ctx, p, "instance string is too short (min=%zu, got=%zu)", n->u.string.min_len, cplen);
+            errs++;
+        }
+    }
+    if (n->u.string.has_max_len) {
+        size_t cplen = utf8_length(s, len);
+        if (cplen > n->u.string.max_len) {
+            emit_error(ctx, p, "instance string is too long (max=%zu, got=%zu)", n->u.string.max_len, cplen);
+            errs++;
+        }
+    }
+    if (n->u.string.has_content) {
+        celix_jansson_schema_root_t* root = n->root;
+        if (!root->content) {
+            emit_error(
+                ctx, p, "a content checker was not provided but a contentEncoding/contentMediaType keyword is present");
+            errs++;
+        } else {
+            int rc = root->content(n->u.string.content_encoding,
+                                   n->u.string.content_media_type ? n->u.string.content_media_type : "",
+                                   inst,
+                                   root->content_ud);
+            if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                emit_error(ctx, p, "content validation failed");
+                errs++;
+            }
+        }
+    }
+    if (n->u.string.has_pattern) {
+        if (regexec(&n->u.string.pattern, s, 0, NULL, 0) != 0) {
+            emit_error(ctx, p, "instance string does not match pattern '%s'", n->u.string.pattern_str);
+            errs++;
+        }
+    }
+    if (n->u.string.has_format) {
+        celix_jansson_schema_root_t* root = n->root;
+        if (!root->format) {
+            emit_error(ctx, p, "a format checker was not provided but a format keyword is present");
+            errs++;
+        } else {
+            int rc = root->format(n->u.string.format, s, root->format_ud);
+            if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                emit_error(ctx, p, "format-checking failed: %s", n->u.string.format);
+                errs++;
+            }
+        }
+    }
+    return errs;
+}
+static const schema_vtable vt_string = {v_string, NULL, d_str};
+
+/* -- numeric (int/float share the same logic, just different bounds types) -- */
+static int v_numeric_int(const celix_jansson_schema_node_t* n,
+                         json_t* inst,
+                         celix_jansson_path_t* p,
+                         celix_jansson_validation_context_t* ctx) {
+    if (!json_is_integer(inst)) {
+        emit_error(ctx, p, "expected instance to be integer");
+        return 1;
+    }
+    json_int_t v = json_integer_value(inst);
+    int errs = 0;
+    if (n->u.numeric.has_min) {
+        if (n->u.numeric.exclusive_min ? (v <= n->u.numeric.bounds.i.min) : (v < n->u.numeric.bounds.i.min)) {
+            emit_error(ctx, p, "instance is below minimum of %lld", (long long)n->u.numeric.bounds.i.min);
+            errs++;
+        }
+    }
+    if (n->u.numeric.has_max) {
+        if (n->u.numeric.exclusive_max ? (v >= n->u.numeric.bounds.i.max) : (v > n->u.numeric.bounds.i.max)) {
+            emit_error(ctx, p, "instance exceeds maximum of %lld", (long long)n->u.numeric.bounds.i.max);
+            errs++;
+        }
+    }
+    if (n->u.numeric.has_mult) {
+        if (violates_multiple((double)v, n->u.numeric.multiple_of)) {
+            emit_error(ctx, p, "instance is not a multiple of %g", n->u.numeric.multiple_of);
+            errs++;
+        }
+    }
+    return errs;
+}
+
+static int v_numeric_float(const celix_jansson_schema_node_t* n,
+                           json_t* inst,
+                           celix_jansson_path_t* p,
+                           celix_jansson_validation_context_t* ctx) {
+    if (!json_is_real(inst) && !json_is_integer(inst)) {
+        emit_error(ctx, p, "expected instance to be number");
+        return 1;
+    }
+    double v = json_is_real(inst) ? json_real_value(inst) : (double)json_integer_value(inst);
+    int errs = 0;
+    if (n->u.numeric.has_min) {
+        if (n->u.numeric.exclusive_min ? (v <= n->u.numeric.bounds.f.min) : (v < n->u.numeric.bounds.f.min)) {
+            emit_error(ctx, p, "instance is below minimum of %.16g", n->u.numeric.bounds.f.min);
+            errs++;
+        }
+    }
+    if (n->u.numeric.has_max) {
+        if (n->u.numeric.exclusive_max ? (v >= n->u.numeric.bounds.f.max) : (v > n->u.numeric.bounds.f.max)) {
+            emit_error(ctx, p, "instance exceeds maximum of %.16g", n->u.numeric.bounds.f.max);
+            errs++;
+        }
+    }
+    if (n->u.numeric.has_mult) {
+        if (violates_multiple(v, n->u.numeric.multiple_of)) {
+            emit_error(ctx, p, "instance is not a multiple of %g", n->u.numeric.multiple_of);
+            errs++;
+        }
+    }
+    return errs;
+}
+static const schema_vtable vt_numeric_int = {v_numeric_int, NULL, d_numeric};
+static const schema_vtable vt_numeric_float = {v_numeric_float, NULL, d_numeric};
+
+/* -- object -- */
+static void obj_validate_deps(const celix_jansson_schema_node_t* n,
+                              json_t* inst,
+                              celix_jansson_path_t* p,
+                              celix_jansson_validation_context_t* ctx,
+                              int* errs);
+
+static int v_object(const celix_jansson_schema_node_t* n,
+                    json_t* inst,
+                    celix_jansson_path_t* p,
+                    celix_jansson_validation_context_t* ctx) {
+    if (!json_is_object(inst)) {
+        emit_error(ctx, p, "expected instance to be object");
+        return 1;
+    }
+    int errs = 0;
+    size_t sz = json_object_size(inst);
+
+    if (n->u.object.has_min_p && sz < n->u.object.min_p) {
+        emit_error(ctx, p, "instance has too few properties (%zu < %zu)", sz, n->u.object.min_p);
+        errs++;
+    }
+    if (n->u.object.has_max_p && sz > n->u.object.max_p) {
+        emit_error(ctx, p, "instance has too many properties (%zu > %zu)", sz, n->u.object.max_p);
+        errs++;
+    }
+
+    /* required check */
+    for (size_t i = 0; i < n->u.object.required_len; i++) {
+        if (!json_object_get(inst, n->u.object.required[i])) {
+            emit_error(ctx, p, "required property '%s' not found in object", n->u.object.required[i]);
+            errs++;
+        }
+    }
+
+    /* per-property validation */
+    const char* key;
+    json_t* val;
+    json_object_foreach(inst, key, val) {
+        /* propertyNames */
+        if (n->u.object.property_names) {
+            json_t* kname = json_string(key);
+            celix_jansson_path_t kp;
+            celix_jansson_path_init(&kp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&kp, p->tokens[pi]);
+            celix_jansson_path_push(&kp, key);
+            errs += n->u.object.property_names->vtable->validate(n->u.object.property_names, kname, &kp, ctx);
+            celix_jansson_path_free(&kp);
+            json_decref(kname);
+        }
+
+        celix_jansson_path_t cp;
+        celix_jansson_path_init(&cp);
+        for (size_t pi = 0; pi < p->len; pi++)
+            celix_jansson_path_push(&cp, p->tokens[pi]);
+        celix_jansson_path_push(&cp, key);
+
+        bool matched = false;
+
+        /* properties */
+        celix_jansson_schema_node_t* prop =
+            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&n->u.object.properties, key);
+        if (prop) {
+            matched = true;
+            errs += prop->vtable->validate(prop, val, &cp, ctx);
+        }
+
+        /* patternProperties */
+        for (size_t j = 0; j < n->u.object.pp_len; j++) {
+            if (regexec(&n->u.object.pattern_properties[j].re, key, 0, NULL, 0) == 0) {
+                matched = true;
+                errs += n->u.object.pattern_properties[j].sch->vtable->validate(
+                    n->u.object.pattern_properties[j].sch, val, &cp, ctx);
+            }
+        }
+
+        /* additionalProperties */
+        if (!matched && n->u.object.additional_properties) {
+            first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
+            fs->base.emit = first_emit;
+            fs->base.destroy = first_destroy;
+            celix_jansson_validation_context_t fctx = *ctx;
+            fctx.sink = &fs->base;
+            n->u.object.additional_properties->vtable->validate(n->u.object.additional_properties, val, &cp, &fctx);
+            if (fs->got) {
+                emit_error(ctx, &cp, "validation failed for additional property '%s': %s", key, fs->msg ? fs->msg : "");
+                errs++;
+            }
+            fs->base.destroy(&fs->base);
+        }
+        celix_jansson_path_free(&cp);
+    }
+
+    /* default values for missing properties */
+    {
+        const char* base_path = celix_jansson_path_str(p);
+        celix_jansson_hash_table_t* ht = (celix_jansson_hash_table_t*)&n->u.object.properties;
+        if (ht->buckets && ht->cap > 0) {
+            for (size_t bi = 0; bi < ht->cap; bi++) {
+                if (ht->buckets[bi].used == 1 && ht->buckets[bi].key) {
+                    const char* pk = ht->buckets[bi].key;
+                    celix_jansson_schema_node_t* ps = (celix_jansson_schema_node_t*)ht->buckets[bi].value;
+                    if (!json_object_get(inst, pk)) {
+                        const json_t* def = NULL;
+                        if (ps->vtable && ps->vtable->default_value) {
+                            celix_jansson_path_t dp;
+                            celix_jansson_path_init(&dp);
+                            for (size_t pi = 0; pi < p->len; pi++)
+                                celix_jansson_path_push(&dp, p->tokens[pi]);
+                            celix_jansson_path_push(&dp, pk);
+                            def = ps->vtable->default_value(ps, &dp, inst, ctx);
+                            celix_jansson_path_free(&dp);
+                        }
+                        if (!def)
+                            def = ps->default_value;
+                        if (def) {
+                            char pat[1024];
+                            snprintf(pat, sizeof(pat), "%s/%s", base_path, pk);
+                            celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* dependencies */
+    obj_validate_deps(n, inst, p, ctx, &errs);
+
+    return errs;
+}
+
+static void obj_validate_dep_one(const celix_jansson_schema_node_t* dep_schema,
+                                 json_t* inst,
+                                 celix_jansson_path_t* p,
+                                 celix_jansson_validation_context_t* ctx,
+                                 int* errs) {
+    if (dep_schema->kind == CELIX_JANSSON_SCHEMA_KIND_REQUIRED) {
+        for (size_t i = 0; i < dep_schema->u.required.len; i++) {
+            if (!json_object_get(inst, dep_schema->u.required.names[i])) {
+                emit_error(
+                    ctx, p, "dependency failed: required property '%s' not found", dep_schema->u.required.names[i]);
+                (*errs)++;
+            }
+        }
+    } else {
+        *errs += dep_schema->vtable->validate(dep_schema, inst, p, ctx);
+    }
+}
+
+static void obj_validate_deps(const celix_jansson_schema_node_t* n,
+                              json_t* inst,
+                              celix_jansson_path_t* p,
+                              celix_jansson_validation_context_t* ctx,
+                              int* errs) {
+    if (n->u.object.dependencies.count == 0)
+        return;
+
+    const char* key;
+    json_t* val;
+    json_object_foreach(inst, key, val) {
+        celix_jansson_schema_node_t* dep =
+            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&n->u.object.dependencies, key);
+        if (dep) {
+            celix_jansson_path_t cp;
+            celix_jansson_path_init(&cp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&cp, p->tokens[pi]);
+            celix_jansson_path_push(&cp, key);
+            obj_validate_dep_one(dep, inst, &cp, ctx, errs);
+            celix_jansson_path_free(&cp);
+        }
+    }
+}
+
+static const json_t* dv_object(const celix_jansson_schema_node_t* n,
+                               celix_jansson_path_t* p,
+                               const json_t* inst,
+                               celix_jansson_validation_context_t* ctx) {
+    (void)p;
+    (void)inst;
+    (void)ctx;
+    return n->default_value;
+}
+static const schema_vtable vt_object = {v_object, dv_object, d_object};
+
+/* -- array -- */
+static int v_array(const celix_jansson_schema_node_t* n,
+                   json_t* inst,
+                   celix_jansson_path_t* p,
+                   celix_jansson_validation_context_t* ctx) {
+    if (!json_is_array(inst)) {
+        emit_error(ctx, p, "expected instance to be array");
+        return 1;
+    }
+    size_t sz = json_array_size(inst);
+    int errs = 0;
+
+    if (n->u.array.has_min_i && sz < n->u.array.min_items) {
+        emit_error(ctx, p, "instance has too few items (%zu < %zu)", sz, n->u.array.min_items);
+        errs++;
+    }
+    if (n->u.array.has_max_i && sz > n->u.array.max_items) {
+        emit_error(ctx, p, "instance has too many items (%zu > %zu)", sz, n->u.array.max_items);
+        errs++;
+    }
+    if (n->u.array.unique_items) {
+        for (size_t i = 0; i < sz; i++) {
+            for (size_t j = i + 1; j < sz; j++) {
+                if (jss_json_equal(json_array_get(inst, i), json_array_get(inst, j))) {
+                    emit_error(ctx, p, "items have to be unique for this array");
+                    errs++;
+                    goto unique_done;
+                }
+            }
+        }
+    unique_done:;
+    }
+
+    /* items */
+    if (n->u.array.items_schema) {
+        for (size_t i = 0; i < sz; i++) {
+            char idx[32];
+            snprintf(idx, sizeof(idx), "%zu", i);
+            celix_jansson_path_t cp;
+            celix_jansson_path_init(&cp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&cp, p->tokens[pi]);
+            celix_jansson_path_push(&cp, idx);
+            errs +=
+                n->u.array.items_schema->vtable->validate(n->u.array.items_schema, json_array_get(inst, i), &cp, ctx);
+            celix_jansson_path_free(&cp);
+        }
+    } else if (n->u.array.items_len > 0) {
+        /* tuple form */
+        for (size_t i = 0; i < sz && i < n->u.array.items_len; i++) {
+            char idx[32];
+            snprintf(idx, sizeof(idx), "%zu", i);
+            celix_jansson_path_t cp;
+            celix_jansson_path_init(&cp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&cp, p->tokens[pi]);
+            celix_jansson_path_push(&cp, idx);
+            errs += n->u.array.items[i]->vtable->validate(n->u.array.items[i], json_array_get(inst, i), &cp, ctx);
+            celix_jansson_path_free(&cp);
+        }
+        if (n->u.array.additional_items && sz > n->u.array.items_len) {
+            for (size_t i = n->u.array.items_len; i < sz; i++) {
+                char idx[32];
+                snprintf(idx, sizeof(idx), "%zu", i);
+                celix_jansson_path_t cp;
+                celix_jansson_path_init(&cp);
+                for (size_t pi = 0; pi < p->len; pi++)
+                    celix_jansson_path_push(&cp, p->tokens[pi]);
+                celix_jansson_path_push(&cp, idx);
+                errs += n->u.array.additional_items->vtable->validate(
+                    n->u.array.additional_items, json_array_get(inst, i), &cp, ctx);
+                celix_jansson_path_free(&cp);
+            }
+        }
+    }
+
+    /* contains */
+    if (n->u.array.contains) {
+        bool found = false;
+        for (size_t i = 0; i < sz && !found; i++) {
+            first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
+            fs->base.emit = first_emit;
+            fs->base.destroy = first_destroy;
+            celix_jansson_validation_context_t fctx = *ctx;
+            fctx.sink = &fs->base;
+            char idx[32];
+            snprintf(idx, sizeof(idx), "%zu", i);
+            celix_jansson_path_t cp;
+            celix_jansson_path_init(&cp);
+            for (size_t pi = 0; pi < p->len; pi++)
+                celix_jansson_path_push(&cp, p->tokens[pi]);
+            celix_jansson_path_push(&cp, idx);
+            int rc = n->u.array.contains->vtable->validate(n->u.array.contains, json_array_get(inst, i), &cp, &fctx);
+            celix_jansson_path_free(&cp);
+            if (rc == 0)
+                found = true;
+            fs->base.destroy(&fs->base);
+        }
+        if (!found) {
+            emit_error(ctx, p, "no element satisfies the 'contains' schema");
+            errs++;
+        }
+    }
+
+    return errs;
+}
+static const schema_vtable vt_array = {v_array, NULL, d_array};
+
+/* -- not -- */
+static int v_not(const celix_jansson_schema_node_t* n,
+                 json_t* inst,
+                 celix_jansson_path_t* p,
+                 celix_jansson_validation_context_t* ctx) {
+    first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
+    fs->base.emit = first_emit;
+    fs->base.destroy = first_destroy;
+    celix_jansson_validation_context_t fctx = *ctx;
+    fctx.sink = &fs->base;
+    int sub_errs = n->u.not_schema.sub->vtable->validate(n->u.not_schema.sub, inst, p, &fctx);
+    fs->base.destroy(&fs->base);
+    if (sub_errs == 0) {
+        emit_error(ctx, p, "the subschema has succeeded, but it is required to not validate");
+        return 1;
+    }
+    return 0;
+}
+static const schema_vtable vt_not = {v_not, NULL, d_not};
+
+/* -- combination (allOf / anyOf / oneOf) -- */
+static int v_comb(const celix_jansson_schema_node_t* n,
+                  json_t* inst,
+                  celix_jansson_path_t* p,
+                  celix_jansson_validation_context_t* ctx) {
+    size_t old_patch = json_array_size(ctx->patch);
+    int count = 0;
+    collecting_sink_t* master = coll_new();
+
+    for (size_t i = 0; i < n->u.combination.len; i++) {
+        collecting_sink_t* cs = coll_new();
+        celix_jansson_validation_context_t cctx = *ctx;
+        cctx.sink = &cs->base;
+
+        size_t branch_patch = json_array_size(ctx->patch);
+        int sub = n->u.combination.items[i]->vtable->validate(n->u.combination.items[i], inst, p, &cctx);
+
+        if (sub == 0)
+            count++;
+        else
+            celix_json_patch_truncate(ctx->patch, branch_patch);
+
+        char prefix[128];
+        const char* kname = (n->kind == CELIX_JANSSON_SCHEMA_KIND_ALL_OF)   ? "allOf"
+                            : (n->kind == CELIX_JANSSON_SCHEMA_KIND_ANY_OF) ? "anyOf"
+                                                                            : "oneOf";
+        snprintf(prefix, sizeof(prefix), "[combination: %s / case#%zu] ", kname, i);
+        coll_propagate(cs, &master->base, prefix);
+        cs->base.destroy(&cs->base);
+    }
+
+    if (n->kind == CELIX_JANSSON_SCHEMA_KIND_ALL_OF) {
+        if (count < (int)n->u.combination.len) {
+            emit_error(ctx,
+                       p,
+                       "at least one subschema has failed, but all of them are required to validate - %zu failed",
+                       n->u.combination.len - (size_t)count);
+            coll_propagate(master, ctx->sink, NULL);
+            master->base.destroy(&master->base);
+            celix_json_patch_truncate(ctx->patch, old_patch);
+            return 1;
+        }
+    } else if (n->kind == CELIX_JANSSON_SCHEMA_KIND_ANY_OF) {
+        if (count == 0) {
+            emit_error(ctx,
+                       p,
+                       "no subschema has succeeded, but one of them is required to validate. Type: anyOf, number of "
+                       "failed subschemas: %zu",
+                       n->u.combination.len);
+            coll_propagate(master, ctx->sink, NULL);
+            master->base.destroy(&master->base);
+            celix_json_patch_truncate(ctx->patch, old_patch);
+            return 1;
+        }
+    } else { /* ONE_OF */
+        if (count == 0) {
+            emit_error(ctx,
+                       p,
+                       "no subschema has succeeded, but one of them is required to validate. Type: oneOf, number of "
+                       "failed subschemas: %zu",
+                       n->u.combination.len);
+            coll_propagate(master, ctx->sink, NULL);
+            master->base.destroy(&master->base);
+            celix_json_patch_truncate(ctx->patch, old_patch);
+            return 1;
+        }
+        if (count > 1) {
+            emit_error(
+                ctx, p, "more than one subschema has succeeded, but exactly one of them is required to validate");
+            master->base.destroy(&master->base);
+            celix_json_patch_truncate(ctx->patch, old_patch);
+            return 1;
+        }
+    }
+    master->base.destroy(&master->base);
+    return 0;
+}
+static const schema_vtable vt_comb = {v_comb, NULL, d_comb};
+
+/* -- type_schema (dispatcher) -- */
+static int v_type(const celix_jansson_schema_node_t* n,
+                  json_t* inst,
+                  celix_jansson_path_t* p,
+                  celix_jansson_validation_context_t* ctx) {
+    int slot = celix_jansson_type_index(inst);
+    int errs = 0;
+
+    /* Type check */
+    celix_jansson_schema_node_t* typed = n->u.type_schema.type_slots[slot];
+    if (!typed) {
+        emit_error(ctx, p, "unexpected instance type");
+        return 1;
+    }
+    errs += typed->vtable->validate(typed, inst, p, ctx);
+
+    /* enum */
+    if (n->u.type_schema.has_enum) {
+        bool found = false;
+        json_t* ev = n->u.type_schema.enum_values;
+        for (size_t i = 0; i < json_array_size(ev); i++) {
+            if (jss_json_equal(inst, json_array_get(ev, i))) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            emit_error(ctx, p, "instance not found in required enum");
+            errs++;
+        }
+    }
+
+    /* const */
+    if (n->u.type_schema.has_const) {
+        if (!jss_json_equal(inst, n->u.type_schema.const_value)) {
+            emit_error(ctx, p, "instance not const");
+            errs++;
+        }
+    }
+
+    /* logical combinators */
+    for (size_t i = 0; i < n->u.type_schema.logic_len; i++) {
+        errs += n->u.type_schema.logic[i]->vtable->validate(n->u.type_schema.logic[i], inst, p, ctx);
+    }
+
+    /* if/then/else */
+    if (n->u.type_schema.if_schema) {
+        first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
+        fs->base.emit = first_emit;
+        fs->base.destroy = first_destroy;
+        celix_jansson_validation_context_t fctx = *ctx;
+        fctx.sink = &fs->base;
+        int if_errs = n->u.type_schema.if_schema->vtable->validate(n->u.type_schema.if_schema, inst, p, &fctx);
+        fs->base.destroy(&fs->base);
+
+        if (if_errs == 0) {
+            if (n->u.type_schema.then_schema)
+                errs += n->u.type_schema.then_schema->vtable->validate(n->u.type_schema.then_schema, inst, p, ctx);
+        } else {
+            if (n->u.type_schema.else_schema)
+                errs += n->u.type_schema.else_schema->vtable->validate(n->u.type_schema.else_schema, inst, p, ctx);
+        }
+    }
+
+    /* Root default: null instance gets default_value */
+    if (json_is_null(inst) && n->default_value) {
+        celix_json_patch_add(ctx->patch, celix_jansson_path_str(p), json_incref(n->default_value));
+    }
+
+    return errs;
+}
+static const json_t* dv_type(const celix_jansson_schema_node_t* n,
+                             celix_jansson_path_t* p,
+                             const json_t* inst,
+                             celix_jansson_validation_context_t* ctx) {
+    (void)p;
+    (void)inst;
+    (void)ctx;
+    return n->default_value;
+}
+static const schema_vtable vt_type = {v_type, dv_type, d_type};
+
+/* ════════════════════════════════════════════════════════════════════════
+ * celix_jansson_schema_make — the compiler
+ * ════════════════════════════════════════════════════════════════════════ */
+
+static int schema_make_internal_depth(json_t* sch,
+                                      celix_jansson_schema_root_t* root,
+                                      celix_jansson_schema_node_t** out,
+                                      int depth);
+static int schema_make_internal(json_t* sch, celix_jansson_schema_root_t* root, celix_jansson_schema_node_t** out) {
+    return schema_make_internal_depth(sch, root, out, 0);
+}
+
+static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celix_jansson_schema_node_t** out) {
+    celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+    if (!n)
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    n->vtable = &vt_type;
+    n->kind = CELIX_JANSSON_SCHEMA_KIND_TYPE;
+    n->root = root;
+    n->refcount = 1;
+
+    /* Parse "type" keyword */
+    json_t* type_val = json_object_get(sch, "type");
+    if (type_val) {
+        if (json_is_string(type_val)) {
+            const char* tname = json_string_value(type_val);
+            int slot = -1;
+            if (strcmp(tname, "null") == 0)
+                slot = 0;
+            else if (strcmp(tname, "object") == 0)
+                slot = 1;
+            else if (strcmp(tname, "array") == 0)
+                slot = 2;
+            else if (strcmp(tname, "string") == 0)
+                slot = 3;
+            else if (strcmp(tname, "boolean") == 0)
+                slot = 4;
+            else if (strcmp(tname, "integer") == 0)
+                slot = 5;
+            else if (strcmp(tname, "number") == 0)
+                slot = 6;
+            if (slot >= 0) {
+                /* Create per-type validator */
+                celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+                if (!typed) {
+                    free(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
+                typed->root = root;
+                typed->refcount = 1;
+                switch (slot) {
+                case 0:
+                    typed->vtable = &vt_null;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_NULL;
+                    break;
+                case 1:
+                    typed->vtable = &vt_object;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_OBJECT;
+                    break;
+                case 2:
+                    typed->vtable = &vt_array;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_ARRAY;
+                    break;
+                case 3:
+                    typed->vtable = &vt_string;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_STRING;
+                    break;
+                case 4:
+                    typed->vtable = &vt_booltype;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN_TYPE;
+                    break;
+                case 5:
+                    typed->vtable = &vt_numeric_int;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_INT;
+                    break;
+                case 6:
+                    typed->vtable = &vt_numeric_float;
+                    typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT;
+                    break;
+                }
+                n->u.type_schema.type_slots[slot] = typed;
+            }
+        } else if (json_is_array(type_val)) {
+            for (size_t i = 0; i < json_array_size(type_val); i++) {
+                const char* tname = json_string_value(json_array_get(type_val, i));
+                int slot = -1;
+                if (!tname)
+                    continue;
+                if (strcmp(tname, "null") == 0)
+                    slot = 0;
+                else if (strcmp(tname, "object") == 0)
+                    slot = 1;
+                else if (strcmp(tname, "array") == 0)
+                    slot = 2;
+                else if (strcmp(tname, "string") == 0)
+                    slot = 3;
+                else if (strcmp(tname, "boolean") == 0)
+                    slot = 4;
+                else if (strcmp(tname, "integer") == 0)
+                    slot = 5;
+                else if (strcmp(tname, "number") == 0)
+                    slot = 6;
+                if (slot >= 0) {
+                    celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+                    typed->root = root;
+                    typed->refcount = 1;
+                    switch (slot) {
+                    case 0:
+                        typed->vtable = &vt_null;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_NULL;
+                        break;
+                    case 1:
+                        typed->vtable = &vt_object;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_OBJECT;
+                        break;
+                    case 2:
+                        typed->vtable = &vt_array;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_ARRAY;
+                        break;
+                    case 3:
+                        typed->vtable = &vt_string;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_STRING;
+                        break;
+                    case 4:
+                        typed->vtable = &vt_booltype;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN_TYPE;
+                        break;
+                    case 5:
+                        typed->vtable = &vt_numeric_int;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_INT;
+                        break;
+                    case 6:
+                        typed->vtable = &vt_numeric_float;
+                        typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT;
+                        break;
+                    }
+                    n->u.type_schema.type_slots[slot] = typed;
+                }
+            }
+        }
+    } else {
+        /* No type specified — all slots */
+        for (int slot = 0; slot < 7; slot++) {
+            celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+            if (!typed) {
+                free(n);
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+            }
+            typed->root = root;
+            typed->refcount = 1;
+            static const schema_vtable* slots[] = {
+                &vt_null, &vt_object, &vt_array, &vt_string, &vt_booltype, &vt_numeric_int, &vt_numeric_float};
+            typed->vtable = slots[slot];
+            static const enum celix_jansson_schema_kind_e kinds[] = {CELIX_JANSSON_SCHEMA_KIND_NULL,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_OBJECT,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_ARRAY,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_STRING,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_BOOLEAN_TYPE,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_NUMERIC_INT,
+                                                                     CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT};
+            typed->kind = kinds[slot];
+            n->u.type_schema.type_slots[slot] = typed;
+        }
+    }
+
+    /* alias: number also validates integer */
+    if (n->u.type_schema.type_slots[6] && !n->u.type_schema.type_slots[5])
+        n->u.type_schema.type_slots[5] = celix_jansson_schema_ref(n->u.type_schema.type_slots[6]);
+
+    /* Parse string constraints */
+    {
+        celix_jansson_schema_node_t* snode = n->u.type_schema.type_slots[3]; /* string slot */
+        if (snode) {
+            json_t* v;
+            if ((v = json_object_get(sch, "minLength"))) {
+                snode->u.string.has_min_len = true;
+                snode->u.string.min_len = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "maxLength"))) {
+                snode->u.string.has_max_len = true;
+                snode->u.string.max_len = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "pattern"))) {
+                const char* ps = json_string_value(v);
+                snode->u.string.pattern_str = celix_jansson_strdup(ps);
+                snode->u.string.has_pattern = true;
+                if (regcomp(&snode->u.string.pattern, ps, REG_EXTENDED) != 0) {
+                    free(snode->u.string.pattern_str);
+                    d_type(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN;
+                }
+            }
+            if ((v = json_object_get(sch, "format"))) {
+                snode->u.string.has_format = true;
+                snode->u.string.format = celix_jansson_strdup(json_string_value(v));
+                if (!root->format) {
+                    d_type(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER;
+                }
+            }
+            if ((v = json_object_get(sch, "contentEncoding"))) {
+                snode->u.string.has_content = true;
+                snode->u.string.content_encoding = celix_jansson_strdup(json_string_value(v));
+                if (!root->content) {
+                    d_type(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER;
+                }
+            }
+            if ((v = json_object_get(sch, "contentMediaType"))) {
+                snode->u.string.has_content = true;
+                snode->u.string.content_media_type = celix_jansson_strdup(json_string_value(v));
+            }
+        }
+    }
+
+    /* Parse numeric constraints (apply to both int and float slots) */
+    {
+        json_t* v;
+        for (int ns = 5; ns <= 6; ns++) {
+            celix_jansson_schema_node_t* nnum = n->u.type_schema.type_slots[ns];
+            if (!nnum)
+                continue;
+            if ((v = json_object_get(sch, "minimum"))) {
+                nnum->u.numeric.has_min = true;
+                if (ns == 5)
+                    nnum->u.numeric.bounds.i.min = json_integer_value(v);
+                else
+                    nnum->u.numeric.bounds.f.min = json_is_real(v) ? json_real_value(v) : (double)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "maximum"))) {
+                nnum->u.numeric.has_max = true;
+                if (ns == 5)
+                    nnum->u.numeric.bounds.i.max = json_integer_value(v);
+                else
+                    nnum->u.numeric.bounds.f.max = json_is_real(v) ? json_real_value(v) : (double)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "exclusiveMinimum"))) {
+                nnum->u.numeric.exclusive_min = true;
+                nnum->u.numeric.has_min = true;
+                if (ns == 5)
+                    nnum->u.numeric.bounds.i.min = json_integer_value(v);
+                else
+                    nnum->u.numeric.bounds.f.min = json_is_real(v) ? json_real_value(v) : (double)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "exclusiveMaximum"))) {
+                nnum->u.numeric.exclusive_max = true;
+                nnum->u.numeric.has_max = true;
+                if (ns == 5)
+                    nnum->u.numeric.bounds.i.max = json_integer_value(v);
+                else
+                    nnum->u.numeric.bounds.f.max = json_is_real(v) ? json_real_value(v) : (double)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "multipleOf"))) {
+                nnum->u.numeric.has_mult = true;
+                nnum->u.numeric.multiple_of = json_is_real(v) ? json_real_value(v) : (double)json_integer_value(v);
+            }
+        }
+    }
+
+    /* Parse object constraints */
+    {
+        celix_jansson_schema_node_t* onode = n->u.type_schema.type_slots[1];
+        if (onode) {
+            json_t* v;
+            if ((v = json_object_get(sch, "minProperties"))) {
+                onode->u.object.has_min_p = true;
+                onode->u.object.min_p = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "maxProperties"))) {
+                onode->u.object.has_max_p = true;
+                onode->u.object.max_p = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "required"))) {
+                size_t rlen = json_array_size(v);
+                onode->u.object.required = (char**)calloc(rlen, sizeof(char*));
+                onode->u.object.required_len = rlen;
+                for (size_t i = 0; i < rlen; i++)
+                    onode->u.object.required[i] = celix_jansson_strdup(json_string_value(json_array_get(v, i)));
+            }
+            if ((v = json_object_get(sch, "properties"))) {
+                celix_jansson_hash_table_init(&onode->u.object.properties);
+                const char* k;
+                json_t* pv;
+                json_object_foreach(v, k, pv) {
+                    celix_jansson_schema_node_t* ps;
+                    if (schema_make_internal(pv, root, &ps) == CELIX_JANSSON_SCHEMA_OK)
+                        celix_jansson_hash_table_put(&onode->u.object.properties, k, ps);
+                }
+            }
+            if ((v = json_object_get(sch, "patternProperties"))) {
+                size_t ppc = json_object_size(v);
+                onode->u.object.pattern_properties = (typeof(onode->u.object.pattern_properties))calloc(
+                    ppc, sizeof(*onode->u.object.pattern_properties));
+                onode->u.object.pp_len = ppc;
+                const char* pk;
+                json_t* psch;
+                size_t idx = 0;
+                json_object_foreach(v, pk, psch) {
+                    onode->u.object.pattern_properties[idx].sch = NULL;
+                    regcomp(&onode->u.object.pattern_properties[idx].re, pk, REG_EXTENDED);
+                    schema_make_internal(psch, root, &onode->u.object.pattern_properties[idx].sch);
+                    idx++;
+                }
+            }
+            if ((v = json_object_get(sch, "additionalProperties"))) {
+                if (json_is_object(v) || json_is_boolean(v))
+                    schema_make_internal(v, root, &onode->u.object.additional_properties);
+            }
+            if ((v = json_object_get(sch, "dependencies"))) {
+                celix_jansson_hash_table_init(&onode->u.object.dependencies);
+                const char* dk;
+                json_t* dv;
+                json_object_foreach(v, dk, dv) {
+                    celix_jansson_schema_node_t* dep;
+                    if (json_is_array(dv)) {
+                        /* Array form → required list */
+                        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+                        rn->vtable = &vt_required;
+                        rn->kind = CELIX_JANSSON_SCHEMA_KIND_REQUIRED;
+                        rn->root = root;
+                        rn->refcount = 1;
+                        size_t alen = json_array_size(dv);
+                        rn->u.required.names = (char**)calloc(alen, sizeof(char*));
+                        rn->u.required.len = alen;
+                        for (size_t ai = 0; ai < alen; ai++)
+                            rn->u.required.names[ai] = celix_jansson_strdup(json_string_value(json_array_get(dv, ai)));
+                        dep = rn;
+                    } else {
+                        schema_make_internal(dv, root, &dep);
+                    }
+                    if (dep)
+                        celix_jansson_hash_table_put(&onode->u.object.dependencies, dk, dep);
+                }
+            }
+            if ((v = json_object_get(sch, "propertyNames"))) {
+                schema_make_internal(v, root, &onode->u.object.property_names);
+            }
+        }
+    }
+
+    /* Parse array constraints */
+    {
+        celix_jansson_schema_node_t* anode = n->u.type_schema.type_slots[2];
+        if (anode) {
+            json_t* v;
+            if ((v = json_object_get(sch, "minItems"))) {
+                anode->u.array.has_min_i = true;
+                anode->u.array.min_items = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "maxItems"))) {
+                anode->u.array.has_max_i = true;
+                anode->u.array.max_items = (size_t)json_integer_value(v);
+            }
+            if ((v = json_object_get(sch, "uniqueItems")))
+                anode->u.array.unique_items = json_is_true(v);
+            if ((v = json_object_get(sch, "items"))) {
+                if (json_is_object(v) || json_is_boolean(v)) {
+                    schema_make_internal(v, root, &anode->u.array.items_schema);
+                } else if (json_is_array(v)) {
+                    size_t ilen = json_array_size(v);
+                    anode->u.array.items =
+                        (celix_jansson_schema_node_t**)calloc(ilen, sizeof(celix_jansson_schema_node_t*));
+                    anode->u.array.items_len = ilen;
+                    for (size_t i = 0; i < ilen; i++)
+                        schema_make_internal(json_array_get(v, i), root, &anode->u.array.items[i]);
+                }
+            }
+            if ((v = json_object_get(sch, "additionalItems")))
+                schema_make_internal(v, root, &anode->u.array.additional_items);
+            if ((v = json_object_get(sch, "contains")))
+                schema_make_internal(v, root, &anode->u.array.contains);
+        }
+    }
+
+    /* enum */
+    {
+        json_t* v = json_object_get(sch, "enum");
+        if (v) {
+            n->u.type_schema.has_enum = true;
+            n->u.type_schema.enum_values = json_deep_copy(v);
+        }
+    }
+
+    /* const */
+    {
+        json_t* v = json_object_get(sch, "const");
+        if (v) {
+            n->u.type_schema.has_const = true;
+            n->u.type_schema.const_value = json_deep_copy(v);
+        }
+    }
+
+    /* logic combinators: not, allOf, anyOf, oneOf */
+    {
+        json_t* v;
+        celix_jansson_vec_t logic;
+        celix_jansson_vec_init(&logic);
+        if ((v = json_object_get(sch, "not"))) {
+            celix_jansson_schema_node_t* sub;
+            if (schema_make_internal(v, root, &sub) == CELIX_JANSSON_SCHEMA_OK) {
+                celix_jansson_schema_node_t* nn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*nn));
+                nn->vtable = &vt_not;
+                nn->kind = CELIX_JANSSON_SCHEMA_KIND_NOT;
+                nn->root = root;
+                nn->refcount = 1;
+                nn->u.not_schema.sub = sub;
+                celix_jansson_vec_push(&logic, nn);
+            }
+        }
+        static const char* combos[] = {"allOf", "anyOf", "oneOf"};
+        static const enum celix_jansson_schema_kind_e ckinds[] = {
+            CELIX_JANSSON_SCHEMA_KIND_ALL_OF, CELIX_JANSSON_SCHEMA_KIND_ANY_OF, CELIX_JANSSON_SCHEMA_KIND_ONE_OF};
+        for (int ci = 0; ci < 3; ci++) {
+            if ((v = json_object_get(sch, combos[ci]))) {
+                size_t clen = json_array_size(v);
+                celix_jansson_schema_node_t* cn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*cn));
+                cn->vtable = &vt_comb;
+                cn->kind = ckinds[ci];
+                cn->root = root;
+                cn->refcount = 1;
+                cn->u.combination.items =
+                    (celix_jansson_schema_node_t**)calloc(clen, sizeof(celix_jansson_schema_node_t*));
+                cn->u.combination.len = clen;
+                for (size_t j = 0; j < clen; j++)
+                    schema_make_internal(json_array_get(v, j), root, &cn->u.combination.items[j]);
+                celix_jansson_vec_push(&logic, cn);
+            }
+        }
+        if (logic.len > 0) {
+            n->u.type_schema.logic = (celix_jansson_schema_node_t**)logic.items;
+            n->u.type_schema.logic_len = logic.len;
+        }
+    }
+
+    /* if/then/else */
+    {
+        json_t* ifv = json_object_get(sch, "if");
+        if (ifv) {
+            schema_make_internal(ifv, root, &n->u.type_schema.if_schema);
+            json_t* thenv = json_object_get(sch, "then");
+            if (thenv)
+                schema_make_internal(thenv, root, &n->u.type_schema.then_schema);
+            json_t* elsev = json_object_get(sch, "else");
+            if (elsev)
+                schema_make_internal(elsev, root, &n->u.type_schema.else_schema);
+        }
+    }
+
+    /* default */
+    {
+        json_t* dv = json_object_get(sch, "default");
+        if (dv)
+            n->default_value = json_deep_copy(dv);
+    }
+
+    *out = n;
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+static int schema_make_internal_depth(json_t* sch,
+                                      celix_jansson_schema_root_t* root,
+                                      celix_jansson_schema_node_t** out,
+                                      int depth) {
+    if (!sch || !root || !out)
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    /* Guard against infinite recursion for self-referencing schemas */
+    if (depth > 20)
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
+
+    if (json_is_true(sch)) {
+        celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+        if (!n)
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        n->vtable = &vt_boolean;
+        n->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN;
+        n->root = root;
+        n->refcount = 1;
+        n->u.boolean.value = true;
+        *out = n;
+        return CELIX_JANSSON_SCHEMA_OK;
+    }
+    if (json_is_false(sch)) {
+        celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+        if (!n)
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        n->vtable = &vt_boolean;
+        n->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN;
+        n->root = root;
+        n->refcount = 1;
+        n->u.boolean.value = false;
+        *out = n;
+        return CELIX_JANSSON_SCHEMA_OK;
+    }
+    if (!json_is_object(sch))
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
+
+    /* Process definitions first — compile and register in celix_jansson_schema_file_t */
+    json_t* defs = json_object_get(sch, "definitions");
+    if (defs && json_is_object(defs)) {
+        const char* dk;
+        json_t* dv;
+        json_object_foreach(defs, dk, dv) {
+            celix_jansson_schema_node_t* ds;
+            if (schema_make_internal(dv, root, &ds) == CELIX_JANSSON_SCHEMA_OK && ds) {
+                /* Register under <location>#/definitions/<dk> */
+                celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, "");
+                char frag[1024];
+                snprintf(frag, sizeof(frag), "/definitions/%s", dk);
+                /* Avoid leaking if the fragment was already registered via a $ref resolution */
+                celix_jansson_schema_node_t* existing =
+                    (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
+                if (existing) {
+                    celix_jansson_schema_unref(ds);
+                } else {
+                    celix_jansson_hash_table_put(&sf->schemas, frag, ds);
+                }
+            }
+        }
+    }
+
+    /* Check for $ref */
+    json_t* refv = json_object_get(sch, "$ref");
+    if (refv) {
+        const char* ref_str = json_string_value(refv);
+        if (!ref_str)
+            return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
+
+        celix_jansson_schema_node_t* target = NULL;
+
+        /* For JSON pointer refs (e.g., "#/definitions/foo", "#"), resolve
+         * by walking the original schema stored in celix_jansson_schema_root_t. */
+        if (ref_str[0] == '#' && root->original_schema) {
+            const char* ptr = ref_str + 1; /* skip '#' */
+            if (*ptr == '\0') {
+                /* "#" self-ref — create placeholder, will be resolved in celix_jansson_schema_root_set_root_schema */
+                target = NULL; /* leave as unresolved, post-compile fixup will resolve */
+            } else if (*ptr == '/') {
+                /* First check the hash table for an already-compiled schema (e.g. definitions) */
+                celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, "");
+                target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, ptr);
+                if (!target) {
+                    /* Compile from original schema and register for proper lifecycle */
+                    celix_json_pointer_t jp;
+                    memset(&jp, 0, sizeof(jp));
+                    if (celix_json_pointer_init(&jp, ptr) == 0) {
+                        json_t* sub = celix_json_pointer_get(root->original_schema, &jp);
+                        if (sub) {
+                            if (schema_make_internal(sub, root, &target) == CELIX_JANSSON_SCHEMA_OK && target) {
+                                celix_jansson_hash_table_put(&sf->schemas, ptr, target);
+                            }
+                        }
+                        celix_json_pointer_clear(&jp);
+                    }
+                }
+            }
+        }
+
+        if (!target) {
+            /* Fall back to registry-based resolution */
+            celix_jansson_uri_t ref_uri;
+            celix_jansson_uri_init(&ref_uri, ref_str);
+            target = celix_jansson_schema_root_get_or_create_ref(root, &ref_uri);
+            celix_jansson_uri_clear(&ref_uri);
+        }
+        /* "#" self-refs with no target are OK (resolved at validation time) */
+        if (!target && strcmp(ref_str, "#") != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+
+        /* Create ref node */
+        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+        if (!rn)
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        rn->vtable = &vt_ref;
+        rn->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
+        rn->root = root;
+        rn->refcount = 1;
+        rn->u.ref.id = celix_jansson_strdup(ref_str);
+        if (target) {
+            rn->u.ref.target_weak = target;
+            rn->u.ref.target_strong = celix_jansson_schema_ref(target);
+        }
+
+        /* Check for default override on $ref */
+        json_t* defv = json_object_get(sch, "default");
+        if (defv)
+            rn->default_value = json_deep_copy(defv);
+
+        *out = rn;
+        return CELIX_JANSSON_SCHEMA_OK;
+    }
+
+    return make_type_schema(sch, root, out);
+}
+
+int celix_jansson_schema_make(json_t* sch,
+                              celix_jansson_schema_root_t* root,
+                              const celix_jansson_vec_t* keys,
+                              const celix_jansson_vec_t* uris,
+                              celix_jansson_schema_node_t** out) {
+    (void)keys;
+    (void)uris;
+    return schema_make_internal(sch, root, out);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Registry
+ * ════════════════════════════════════════════════════════════════════════ */
+
+static void celix_jansson_schema_file_free(void* value);
+
+celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_jansson_schema_root_t* root,
+                                                                          const char* location) {
+    celix_jansson_schema_file_t* sf =
+        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+    if (sf)
+        return sf;
+    sf = (celix_jansson_schema_file_t*)calloc(1, sizeof(*sf));
+    if (!sf)
+        return NULL;
+    celix_jansson_hash_table_init(&sf->schemas);
+    celix_jansson_hash_table_init(&sf->unresolved);
+    sf->unknown_keywords = NULL;
+    celix_jansson_hash_table_put(&root->files, location, sf);
+    return sf;
+}
+
+int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
+                                     const celix_jansson_uri_t* uri,
+                                     celix_jansson_schema_node_t* sch) {
+    const char* loc = celix_jansson_uri_location(uri);
+    const char* frag = celix_jansson_uri_fragment(uri);
+    celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
+    if (!sf)
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    if (celix_jansson_hash_table_get(&sf->schemas, frag))
+        return CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI;
+    celix_jansson_schema_ref(sch);
+    celix_jansson_hash_table_put(&sf->schemas, frag, sch);
+
+    /* Resolve waiting refs */
+    celix_jansson_schema_node_t* waiting =
+        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
+    if (waiting && waiting->kind == CELIX_JANSSON_SCHEMA_KIND_REF) {
+        waiting->u.ref.target_weak = sch;
+        waiting->u.ref.target_strong = celix_jansson_schema_ref(sch);
+        celix_jansson_hash_table_remove(&sf->unresolved, frag);
+    }
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_jansson_schema_root_t* root,
+                                                                         const celix_jansson_uri_t* uri) {
+    const char* loc = celix_jansson_uri_location(uri);
+    const char* frag = celix_jansson_uri_fragment(uri);
+    celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
+    if (!sf)
+        return NULL;
+
+    celix_jansson_schema_node_t* existing =
+        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
+    if (existing)
+        return existing;
+
+    /* If the fragment is a JSON pointer into unknown_keywords, compile it */
+    if (sf->unknown_keywords && frag && frag[0] == '/') {
+        celix_json_pointer_t ptr;
+        memset(&ptr, 0, sizeof(ptr));
+        if (celix_json_pointer_init(&ptr, frag) == 0) {
+            json_t* sub = celix_json_pointer_get(sf->unknown_keywords, &ptr);
+            if (sub) {
+                /* Compile this subtree as a schema */
+                celix_jansson_schema_node_t* sch = NULL;
+                if (schema_make_internal(sub, root, &sch) == CELIX_JANSSON_SCHEMA_OK && sch) {
+                    /* Register it */
+                    celix_jansson_hash_table_put(&sf->schemas, frag, sch);
+                    celix_json_pointer_clear(&ptr);
+                    return sch;
+                }
+            }
+            celix_json_pointer_clear(&ptr);
+        }
+    }
+
+    celix_jansson_schema_node_t* pending =
+        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
+    if (pending)
+        return pending;
+
+    /* Create unresolved ref placeholder */
+    celix_jansson_schema_node_t* ref = (celix_jansson_schema_node_t*)calloc(1, sizeof(*ref));
+    if (!ref)
+        return NULL;
+    ref->vtable = &vt_ref;
+    ref->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
+    ref->root = root;
+    ref->refcount = 1;
+    char* uristr = celix_jansson_uri_to_string(uri);
+    ref->u.ref.id = uristr;
+    celix_jansson_hash_table_put(&sf->unresolved, frag, ref);
+    return ref;
+}
+
+int celix_jansson_schema_root_insert_unknown_keyword(celix_jansson_schema_root_t* root,
+                                                     const celix_jansson_uri_t* uri,
+                                                     const char* key,
+                                                     json_t* value) {
+    const char* loc = celix_jansson_uri_location(uri);
+    celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
+    if (!sf)
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    if (!sf->unknown_keywords)
+        sf->unknown_keywords = json_object();
+    json_object_set(sf->unknown_keywords, key, value);
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+static void celix_jansson_schema_file_free(void* value) {
+    celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)value;
+    if (!sf)
+        return;
+    celix_jansson_hash_table_destroy(&sf->schemas, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    celix_jansson_hash_table_destroy(&sf->unresolved, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    json_decref(sf->unknown_keywords);
+    free(sf);
+}
+
+void celix_jansson_schema_root_destroy(celix_jansson_schema_root_t* root) {
+    if (!root)
+        return;
+    celix_jansson_schema_unref(root->root);
+    json_decref(root->original_schema);
+    celix_jansson_hash_table_destroy(&root->files, celix_jansson_schema_file_free);
+    free(root);
+}
+
+int celix_jansson_schema_root_set_root_schema(celix_jansson_schema_root_t* root, json_t* schema) {
+    if (!root || !schema)
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    celix_jansson_schema_unref(root->root);
+    root->root = NULL;
+    json_decref(root->original_schema);
+    root->original_schema = NULL;
+    celix_jansson_hash_table_clear(&root->files, celix_jansson_schema_file_free);
+
+    json_t* copy = json_deep_copy(schema);
+    if (!copy)
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+
+    /* Store the original for JSON pointer $ref resolution */
+    root->original_schema = json_deep_copy(schema);
+
+    celix_jansson_schema_node_t* sch;
+    int err = schema_make_internal(copy, root, &sch);
+    json_decref(copy);
+    if (err != CELIX_JANSSON_SCHEMA_OK)
+        return err;
+
+    root->root = sch;
+
+    /* Check for unresolved refs in the root schema */
+    {
+        int has_unresolved = 0;
+        /* Check the root file (location "") for unresolved refs */
+        celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, "");
+        if (sf && sf->unresolved.count > 0) {
+            has_unresolved = 1;
+        }
+        if (has_unresolved)
+            return CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED;
+    }
+
+    /* Phase 2: load external files and resolve refs (simplified for now) */
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
+                                       const char* initial_uri,
+                                       json_t* instance,
+                                       celix_jansson_validation_context_t* ctx) {
+    if (!root || !ctx)
+        return -1;
+    celix_jansson_schema_node_t* sch = root->root;
+    if (!sch) {
+        ctx->sink->emit(ctx->sink, "", instance, "no root schema set");
+        return 1;
+    }
+    (void)initial_uri;
+    celix_jansson_path_t path;
+    celix_jansson_path_init(&path);
+    int errs = sch->vtable->validate(sch, instance, &path, ctx);
+    celix_jansson_path_free(&path);
+    return errs;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Error list
+ * ════════════════════════════════════════════════════════════════════════ */
+
+void celix_jansson_error_list_init(celix_jansson_error_list_t* el) { memset(el, 0, sizeof(*el)); }
+void celix_jansson_error_list_add(celix_jansson_error_list_t* el, const char* ptr, json_t* inst, const char* msg) {
+    if (el->len >= el->cap) {
+        size_t nc = el->cap ? el->cap * 2 : 8;
+        celix_jansson_error_entry_t* ne = (celix_jansson_error_entry_t*)realloc(el->entries, nc * sizeof(*ne));
+        if (!ne)
+            return;
+        el->entries = ne;
+        el->cap = nc;
+    }
+    celix_jansson_error_entry_t* e = &el->entries[el->len++];
+    e->ptr = celix_jansson_strdup(ptr);
+    e->message = celix_jansson_strdup(msg);
+    e->instance = inst;
+    json_incref(inst);
+}
+void celix_jansson_error_list_clear(celix_jansson_error_list_t* el) {
+    for (size_t i = 0; i < el->len; i++) {
+        free(el->entries[i].ptr);
+        free(el->entries[i].message);
+        json_decref(el->entries[i].instance);
+    }
+    free(el->entries);
+    memset(el, 0, sizeof(*el));
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Public API
+ * ════════════════════════════════════════════════════════════════════════ */
+
+struct celix_jansson_schema_validator_t {
+    celix_jansson_schema_root_t* root;
+};
+
+celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_jansson_schema_loader_fn loader,
+                                                                        void* loader_ud,
+                                                                        celix_jansson_schema_format_checker_fn format,
+                                                                        void* format_ud,
+                                                                        celix_jansson_schema_content_checker_fn content,
+                                                                        void* content_ud) {
+    celix_jansson_schema_validator_t* v = (celix_jansson_schema_validator_t*)calloc(1, sizeof(*v));
+    if (!v)
+        return NULL;
+    v->root = (celix_jansson_schema_root_t*)calloc(1, sizeof(*v->root));
+    if (!v->root) {
+        free(v);
+        return NULL;
+    }
+    celix_jansson_hash_table_init(&v->root->files);
+    v->root->loader = loader;
+    v->root->loader_ud = loader_ud;
+    v->root->format = format;
+    v->root->format_ud = format_ud;
+    v->root->content = content;
+    v->root->content_ud = content_ud;
+    return v;
+}
+
+void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v) {
+    if (!v)
+        return;
+    celix_jansson_schema_root_destroy(v->root);
+    free(v);
+}
+
+int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, json_t* schema, char** errmsg) {
+    if (!v || !schema) {
+        if (errmsg)
+            *errmsg = celix_jansson_strdup("validator and schema required");
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    }
+    int err = celix_jansson_schema_root_set_root_schema(v->root, schema);
+    if (err != CELIX_JANSSON_SCHEMA_OK && errmsg)
+        *errmsg = celix_jansson_strdup(celix_jansson_schema_strerror(err));
+    return err;
+}
+
+int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
+                                  json_t* instance,
+                                  celix_jansson_schema_error_fn on_error,
+                                  void* error_ud,
+                                  json_t** patch_out) {
+    if (!v)
+        return -1;
+    user_sink_t* sink = (user_sink_t*)calloc(1, sizeof(*sink));
+    if (!sink)
+        return -1;
+    sink->base.emit = user_emit;
+    sink->base.destroy = user_destroy;
+    sink->fn = on_error;
+    sink->ud = error_ud;
+
+    celix_jansson_validation_context_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.root = v->root;
+    ctx.sink = &sink->base;
+    ctx.patch = json_array();
+
+    int errs = celix_jansson_schema_root_validate(v->root, "#", instance, &ctx);
+
+    if (patch_out)
+        *patch_out = ctx.patch;
+    else
+        json_decref(ctx.patch);
+
+    sink->base.destroy(&sink->base);
+    return errs;
+}
+
+int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
+                                      json_t* instance,
+                                      const char* initial_uri,
+                                      celix_jansson_schema_error_fn on_error,
+                                      void* error_ud,
+                                      json_t** patch_out) {
+    if (!v)
+        return -1;
+    user_sink_t* sink = (user_sink_t*)calloc(1, sizeof(*sink));
+    if (!sink)
+        return -1;
+    sink->base.emit = user_emit;
+    sink->base.destroy = user_destroy;
+    sink->fn = on_error;
+    sink->ud = error_ud;
+
+    celix_jansson_validation_context_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.root = v->root;
+    ctx.sink = &sink->base;
+    ctx.patch = json_array();
+
+    int errs = celix_jansson_schema_root_validate(v->root, initial_uri ? initial_uri : "#", instance, &ctx);
+
+    if (patch_out)
+        *patch_out = ctx.patch;
+    else
+        json_decref(ctx.patch);
+
+    sink->base.destroy(&sink->base);
+    return errs;
+}
+
+json_t* celix_jansson_schema_draft7_meta_schema(void) {
+    const char* s = "{"
+                    "\"$schema\":\"http://json-schema.org/draft-07/schema#\","
+                    "\"$id\":\"http://json-schema.org/draft-07/schema#\","
+                    "\"type\":[\"object\",\"boolean\"]"
+                    "}";
+    return json_loads(s, 0, NULL);
+}
