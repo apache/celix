@@ -26,8 +26,6 @@
 
 /* ── URI ──────────────────────────────────────────────────────────────── */
 
-static char scratch_buf[4096]; /* reusable buffer for location() and fragment() */
-
 /* Percent-decode a string. Returns malloc'd output. */
 static char* percent_decode(const char* src) {
     celix_jansson_strbuf_t sb;
@@ -242,10 +240,9 @@ int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, ce
     return 0;
 }
 
-const char* celix_jansson_uri_location(const celix_jansson_uri_t* u) {
+char* celix_jansson_uri_location(const celix_jansson_uri_t* u) {
     if (u->urn) {
-        snprintf(scratch_buf, sizeof(scratch_buf), "%s", u->urn);
-        return scratch_buf;
+        return celix_jansson_strdup(u->urn);
     }
 
     celix_jansson_strbuf_t sb;
@@ -260,16 +257,15 @@ const char* celix_jansson_uri_location(const celix_jansson_uri_t* u) {
         celix_jansson_strbuf_appends(&sb, u->path);
 
     if (sb.len == 0)
-        return "";
+        return celix_jansson_strdup("");
 
-    snprintf(scratch_buf, sizeof(scratch_buf), "%.*s", (int)sb.len, sb.data);
-    celix_jansson_strbuf_free(&sb);
-    return scratch_buf;
+    char* result = celix_jansson_strbuf_detach(&sb);
+    return result ? result : celix_jansson_strdup("");
 }
 
 char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u) {
-    const char* loc = celix_jansson_uri_location(u);
-    const char* frag = celix_jansson_uri_fragment(u);
+    char* loc = celix_jansson_uri_location(u);
+    char* frag = celix_jansson_uri_fragment(u);
 
     celix_jansson_strbuf_t sb;
     celix_jansson_strbuf_init(&sb);
@@ -278,6 +274,9 @@ char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u) {
         celix_jansson_strbuf_appends(&sb, "#");
         celix_jansson_strbuf_appends(&sb, frag);
     }
+
+    free(loc);
+    free(frag);
 
     char* result = celix_jansson_strbuf_detach(&sb);
     return result ? result : celix_jansson_strdup("");
@@ -299,27 +298,31 @@ char* celix_jansson_uri_escape(const char* src) {
     return celix_jansson_strbuf_detach(&sb);
 }
 
-const char* celix_jansson_uri_fragment(const celix_jansson_uri_t* u) {
+char* celix_jansson_uri_fragment(const celix_jansson_uri_t* u) {
     if (u->identifier)
-        return u->identifier;
+        return celix_jansson_strdup(u->identifier);
 
     if (u->pointer.len > 0) {
-        char* s = celix_json_pointer_to_string(&u->pointer);
-        snprintf(scratch_buf, sizeof(scratch_buf), "%s", s);
-        free(s);
-        return scratch_buf;
+        return celix_json_pointer_to_string(&u->pointer);
     }
 
-    return "";
+    return celix_jansson_strdup("");
 }
 
 bool celix_jansson_uri_equals(const celix_jansson_uri_t* a, const celix_jansson_uri_t* b) {
-    const char* la = celix_jansson_uri_location(a);
-    const char* lb = celix_jansson_uri_location(b);
+    char* la = celix_jansson_uri_location(a);
+    char* lb = celix_jansson_uri_location(b);
     int r = strcmp(la, lb);
+    free(la);
+    free(lb);
     if (r != 0)
         return false;
-    return strcmp(celix_jansson_uri_fragment(a), celix_jansson_uri_fragment(b)) == 0;
+    char* fa = celix_jansson_uri_fragment(a);
+    char* fb = celix_jansson_uri_fragment(b);
+    r = strcmp(fa, fb);
+    free(fa);
+    free(fb);
+    return r == 0;
 }
 
 void celix_jansson_uri_clear(celix_jansson_uri_t* u) {

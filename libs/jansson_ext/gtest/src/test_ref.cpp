@@ -215,3 +215,154 @@ TEST(RefTest, RefWithDefaultOverride) {
     json_decref(sch);
     free_validator(v);
 }
+
+/* ── Forward $ref to $id-based target (triggers root_insert placeholder) ─── */
+
+TEST(RefTest, ForwardRefToIdBasedTarget) {
+    /* Definition "A" references "http://example.com/b" via $ref.
+     * Definition "B" declares $id "http://example.com/b" and appears
+     * after "A" in JSON key order. Since definitions are compiled
+     * iteratively, "A" sees a placeholder for "b"'s URI, which is
+     * resolved when "B" is registered via celix_jansson_schema_root_insert.
+     * This exercises the waiting-placeholder resolution at line 2167-2173. */
+    static const char* schema = R"({
+        "definitions": {
+            "A": {
+                "$ref": "http://example.com/b"
+            },
+            "B": {
+                "$id": "http://example.com/b",
+                "type": "integer",
+                "minimum": 1
+            }
+        },
+        "properties": {
+            "value": { "$ref": "#/definitions/A" }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Valid: 5 resolves through A → B chain to positive integer */
+    reset_errors();
+    json_t* inst = json_loads(R"({"value":5})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Invalid: 0 is not >= 1 */
+    inst = json_loads(R"({"value":0})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_GT(celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr), 0);
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── Forward $ref resolution (placeholder → registered schema) ───────────── */
+
+TEST(RefTest, ForwardRefToDefinition) {
+    /* Forward reference: $ref to a definition that appears later in the
+     * JSON object. This exercises the placeholder → resolve path in
+     * celix_jansson_schema_root_insert, where a waiting placeholder is
+     * removed from sf->unresolved after the target node is registered. */
+    static const char* schema = R"({
+        "properties": {
+            "value": { "$ref": "#/definitions/posInt" }
+        },
+        "definitions": {
+            "posInt": {
+                "type": "integer",
+                "minimum": 1
+            }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Valid: positive integer */
+    reset_errors();
+    json_t* inst = json_loads(R"({"value":42})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Invalid: 0 is not >= 1 */
+    inst = json_loads(R"({"value":0})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_GT(celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr), 0);
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── Multiple forward $refs to same definition ───────────────────────────── */
+
+TEST(RefTest, MultipleForwardRefsToSameDefinition) {
+    /* Multiple forward $refs to the same definition. Each creates a
+     * placeholder in sf->unresolved; the first one that gets resolved
+     * via celix_jansson_schema_root_insert should remove and wire up
+     * the placeholder. All of them should be cleaned up without leak. */
+    static const char* schema = R"({
+        "properties": {
+            "a": { "$ref": "#/definitions/posInt" },
+            "b": { "$ref": "#/definitions/posInt" }
+        },
+        "definitions": {
+            "posInt": {
+                "type": "integer",
+                "minimum": 1
+            }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Both properties should validate */
+    reset_errors();
+    json_t* inst = json_loads(R"({"a":5,"b":10})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Both invalid */
+    inst = json_loads(R"({"a":0,"b":-1})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(2, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}

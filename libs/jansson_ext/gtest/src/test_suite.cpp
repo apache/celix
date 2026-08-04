@@ -45,8 +45,6 @@ static bool is_expected_fail(const std::string& fn) {
                                  "content",
                                  "unknownKeyword",
                                  "zeroTerminatedFloats",
-                                 /* $ref remote schema loading not yet implemented */
-                                 "refRemote",
                                  /* Format checkers with known limitations */
                                  "email",
                                  "idn-email",
@@ -54,7 +52,7 @@ static bool is_expected_fail(const std::string& fn) {
                                  "uri",
                                  "format",
                                  "format-unknown",
-                                 "ref",
+                                 "ref.json",
                                  "bignum",
                                  NULL};
     for (const char** p = list; *p; p++)
@@ -266,6 +264,7 @@ TEST_F(SuiteTest, minLength) { run_file("tests/draft7/minLength.json"); }
 TEST_F(SuiteTest, minProperties) { run_file("tests/draft7/minProperties.json"); }
 TEST_F(SuiteTest, minimum) { run_file("tests/draft7/minimum.json"); }
 TEST_F(SuiteTest, multipleOf) { run_file("tests/draft7/multipleOf.json"); }
+TEST_F(SuiteTest, id_) { run_file("tests/draft7/id.json"); }
 TEST_F(SuiteTest, not_) { run_file("tests/draft7/not.json"); }
 TEST_F(SuiteTest, oneOf) { run_file("tests/draft7/oneOf.json"); }
 TEST_F(SuiteTest, pattern) { run_file("tests/draft7/pattern.json"); }

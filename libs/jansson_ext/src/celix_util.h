@@ -106,10 +106,6 @@ static inline size_t celix_jansson_vec_size(const celix_jansson_vec_t* v) { retu
 
 /* ── Allocation helpers ─────────────────────────────────────────────────── */
 
-static inline void* celix_jansson_malloc(size_t sz) { return malloc(sz); }
-
-static inline void* celix_jansson_calloc(size_t n, size_t sz) { return calloc(n, sz); }
-
 static inline char* celix_jansson_strdup(const char* s) {
     if (!s)
         return NULL;
@@ -117,15 +113,6 @@ static inline char* celix_jansson_strdup(const char* s) {
     char* d = (char*)malloc(len + 1);
     if (d)
         memcpy(d, s, len + 1);
-    return d;
-}
-
-static inline void* celix_jansson_memdup(const void* src, size_t sz) {
-    if (!src || sz == 0)
-        return NULL;
-    void* d = malloc(sz);
-    if (d)
-        memcpy(d, src, sz);
     return d;
 }
 

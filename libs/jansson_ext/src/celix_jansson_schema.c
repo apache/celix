@@ -329,7 +329,6 @@ static void d_required(celix_jansson_schema_node_t* n) {
 
 static void d_ref(celix_jansson_schema_node_t* n) {
     free(n->u.ref.id);
-    celix_jansson_schema_unref(n->u.ref.target_strong);
     json_decref(n->default_value);
     free(n);
 }
@@ -465,15 +464,13 @@ static int v_ref(const celix_jansson_schema_node_t* n,
                  json_t* inst,
                  celix_jansson_path_t* p,
                  celix_jansson_validation_context_t* ctx) {
-    celix_jansson_schema_node_t* t = n->u.ref.target_weak ? n->u.ref.target_weak : n->u.ref.target_strong;
+    celix_jansson_schema_node_t* t = n->u.ref.target_weak;
+    if (!t && n->u.ref.id && strcmp(n->u.ref.id, "#") == 0 && n->root && n->root->root) {
+        t = n->root->root;
+    }
     if (!t) {
-        /* Handle "#" self-reference */
-        if (n->u.ref.id && strcmp(n->u.ref.id, "#") == 0 && n->root && n->root->root) {
-            t = n->root->root;
-        } else {
-            emit_error(ctx, p, "unresolved or freed schema-reference");
-            return 1;
-        }
+        emit_error(ctx, p, "unresolved or freed schema-reference");
+        return 1;
     }
     return t->vtable->validate(t, inst, p, ctx);
 }
@@ -483,7 +480,7 @@ static const json_t* dv_ref(const celix_jansson_schema_node_t* n,
                             celix_jansson_validation_context_t* ctx) {
     if (n->default_value)
         return n->default_value;
-    celix_jansson_schema_node_t* t = n->u.ref.target_weak ? n->u.ref.target_weak : n->u.ref.target_strong;
+    celix_jansson_schema_node_t* t = n->u.ref.target_weak;
     if (!t && n->u.ref.id && strcmp(n->u.ref.id, "#") == 0 && n->root)
         t = n->root->root;
     if (t && t->vtable->default_value)
@@ -1132,15 +1129,25 @@ static const schema_vtable vt_type = {v_type, dv_type, d_type};
  * celix_jansson_schema_make — the compiler
  * ════════════════════════════════════════════════════════════════════════ */
 
+/* Forward declarations for functions defined later in this file */
+static celix_jansson_schema_node_t* resolve_document_fragment(
+    celix_jansson_schema_root_t* root, const char* location, const char* fragment);
+
 static int schema_make_internal_depth(json_t* sch,
                                       celix_jansson_schema_root_t* root,
+                                      const celix_jansson_uri_t* base,
+                                      celix_jansson_uri_t* eff_base_out,
                                       celix_jansson_schema_node_t** out,
                                       int depth);
-static int schema_make_internal(json_t* sch, celix_jansson_schema_root_t* root, celix_jansson_schema_node_t** out) {
-    return schema_make_internal_depth(sch, root, out, 0);
+static int schema_make_internal(json_t* sch, celix_jansson_schema_root_t* root,
+                                const celix_jansson_uri_t* base,
+                                celix_jansson_schema_node_t** out) {
+    return schema_make_internal_depth(sch, root, base, NULL, out, 0);
 }
 
-static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celix_jansson_schema_node_t** out) {
+static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
+                            const celix_jansson_uri_t* base,
+                            celix_jansson_schema_node_t** out) {
     celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
     if (!n)
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
@@ -1413,7 +1420,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
                 json_t* pv;
                 json_object_foreach(v, k, pv) {
                     celix_jansson_schema_node_t* ps;
-                    if (schema_make_internal(pv, root, &ps) == CELIX_JANSSON_SCHEMA_OK)
+                    if (schema_make_internal(pv, root, base, &ps) == CELIX_JANSSON_SCHEMA_OK)
                         celix_jansson_hash_table_put(&onode->u.object.properties, k, ps);
                 }
             }
@@ -1428,13 +1435,13 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
                 json_object_foreach(v, pk, psch) {
                     onode->u.object.pattern_properties[idx].sch = NULL;
                     regcomp(&onode->u.object.pattern_properties[idx].re, pk, REG_EXTENDED);
-                    schema_make_internal(psch, root, &onode->u.object.pattern_properties[idx].sch);
+                    schema_make_internal(psch, root, base, &onode->u.object.pattern_properties[idx].sch);
                     idx++;
                 }
             }
             if ((v = json_object_get(sch, "additionalProperties"))) {
                 if (json_is_object(v) || json_is_boolean(v))
-                    schema_make_internal(v, root, &onode->u.object.additional_properties);
+                    schema_make_internal(v, root, base, &onode->u.object.additional_properties);
             }
             if ((v = json_object_get(sch, "dependencies"))) {
                 celix_jansson_hash_table_init(&onode->u.object.dependencies);
@@ -1456,14 +1463,14 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
                             rn->u.required.names[ai] = celix_jansson_strdup(json_string_value(json_array_get(dv, ai)));
                         dep = rn;
                     } else {
-                        schema_make_internal(dv, root, &dep);
+                        schema_make_internal(dv, root, base, &dep);
                     }
                     if (dep)
                         celix_jansson_hash_table_put(&onode->u.object.dependencies, dk, dep);
                 }
             }
             if ((v = json_object_get(sch, "propertyNames"))) {
-                schema_make_internal(v, root, &onode->u.object.property_names);
+                schema_make_internal(v, root, base, &onode->u.object.property_names);
             }
         }
     }
@@ -1485,20 +1492,20 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
                 anode->u.array.unique_items = json_is_true(v);
             if ((v = json_object_get(sch, "items"))) {
                 if (json_is_object(v) || json_is_boolean(v)) {
-                    schema_make_internal(v, root, &anode->u.array.items_schema);
+                    schema_make_internal(v, root, base, &anode->u.array.items_schema);
                 } else if (json_is_array(v)) {
                     size_t ilen = json_array_size(v);
                     anode->u.array.items =
                         (celix_jansson_schema_node_t**)calloc(ilen, sizeof(celix_jansson_schema_node_t*));
                     anode->u.array.items_len = ilen;
                     for (size_t i = 0; i < ilen; i++)
-                        schema_make_internal(json_array_get(v, i), root, &anode->u.array.items[i]);
+                        schema_make_internal(json_array_get(v, i), root, base, &anode->u.array.items[i]);
                 }
             }
             if ((v = json_object_get(sch, "additionalItems")))
-                schema_make_internal(v, root, &anode->u.array.additional_items);
+                schema_make_internal(v, root, base, &anode->u.array.additional_items);
             if ((v = json_object_get(sch, "contains")))
-                schema_make_internal(v, root, &anode->u.array.contains);
+                schema_make_internal(v, root, base, &anode->u.array.contains);
         }
     }
 
@@ -1527,7 +1534,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
         celix_jansson_vec_init(&logic);
         if ((v = json_object_get(sch, "not"))) {
             celix_jansson_schema_node_t* sub;
-            if (schema_make_internal(v, root, &sub) == CELIX_JANSSON_SCHEMA_OK) {
+            if (schema_make_internal(v, root, base, &sub) == CELIX_JANSSON_SCHEMA_OK) {
                 celix_jansson_schema_node_t* nn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*nn));
                 nn->vtable = &vt_not;
                 nn->kind = CELIX_JANSSON_SCHEMA_KIND_NOT;
@@ -1552,7 +1559,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
                     (celix_jansson_schema_node_t**)calloc(clen, sizeof(celix_jansson_schema_node_t*));
                 cn->u.combination.len = clen;
                 for (size_t j = 0; j < clen; j++)
-                    schema_make_internal(json_array_get(v, j), root, &cn->u.combination.items[j]);
+                    schema_make_internal(json_array_get(v, j), root, base, &cn->u.combination.items[j]);
                 celix_jansson_vec_push(&logic, cn);
             }
         }
@@ -1566,13 +1573,13 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
     {
         json_t* ifv = json_object_get(sch, "if");
         if (ifv) {
-            schema_make_internal(ifv, root, &n->u.type_schema.if_schema);
+            schema_make_internal(ifv, root, base, &n->u.type_schema.if_schema);
             json_t* thenv = json_object_get(sch, "then");
             if (thenv)
-                schema_make_internal(thenv, root, &n->u.type_schema.then_schema);
+                schema_make_internal(thenv, root, base, &n->u.type_schema.then_schema);
             json_t* elsev = json_object_get(sch, "else");
             if (elsev)
-                schema_make_internal(elsev, root, &n->u.type_schema.else_schema);
+                schema_make_internal(elsev, root, base, &n->u.type_schema.else_schema);
         }
     }
 
@@ -1589,6 +1596,8 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root, celi
 
 static int schema_make_internal_depth(json_t* sch,
                                       celix_jansson_schema_root_t* root,
+                                      const celix_jansson_uri_t* base,
+                                      celix_jansson_uri_t* eff_base_out,
                                       celix_jansson_schema_node_t** out,
                                       int depth) {
     if (!sch || !root || !out)
@@ -1596,6 +1605,38 @@ static int schema_make_internal_depth(json_t* sch,
     /* Guard against infinite recursion for self-referencing schemas */
     if (depth > 20)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
+
+    /* ── Parse $id to compute effective base URI ─────────────────────── */
+    const celix_jansson_uri_t* effective_base = base;
+    celix_jansson_uri_t my_base;
+    memset(&my_base, 0, sizeof(my_base)); /* must zero-init for uri_derive → uri_clear */
+    bool has_id = false;
+    bool id_stored_in_out = false; /* true if eff_base_out holds the owned URI */
+    json_t* refv = json_object_get(sch, "$ref"); /* peek early: $id alongside $ref is not a real $id */
+    json_t* idv = json_object_get(sch, "$id");
+    if (idv && json_is_string(idv) && !refv) {
+        const celix_jansson_uri_t* derive_from = effective_base;
+        celix_jansson_uri_t empty;
+        if (!derive_from) {
+            celix_jansson_uri_init(&empty, "");
+            derive_from = &empty;
+        }
+        if (eff_base_out) {
+            /* Derive directly into caller's buffer — avoids double-free from struct copy */
+            if (celix_jansson_uri_derive(derive_from, json_string_value(idv), eff_base_out) == 0) {
+                effective_base = eff_base_out;
+                has_id = true;
+                id_stored_in_out = true;
+            }
+        } else {
+            if (celix_jansson_uri_derive(derive_from, json_string_value(idv), &my_base) == 0) {
+                effective_base = &my_base;
+                has_id = true;
+            }
+        }
+        if (!base)
+            celix_jansson_uri_clear(&empty);
+    }
 
     if (json_is_true(sch)) {
         celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
@@ -1607,6 +1648,7 @@ static int schema_make_internal_depth(json_t* sch,
         n->refcount = 1;
         n->u.boolean.value = true;
         *out = n;
+        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, n);
         return CELIX_JANSSON_SCHEMA_OK;
     }
     if (json_is_false(sch)) {
@@ -1619,24 +1661,25 @@ static int schema_make_internal_depth(json_t* sch,
         n->refcount = 1;
         n->u.boolean.value = false;
         *out = n;
+        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, n);
         return CELIX_JANSSON_SCHEMA_OK;
     }
     if (!json_is_object(sch))
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
 
-    /* Process definitions first — compile and register in celix_jansson_schema_file_t */
+    /* Process definitions first — compile and register using effective base location */
     json_t* defs = json_object_get(sch, "definitions");
     if (defs && json_is_object(defs)) {
+        char* base_loc = effective_base ? celix_jansson_uri_location(effective_base) : celix_jansson_strdup("");
+        celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, base_loc);
+        free(base_loc);
         const char* dk;
         json_t* dv;
         json_object_foreach(defs, dk, dv) {
             celix_jansson_schema_node_t* ds;
-            if (schema_make_internal(dv, root, &ds) == CELIX_JANSSON_SCHEMA_OK && ds) {
-                /* Register under <location>#/definitions/<dk> */
-                celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, "");
+            if (schema_make_internal(dv, root, effective_base, &ds) == CELIX_JANSSON_SCHEMA_OK && ds) {
                 char frag[1024];
                 snprintf(frag, sizeof(frag), "/definitions/%s", dk);
-                /* Avoid leaking if the fragment was already registered via a $ref resolution */
                 celix_jansson_schema_node_t* existing =
                     (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
                 if (existing) {
@@ -1649,77 +1692,422 @@ static int schema_make_internal_depth(json_t* sch,
     }
 
     /* Check for $ref */
-    json_t* refv = json_object_get(sch, "$ref");
     if (refv) {
         const char* ref_str = json_string_value(refv);
         if (!ref_str)
             return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
 
-        celix_jansson_schema_node_t* target = NULL;
-
-        /* For JSON pointer refs (e.g., "#/definitions/foo", "#"), resolve
-         * by walking the original schema stored in celix_jansson_schema_root_t. */
-        if (ref_str[0] == '#' && root->original_schema) {
-            const char* ptr = ref_str + 1; /* skip '#' */
-            if (*ptr == '\0') {
-                /* "#" self-ref — create placeholder, will be resolved in celix_jansson_schema_root_set_root_schema */
-                target = NULL; /* leave as unresolved, post-compile fixup will resolve */
-            } else if (*ptr == '/') {
-                /* First check the hash table for an already-compiled schema (e.g. definitions) */
-                celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, "");
-                target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, ptr);
-                if (!target) {
-                    /* Compile from original schema and register for proper lifecycle */
-                    celix_json_pointer_t jp;
-                    memset(&jp, 0, sizeof(jp));
-                    if (celix_json_pointer_init(&jp, ptr) == 0) {
-                        json_t* sub = celix_json_pointer_get(root->original_schema, &jp);
-                        if (sub) {
-                            if (schema_make_internal(sub, root, &target) == CELIX_JANSSON_SCHEMA_OK && target) {
-                                celix_jansson_hash_table_put(&sf->schemas, ptr, target);
-                            }
-                        }
-                        celix_json_pointer_clear(&jp);
-                    }
-                }
-            }
-        }
-
-        if (!target) {
-            /* Fall back to registry-based resolution */
-            celix_jansson_uri_t ref_uri;
+        /* Resolve ref_str against the effective base URI */
+        celix_jansson_uri_t ref_uri;
+        if (effective_base) {
+            if (celix_jansson_uri_derive(effective_base, ref_str, &ref_uri) != 0)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        } else {
             celix_jansson_uri_init(&ref_uri, ref_str);
-            target = celix_jansson_schema_root_get_or_create_ref(root, &ref_uri);
-            celix_jansson_uri_clear(&ref_uri);
         }
-        /* "#" self-refs with no target are OK (resolved at validation time) */
-        if (!target && strcmp(ref_str, "#") != 0)
-            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
 
-        /* Create ref node */
-        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
-        if (!rn)
+        char* rloc = celix_jansson_uri_location(&ref_uri);
+        char* rfra = celix_jansson_uri_fragment(&ref_uri);
+        celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, rloc);
+        celix_jansson_schema_node_t* target = NULL;
+        if (sf)
+            target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, rfra);
+
+        bool plain_self_ref = (strcmp(ref_str, "#") == 0 && rloc[0] == '\0' && rfra[0] == '\0');
+
+        /* Document fragment walk for internal refs and external docs with document loaded */
+        if (!target && !plain_self_ref && sf &&
+            (sf->document || (rloc[0] == '\0' && root->original_schema))) {
+            target = resolve_document_fragment(root, rloc, rfra);
+        }
+
+        if (!target)
+            target = celix_jansson_schema_root_get_or_create_ref(root, &ref_uri);
+
+        if (!target && !plain_self_ref) {
+            free(rloc); free(rfra); celix_jansson_uri_clear(&ref_uri);
             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
+
+        /* Create ref node — store derived URI as id */
+        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+        if (!rn) {
+            free(rloc); free(rfra); celix_jansson_uri_clear(&ref_uri);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         rn->vtable = &vt_ref;
         rn->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
         rn->root = root;
         rn->refcount = 1;
-        rn->u.ref.id = celix_jansson_strdup(ref_str);
+        rn->u.ref.id = celix_jansson_uri_to_string(&ref_uri);
         if (target) {
             rn->u.ref.target_weak = target;
-            rn->u.ref.target_strong = celix_jansson_schema_ref(target);
         }
 
-        /* Check for default override on $ref */
         json_t* defv = json_object_get(sch, "default");
         if (defv)
             rn->default_value = json_deep_copy(defv);
 
+        free(rloc); free(rfra);
+        celix_jansson_uri_clear(&ref_uri);
+
+        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, rn);
         *out = rn;
         return CELIX_JANSSON_SCHEMA_OK;
     }
 
-    return make_type_schema(sch, root, out);
+    int rc = make_type_schema(sch, root, effective_base, out);
+    if (rc == CELIX_JANSSON_SCHEMA_OK && has_id && *out)
+        (void)celix_jansson_schema_root_insert(root, &my_base, *out);
+    if (has_id && !id_stored_in_out)
+        celix_jansson_uri_clear(&my_base);
+    return rc;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Document fragment resolution with $id tracking
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* Determine if a JSON pointer token points to a container whose values are
+ * schema objects (definitions, properties, patternProperties, dependencies,
+ * allOf, anyOf, oneOf, or the items-array tuple form). In such containers,
+ * $id inside the member values is a real schema identifier. */
+static bool token_members_are_schemas(const char* token, json_t* container) {
+    static const char* schema_containers[] = {
+        "definitions", "properties", "patternProperties", "dependencies",
+        "allOf", "anyOf", "oneOf", NULL
+    };
+    for (const char** p = schema_containers; *p; p++)
+        if (strcmp(token, *p) == 0)
+            return true;
+    /* items: tuple form = array of schemas, single form = one schema */
+    if (strcmp(token, "items") == 0 && json_is_array(container))
+        return true;
+    return false;
+}
+
+/* Determine if a token points to a schema-position node (i.e., the value
+ * at this key is itself a schema where $id would be meaningful). */
+static bool token_is_schema_position(const char* token, json_t* child) {
+    static const char* schema_positions[] = {
+        "additionalProperties", "additionalItems", "contains",
+        "propertyNames", "not", "if", "then", "else", NULL
+    };
+    for (const char** p = schema_positions; *p; p++)
+        if (strcmp(token, *p) == 0)
+            return true;
+    /* "items" with a non-array value is a single schema */
+    if (strcmp(token, "items") == 0 && !json_is_array(child))
+        return true;
+    return false;
+}
+
+/* Walk a JSON document following a JSON Pointer fragment, tracking $id
+ * base-URI changes along the path. Compile the target subtree and register
+ * it in the registry. */
+static celix_jansson_schema_node_t* resolve_document_fragment(
+    celix_jansson_schema_root_t* root, const char* location, const char* fragment)
+{
+    celix_jansson_schema_file_t* sf =
+        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+    if (!sf)
+        return NULL;
+
+    json_t* doc = sf->document;
+    if (!doc && location[0] == '\0')
+        doc = root->original_schema;
+    if (!doc)
+        return NULL;
+
+    /* Build the base URI for this walk */
+    celix_jansson_uri_t cur_base;
+    if (sf->base_uri)
+        celix_jansson_uri_init(&cur_base, sf->base_uri);
+    else
+        celix_jansson_uri_init(&cur_base, location[0] ? location : "");
+
+    /* Walk the fragment tokens */
+    json_t* cur = doc;
+    bool members_are_schemas = false;
+    json_t* prev_container = NULL;
+
+    if (fragment[0] == '/' && fragment[1] != '\0') {
+        /* Tokenize: split by '/' and decode ~0/~1 */
+        const char* s = fragment + 1; /* skip leading '/' */
+        const char* tok_start = s;
+        while (*tok_start) {
+            const char* tok_end = tok_start;
+            while (*tok_end && *tok_end != '/')
+                tok_end++;
+
+            /* Decode token */
+            celix_jansson_strbuf_t tsb;
+            celix_jansson_strbuf_init(&tsb);
+            for (const char* c = tok_start; c < tok_end; c++) {
+                if (*c == '~' && *(c+1) == '0') { celix_jansson_strbuf_appendc(&tsb, '~'); c++; }
+                else if (*c == '~' && *(c+1) == '1') { celix_jansson_strbuf_appendc(&tsb, '/'); c++; }
+                else celix_jansson_strbuf_appendc(&tsb, *c);
+            }
+            char* token = celix_jansson_strbuf_detach(&tsb);
+            if (!token) {
+                celix_jansson_uri_clear(&cur_base);
+                return NULL;
+            }
+
+            prev_container = cur;
+
+            if (!json_is_object(cur)) {
+                free(token);
+                celix_jansson_uri_clear(&cur_base);
+                return NULL;
+            }
+
+            json_t* child = json_object_get(cur, token);
+
+            /* If entering a schema-position node with $id, update base */
+            if (child && json_is_object(child) &&
+                (members_are_schemas || token_is_schema_position(token, child))) {
+                json_t* cid = json_object_get(child, "$id");
+                if (cid && json_is_string(cid)) {
+                    celix_jansson_uri_t new_base;
+                    if (celix_jansson_uri_derive(&cur_base, json_string_value(cid), &new_base) == 0) {
+                        celix_jansson_uri_clear(&cur_base);
+                        cur_base = new_base;
+                    }
+                }
+            }
+
+            members_are_schemas = token_members_are_schemas(token, child ? child : prev_container);
+
+            if (!child) {
+                free(token);
+                celix_jansson_uri_clear(&cur_base);
+                return NULL;
+            }
+            cur = child;
+            free(token);
+
+            tok_start = (*tok_end == '/') ? tok_end + 1 : tok_end;
+        }
+    }
+
+    /* Compile the reached subtree with the tracked base */
+    celix_jansson_schema_node_t* sch = NULL;
+    int rc = schema_make_internal_depth(cur, root, &cur_base, NULL, &sch, 0);
+    celix_jansson_uri_clear(&cur_base);
+    if (rc != CELIX_JANSSON_SCHEMA_OK || !sch)
+        return NULL;
+
+    /* Register under the full URI so waiting refs get resolved */
+    celix_jansson_uri_t full_uri;
+    celix_jansson_uri_init(&full_uri, location);
+    /* Re-attach fragment to the URI */
+    if (fragment[0] == '/') {
+        celix_json_pointer_t ptr;
+        memset(&ptr, 0, sizeof(ptr));
+        if (celix_json_pointer_init(&ptr, fragment) == 0) {
+            for (size_t i = 0; i < ptr.len; i++)
+                celix_json_pointer_push(&full_uri.pointer, ptr.tokens[i]);
+            celix_json_pointer_clear(&ptr);
+        }
+    }
+    (void)celix_jansson_schema_root_insert(root, &full_uri, sch);
+    celix_jansson_uri_clear(&full_uri);
+    celix_jansson_schema_unref(sch); /* registry holds the owning ref now */
+
+    return sch;
+}
+
+/* ── Helper: count total unresolved refs across all files ───────────────── */
+static size_t total_unresolved(const celix_jansson_schema_root_t* root) {
+    size_t count = 0;
+    for (size_t i = 0; i < root->files.cap; i++) {
+        if (root->files.buckets[i].used == 1 && root->files.buckets[i].value) {
+            celix_jansson_schema_file_t* sf =
+                (celix_jansson_schema_file_t*)root->files.buckets[i].value;
+            count += sf->unresolved.count;
+        }
+    }
+    return count;
+}
+
+/* ── Phase 2: compile external document ─────────────────────────────────── */
+static int compile_external_document(celix_jansson_schema_root_t* root, const char* location) {
+    if (!root->loader)
+        return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+
+    json_t* doc = NULL;
+    int rc = root->loader(location, &doc, root->loader_ud);
+    if (rc != CELIX_JANSSON_SCHEMA_OK || !doc) {
+        json_decref(doc);
+        return rc ? rc : CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+    }
+
+    celix_jansson_uri_t retr;
+    celix_jansson_uri_init(&retr, location);
+    celix_jansson_schema_node_t* sch = NULL;
+    rc = schema_make_internal_depth(doc, root, &retr, NULL, &sch, 0);
+    if (rc != CELIX_JANSSON_SCHEMA_OK || !sch) {
+        json_decref(doc);
+        celix_jansson_uri_clear(&retr);
+        return rc ? rc : CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
+
+    /* Register root at retrieval URI — auto-resolves waiting fragment="" placeholder */
+    (void)celix_jansson_schema_root_insert(root, &retr, sch);
+
+    /* Retain document for fragment resolution */
+    celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, location);
+    if (sf) {
+        json_decref(sf->document);
+        sf->document = doc;  /* ownership transferred */
+        free(sf->base_uri);
+        sf->base_uri = celix_jansson_strdup(location);
+    } else {
+        json_decref(doc);
+    }
+
+    celix_jansson_uri_clear(&retr);
+    celix_jansson_schema_unref(sch);
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+/* ── Phase 2: try to resolve a single placeholder ──────────────────────── */
+static bool resolve_placeholder(celix_jansson_schema_root_t* root,
+                                const char* location, const char* fragment,
+                                celix_jansson_schema_node_t* ref_node) {
+    (void)ref_node;
+    /* Use the location+fragment to look up in schemas */
+    celix_jansson_schema_file_t* sf =
+        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+    if (!sf)
+        return false;
+
+    /* Already resolved? */
+    celix_jansson_schema_node_t* existing =
+        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, fragment);
+    if (existing) {
+        /* Wire up the placeholder if not yet done */
+        celix_jansson_schema_node_t* waiting =
+            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, fragment);
+        if (waiting && waiting->kind == CELIX_JANSSON_SCHEMA_KIND_REF) {
+            waiting->u.ref.target_weak = existing;
+            celix_jansson_hash_table_remove(&sf->unresolved, fragment);
+            celix_jansson_vec_push(&sf->retained, waiting);
+            return true;
+        }
+        return false;
+    }
+
+    /* Try document fragment walk */
+    if (sf->document || (location[0] == '\0' && root->original_schema)) {
+        celix_jansson_schema_node_t* resolved = resolve_document_fragment(root, location, fragment);
+        if (resolved)
+            return true;
+    }
+
+    /* Try loading the document if not yet loaded */
+    if (sf->document == NULL && location[0] != '\0' && root->loader) {
+        int rc = compile_external_document(root, location);
+        if (rc == CELIX_JANSSON_SCHEMA_OK) {
+            /* Re-check schemas after loading */
+            celix_jansson_schema_node_t* reloaded =
+                (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, fragment);
+            if (reloaded)
+                return true;
+            /* Try fragment walk again */
+            return resolve_document_fragment(root, location, fragment) != NULL;
+        }
+    }
+
+    return false;
+}
+
+/* ── Phase 2: resolve all external refs ────────────────────────────────── */
+static int resolve_external_refs(celix_jansson_schema_root_t* root) {
+    int max_iter = 20;
+    while (total_unresolved(root) > 0 && max_iter-- > 0) {
+        bool progress = false;
+
+        /* Phase A: load documents for locations with pending refs */
+        {
+            /* Snapshot file keys — loading adds new entries */
+            celix_jansson_vec_t locs;
+            celix_jansson_vec_init(&locs);
+            for (size_t i = 0; i < root->files.cap; i++) {
+                if (root->files.buckets[i].used == 1 && root->files.buckets[i].key)
+                    celix_jansson_vec_push(&locs, celix_jansson_strdup(root->files.buckets[i].key));
+            }
+
+            for (size_t i = 0; i < locs.len; i++) {
+                const char* loc = (const char*)locs.items[i];
+                if (loc[0] == '\0') { free(locs.items[i]); continue; }
+
+                celix_jansson_schema_file_t* sf =
+                    (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, loc);
+                if (sf && sf->unresolved.count > 0 && sf->document == NULL) {
+                    int rc = compile_external_document(root, loc);
+                    if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                        for (size_t j = i; j < locs.len; j++)
+                            free(locs.items[j]);
+                        celix_jansson_vec_free(&locs);
+                        return rc;
+                    }
+                    progress = true;
+                }
+                free(locs.items[i]);
+            }
+            celix_jansson_vec_free(&locs);
+        }
+
+        /* Phase B: resolve placeholders */
+        {
+            /* Snapshot (location, fragment) pairs */
+            struct pf_pair { char* loc; char* frag; };
+            celix_jansson_vec_t pairs;
+            celix_jansson_vec_init(&pairs);
+            for (size_t i = 0; i < root->files.cap; i++) {
+                if (root->files.buckets[i].used != 1 || !root->files.buckets[i].key)
+                    continue;
+                celix_jansson_schema_file_t* sf =
+                    (celix_jansson_schema_file_t*)root->files.buckets[i].value;
+                if (!sf || sf->unresolved.count == 0)
+                    continue;
+                for (size_t j = 0; j < sf->unresolved.cap; j++) {
+                    if (sf->unresolved.buckets[j].used == 1 && sf->unresolved.buckets[j].key) {
+                        struct pf_pair* p = (struct pf_pair*)malloc(sizeof(*p));
+                        p->loc = celix_jansson_strdup(root->files.buckets[i].key);
+                        p->frag = celix_jansson_strdup(sf->unresolved.buckets[j].key);
+                        celix_jansson_vec_push(&pairs, p);
+                    }
+                }
+            }
+
+            for (size_t i = 0; i < pairs.len; i++) {
+                struct pf_pair* p = (struct pf_pair*)pairs.items[i];
+                celix_jansson_schema_file_t* sf =
+                    (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, p->loc);
+                if (sf) {
+                    celix_jansson_schema_node_t* ref_node =
+                        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, p->frag);
+                    if (ref_node)
+                        progress |= resolve_placeholder(root, p->loc, p->frag, ref_node);
+                }
+                free(p->loc);
+                free(p->frag);
+                free(p);
+            }
+            celix_jansson_vec_free(&pairs);
+        }
+
+        if (!progress)
+            break;
+    }
+
+    return total_unresolved(root) > 0
+        ? (root->loader ? CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED
+                        : CELIX_JANSSON_SCHEMA_ERROR_LOADER)
+        : CELIX_JANSSON_SCHEMA_OK;
 }
 
 int celix_jansson_schema_make(json_t* sch,
@@ -1729,7 +2117,7 @@ int celix_jansson_schema_make(json_t* sch,
                               celix_jansson_schema_node_t** out) {
     (void)keys;
     (void)uris;
-    return schema_make_internal(sch, root, out);
+    return schema_make_internal(sch, root, NULL, out);
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -1750,6 +2138,7 @@ celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_
     celix_jansson_hash_table_init(&sf->schemas);
     celix_jansson_hash_table_init(&sf->unresolved);
     sf->unknown_keywords = NULL;
+    celix_jansson_vec_init(&sf->retained);
     celix_jansson_hash_table_put(&root->files, location, sf);
     return sf;
 }
@@ -1757,13 +2146,19 @@ celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_
 int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
                                      const celix_jansson_uri_t* uri,
                                      celix_jansson_schema_node_t* sch) {
-    const char* loc = celix_jansson_uri_location(uri);
+    char* loc = celix_jansson_uri_location(uri);
     const char* frag = celix_jansson_uri_fragment(uri);
     celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
-    if (!sf)
+    if (!sf) {
+        free(loc);
+        free((char*)frag);
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-    if (celix_jansson_hash_table_get(&sf->schemas, frag))
+    }
+    if (celix_jansson_hash_table_get(&sf->schemas, frag)) {
+        free(loc);
+        free((char*)frag);
         return CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI;
+    }
     celix_jansson_schema_ref(sch);
     celix_jansson_hash_table_put(&sf->schemas, frag, sch);
 
@@ -1772,24 +2167,32 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
         (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
     if (waiting && waiting->kind == CELIX_JANSSON_SCHEMA_KIND_REF) {
         waiting->u.ref.target_weak = sch;
-        waiting->u.ref.target_strong = celix_jansson_schema_ref(sch);
         celix_jansson_hash_table_remove(&sf->unresolved, frag);
+        celix_jansson_vec_push(&sf->retained, waiting);
     }
+    free(loc);
+    free((char*)frag);
     return CELIX_JANSSON_SCHEMA_OK;
 }
 
 celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_jansson_schema_root_t* root,
                                                                          const celix_jansson_uri_t* uri) {
-    const char* loc = celix_jansson_uri_location(uri);
-    const char* frag = celix_jansson_uri_fragment(uri);
+    char* loc = celix_jansson_uri_location(uri);
+    char* frag = celix_jansson_uri_fragment(uri);
     celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
-    if (!sf)
+    if (!sf) {
+        free(loc);
+        free(frag);
         return NULL;
+    }
 
     celix_jansson_schema_node_t* existing =
         (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
-    if (existing)
+    if (existing) {
+        free(loc);
+        free(frag);
         return existing;
+    }
 
     /* If the fragment is a JSON pointer into unknown_keywords, compile it */
     if (sf->unknown_keywords && frag && frag[0] == '/') {
@@ -1800,10 +2203,12 @@ celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_j
             if (sub) {
                 /* Compile this subtree as a schema */
                 celix_jansson_schema_node_t* sch = NULL;
-                if (schema_make_internal(sub, root, &sch) == CELIX_JANSSON_SCHEMA_OK && sch) {
+                if (schema_make_internal(sub, root, NULL, &sch) == CELIX_JANSSON_SCHEMA_OK && sch) {
                     /* Register it */
                     celix_jansson_hash_table_put(&sf->schemas, frag, sch);
                     celix_json_pointer_clear(&ptr);
+                    free(loc);
+                    free(frag);
                     return sch;
                 }
             }
@@ -1813,13 +2218,19 @@ celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_j
 
     celix_jansson_schema_node_t* pending =
         (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
-    if (pending)
+    if (pending) {
+        free(loc);
+        free(frag);
         return pending;
+    }
 
     /* Create unresolved ref placeholder */
     celix_jansson_schema_node_t* ref = (celix_jansson_schema_node_t*)calloc(1, sizeof(*ref));
-    if (!ref)
+    if (!ref) {
+        free(loc);
+        free(frag);
         return NULL;
+    }
     ref->vtable = &vt_ref;
     ref->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
     ref->root = root;
@@ -1827,6 +2238,8 @@ celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_j
     char* uristr = celix_jansson_uri_to_string(uri);
     ref->u.ref.id = uristr;
     celix_jansson_hash_table_put(&sf->unresolved, frag, ref);
+    free(loc);
+    free(frag);
     return ref;
 }
 
@@ -1834,8 +2247,9 @@ int celix_jansson_schema_root_insert_unknown_keyword(celix_jansson_schema_root_t
                                                      const celix_jansson_uri_t* uri,
                                                      const char* key,
                                                      json_t* value) {
-    const char* loc = celix_jansson_uri_location(uri);
+    char* loc = celix_jansson_uri_location(uri);
     celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
+    free(loc);
     if (!sf)
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     if (!sf->unknown_keywords)
@@ -1850,7 +2264,12 @@ static void celix_jansson_schema_file_free(void* value) {
         return;
     celix_jansson_hash_table_destroy(&sf->schemas, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
     celix_jansson_hash_table_destroy(&sf->unresolved, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    for (size_t i = 0; i < sf->retained.len; i++)
+        celix_jansson_schema_unref((celix_jansson_schema_node_t*)sf->retained.items[i]);
+    celix_jansson_vec_free(&sf->retained);
     json_decref(sf->unknown_keywords);
+    json_decref(sf->document);
+    free(sf->base_uri);
     free(sf);
 }
 
@@ -1879,28 +2298,39 @@ int celix_jansson_schema_root_set_root_schema(celix_jansson_schema_root_t* root,
     /* Store the original for JSON pointer $ref resolution */
     root->original_schema = json_deep_copy(schema);
 
+    /* Compile with empty initial base; $id in the root will set the real base */
+    celix_jansson_uri_t root_base;
+    celix_jansson_uri_init(&root_base, "");
+
     celix_jansson_schema_node_t* sch;
-    int err = schema_make_internal(copy, root, &sch);
+    int err = schema_make_internal_depth(copy, root, NULL, &root_base, &sch, 0);
     json_decref(copy);
-    if (err != CELIX_JANSSON_SCHEMA_OK)
+    if (err != CELIX_JANSSON_SCHEMA_OK) {
+        celix_jansson_uri_clear(&root_base);
         return err;
+    }
 
     root->root = sch;
 
-    /* Check for unresolved refs in the root schema */
-    {
-        int has_unresolved = 0;
-        /* Check the root file (location "") for unresolved refs */
-        celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, "");
-        if (sf && sf->unresolved.count > 0) {
-            has_unresolved = 1;
-        }
-        if (has_unresolved)
-            return CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED;
-    }
+    /* Register root under its effective base ("" or $id-derived) */
+    (void)celix_jansson_schema_root_insert(root, &root_base, sch);
 
-    /* Phase 2: load external files and resolve refs (simplified for now) */
-    return CELIX_JANSSON_SCHEMA_OK;
+    /* Attach document for JSON pointer fragment resolution */
+    {
+        char* rloc = celix_jansson_uri_location(&root_base);
+        celix_jansson_schema_file_t* rsf = celix_jansson_schema_root_get_or_create_file(root, rloc);
+        if (rsf) {
+            json_decref(rsf->document);
+            rsf->document = json_incref(root->original_schema);
+            free(rsf->base_uri);
+            rsf->base_uri = celix_jansson_strdup(rloc);
+        }
+        free(rloc);
+    }
+    celix_jansson_uri_clear(&root_base);
+
+    /* Phase 2: load external files and resolve refs */
+    return resolve_external_refs(root);
 }
 
 int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,

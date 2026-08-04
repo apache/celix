@@ -126,7 +126,6 @@ struct celix_jansson_schema_node_t {
         struct {
             char* id;                                   /* the $ref URI string */
             celix_jansson_schema_node_t* target_weak;   /* non-owning (registry holds ref) */
-            celix_jansson_schema_node_t* target_strong; /* owning, for ref-to-ref chains */
         } ref;
 
         /* CELIX_JANSSON_SCHEMA_KIND_STRING */
@@ -262,7 +261,10 @@ typedef struct celix_jansson_schema_file_t {
     celix_jansson_hash_table_t schemas; /* fragment string -> celix_jansson_schema_node_t* (owning ref) */
     celix_jansson_hash_table_t
         unresolved; /* fragment string -> celix_jansson_schema_node_t* (CELIX_JANSSON_SCHEMA_KIND_REF, owning ref) */
+    json_t* document;        /* original JSON document for this location (owned), or NULL */
+    char* base_uri;          /* base URI used when compiling this document (owned), or NULL */
     json_t* unknown_keywords; /* JSON object tree of non-schema keywords */
+    celix_jansson_vec_t retained; /* resolved placeholders kept alive for weak-ref indirection */
 } celix_jansson_schema_file_t;
 
 /* ── Root schema (the central registry) ────────────────────────────────── */

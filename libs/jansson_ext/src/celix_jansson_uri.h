@@ -57,8 +57,8 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
  */
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out);
 
-/** Reconstruct the location part (scheme://authority/path or URN). */
-const char* celix_jansson_uri_location(const celix_jansson_uri_t* u);
+/** Reconstruct the location part (scheme://authority/path or URN). Returns malloc'd string; caller must free(). */
+char* celix_jansson_uri_location(const celix_jansson_uri_t* u);
 
 /** Full URI string "location # fragment".  Returns malloc'd string. */
 char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u);
@@ -66,8 +66,8 @@ char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u);
 /** Escape special chars for JSON Pointer (~ and /). Returns malloc'd. */
 char* celix_jansson_uri_escape(const char* src);
 
-/** Return the fragment as a string (concatenation of pointer or identifier). */
-const char* celix_jansson_uri_fragment(const celix_jansson_uri_t* u);
+/** Return the fragment as a string (concatenation of pointer or identifier). Returns malloc'd string; caller must free(). */
+char* celix_jansson_uri_fragment(const celix_jansson_uri_t* u);
 
 /** Compare two URIs for equality. Returns true if equal. */
 bool celix_jansson_uri_equals(const celix_jansson_uri_t* a, const celix_jansson_uri_t* b);

@@ -34,7 +34,9 @@ TEST(UriTest, ParseSimple) {
     memset(&u, 0, sizeof(u));
     int rc = celix_jansson_uri_init(&u, "http://example.com/schema");
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
-    EXPECT_STREQ("http://example.com/schema", celix_jansson_uri_location(&u));
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("http://example.com/schema", loc);
+    free(loc);
     celix_jansson_uri_clear(&u);
 }
 
@@ -43,8 +45,12 @@ TEST(UriTest, ParseWithFragmentPointer) {
     memset(&u, 0, sizeof(u));
     int rc = celix_jansson_uri_init(&u, "http://example.com/schema#/definitions/foo");
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
-    EXPECT_STREQ("http://example.com/schema", celix_jansson_uri_location(&u));
-    EXPECT_STREQ("/definitions/foo", celix_jansson_uri_fragment(&u));
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("http://example.com/schema", loc);
+    free(loc);
+    char* frag = celix_jansson_uri_fragment(&u);
+    EXPECT_STREQ("/definitions/foo", frag);
+    free(frag);
     celix_jansson_uri_clear(&u);
 }
 
@@ -53,7 +59,9 @@ TEST(UriTest, ParseWithIdentifierFragment) {
     memset(&u, 0, sizeof(u));
     int rc = celix_jansson_uri_init(&u, "http://example.com/schema#foo");
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
-    EXPECT_STREQ("foo", celix_jansson_uri_fragment(&u));
+    char* frag = celix_jansson_uri_fragment(&u);
+    EXPECT_STREQ("foo", frag);
+    free(frag);
     celix_jansson_uri_clear(&u);
 }
 
@@ -64,7 +72,9 @@ TEST(UriTest, DeriveRelative) {
 
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://json-schema.org/draft-07/schema#"));
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, "other.json", &derived));
-    EXPECT_STREQ("http://json-schema.org/draft-07/other.json", celix_jansson_uri_location(&derived));
+    char* loc = celix_jansson_uri_location(&derived);
+    EXPECT_STREQ("http://json-schema.org/draft-07/other.json", loc);
+    free(loc);
 
     celix_jansson_uri_clear(&base);
     celix_jansson_uri_clear(&derived);
@@ -77,8 +87,12 @@ TEST(UriTest, DeriveFragment) {
 
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/root#"));
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, "#/definitions/foo", &derived));
-    EXPECT_STREQ("http://example.com/root", celix_jansson_uri_location(&derived));
-    EXPECT_STREQ("/definitions/foo", celix_jansson_uri_fragment(&derived));
+    char* loc = celix_jansson_uri_location(&derived);
+    EXPECT_STREQ("http://example.com/root", loc);
+    free(loc);
+    char* frag = celix_jansson_uri_fragment(&derived);
+    EXPECT_STREQ("/definitions/foo", frag);
+    free(frag);
 
     celix_jansson_uri_clear(&base);
     celix_jansson_uri_clear(&derived);
@@ -91,7 +105,9 @@ TEST(UriTest, AppendToken) {
 
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema#/definitions"));
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_append(&base, "MyType", &result));
-    EXPECT_STREQ("/definitions/MyType", celix_jansson_uri_fragment(&result));
+    char* frag = celix_jansson_uri_fragment(&result);
+    EXPECT_STREQ("/definitions/MyType", frag);
+    free(frag);
 
     celix_jansson_uri_clear(&base);
     celix_jansson_uri_clear(&result);
@@ -108,6 +124,8 @@ TEST(UriTest, URN) {
     memset(&u, 0, sizeof(u));
     int rc = celix_jansson_uri_init(&u, "urn:uuid:12345678-1234-1234-1234-123456789abc");
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
-    EXPECT_STREQ("urn:uuid:12345678-1234-1234-1234-123456789abc", celix_jansson_uri_location(&u));
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("urn:uuid:12345678-1234-1234-1234-123456789abc", loc);
+    free(loc);
     celix_jansson_uri_clear(&u);
 }
