@@ -2339,12 +2339,45 @@ int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
                                        celix_jansson_validation_context_t* ctx) {
     if (!root || !ctx)
         return -1;
-    celix_jansson_schema_node_t* sch = root->root;
+
+    celix_jansson_schema_node_t* sch = NULL;
+
+    /* Resolve initial_uri to a specific subschema, if provided */
+    if (initial_uri && initial_uri[0] != '\0' && strcmp(initial_uri, "#") != 0) {
+        celix_jansson_uri_t uri;
+        if (celix_jansson_uri_init(&uri, initial_uri) == 0) {
+            char* loc = celix_jansson_uri_location(&uri);
+            const char* frag = celix_jansson_uri_fragment(&uri);
+
+            celix_jansson_schema_file_t* sf =
+                (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, loc);
+            if (sf) {
+                if (frag && frag[0] != '\0') {
+                    sch = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
+                    if (!sch) {
+                        /* Attempt on-demand compilation from the original document */
+                        sch = resolve_document_fragment(root, loc, frag);
+                    }
+                } else {
+                    /* Empty fragment — resolve the root of this file */
+                    sch = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, "");
+                }
+            }
+            free(loc);
+            free((char*)frag);
+            celix_jansson_uri_clear(&uri);
+        }
+    }
+
+    /* Fallback: use root schema */
+    if (!sch)
+        sch = root->root;
+
     if (!sch) {
         ctx->sink->emit(ctx->sink, "", instance, "no root schema set");
         return 1;
     }
-    (void)initial_uri;
+
     celix_jansson_path_t path;
     celix_jansson_path_init(&path);
     int errs = sch->vtable->validate(sch, instance, &path, ctx);

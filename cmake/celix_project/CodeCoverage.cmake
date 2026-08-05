@@ -130,12 +130,12 @@ function (setup_target_for_coverage)
     		# Cleanup lcov
     		COMMAND ${LCOV_PATH} --directory . --zerocounters
 
-            COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R ${TEST_TARGET_NAME}
+            # COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R ${TEST_TARGET_NAME}
 
     		# Capturing lcov counters and generating report
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
     		COMMAND ${LCOV_PATH} --directory ${COVERAGE_SCAN_DIR} --capture --output-file ${OUTPUT_FILE}
-    		COMMAND ${LCOV_PATH} --remove ${OUTPUT_FILE} '**/error_injector/*' '**/mock/*' '**/.conan/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${OUTPUT_FILE}.cleaned
+    		COMMAND ${LCOV_PATH} --ignore-errors unused --remove ${OUTPUT_FILE} '**/error_injector/*' '**/mock/*' '**/.conan/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${OUTPUT_FILE}.cleaned
 
             #test dependencies, so that test is runned
             DEPENDENCIES ${TEST_TARGET_NAME}

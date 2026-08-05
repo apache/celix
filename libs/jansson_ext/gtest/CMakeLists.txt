@@ -29,6 +29,7 @@ set(TEST_SOURCES
     src/test_pointer.cpp
     src/test_patch.cpp
     src/test_json_patch.cpp
+    src/test_validate_uri.cpp
 )
 
 foreach(T ${TEST_SOURCES})
