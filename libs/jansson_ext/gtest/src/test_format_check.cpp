@@ -150,3 +150,14 @@ TEST(FormatCheckTest, UriInvalidChars) {
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
               celix_jansson_schema_default_format_check("uri", "http://example.com/path\"quote", nullptr));
 }
+
+/* ── NULL argument guard ─────────────────────────────────────────────────── */
+
+TEST(FormatCheckTest, NullArgumentDispatch) {
+    /* NULL format */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT,
+              celix_jansson_schema_default_format_check(nullptr, "valid-value", nullptr));
+    /* NULL value */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT,
+              celix_jansson_schema_default_format_check("date-time", nullptr, nullptr));
+}

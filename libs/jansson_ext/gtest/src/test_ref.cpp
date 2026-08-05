@@ -366,3 +366,90 @@ TEST(RefTest, MultipleForwardRefsToSameDefinition) {
     json_decref(sch);
     free_validator(v);
 }
+
+/* ── External $ref with no loader ─────────────────────────────────────── */
+
+TEST(RefTest, ExternalRefWithoutLoader) {
+    auto* v = celix_jansson_schema_validator_create(
+        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(R"({"$ref":"http://example.com/schema"})", 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_LOADER, rc);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── Loader returns error ──────────────────────────────────────────────── */
+
+static int failing_loader(const char* /*uri*/, json_t** /*out*/, void* /*ud*/) {
+    return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+}
+
+TEST(RefTest, LoaderReturnsError) {
+    auto* v = celix_jansson_schema_validator_create(
+        failing_loader, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(R"({"$ref":"http://example.com/schema"})", 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_LOADER, rc);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── Loader returns non-schema value ───────────────────────────────────── */
+
+static int non_schema_loader(const char* /*uri*/, json_t** out, void* /*ud*/) {
+    *out = json_integer(42); /* not a schema — must be boolean or object */
+    return CELIX_JANSSON_SCHEMA_OK;
+}
+
+TEST(RefTest, LoaderReturnsNonSchema) {
+    auto* v = celix_jansson_schema_validator_create(
+        non_schema_loader, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(R"({"$ref":"http://example.com/schema"})", 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, rc);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── Multiple refs to same unresolved external target ──────────────────── */
+
+TEST(RefTest, DuplicateUnresolvedExternalRef) {
+    auto* v = celix_jansson_schema_validator_create(
+        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(
+        R"({"properties":{"a":{"$ref":"http://missing/x#/a"},"b":{"$ref":"http://missing/x#/a"}}})",
+        0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_LOADER, rc);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}

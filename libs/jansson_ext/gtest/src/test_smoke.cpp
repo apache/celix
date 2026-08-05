@@ -123,3 +123,100 @@ TEST(SmokeTest, Draft7MetaSchema) {
     EXPECT_TRUE(json_is_object(ms));
     json_decref(ms);
 }
+
+/* ── strerror: all error codes ─────────────────────────────────────────── */
+
+TEST(SmokeTest, StrerrorAllCodes) {
+    struct {
+        int code;
+        const char* expected;
+    } cases[] = {
+        {CELIX_JANSSON_SCHEMA_OK,                          "success"},
+        {CELIX_JANSSON_SCHEMA_ERROR_NOMEM,                 "allocation failure"},
+        {CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA,        "schema must be boolean or object"},
+        {CELIX_JANSSON_SCHEMA_ERROR_SCHEMA_PARSE,          "JSON parse error"},
+        {CELIX_JANSSON_SCHEMA_ERROR_URI,                   "malformed URI"},
+        {CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED,        "unresolved $ref"},
+        {CELIX_JANSSON_SCHEMA_ERROR_LOADER,                "schema loader failed or absent"},
+        {CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER,        "format checker required but not provided"},
+        {CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER,       "content checker required but not provided"},
+        {CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI,         "duplicate URI"},
+        {CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN,       "invalid regex pattern"},
+        {CELIX_JANSSON_SCHEMA_ERROR_NO_ROOT_SCHEMA,        "no root schema set"},
+        {CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT,      "invalid argument"},
+    };
+
+    for (auto& c : cases) {
+        EXPECT_STREQ(c.expected, celix_jansson_schema_strerror(c.code))
+            << "Mismatch for error code " << c.code;
+    }
+
+    /* Unknown code */
+    EXPECT_STREQ("unknown error", celix_jansson_schema_strerror(999));
+    EXPECT_STREQ("unknown error", celix_jansson_schema_strerror(-1));
+}
+
+/* ── Validate without root schema ──────────────────────────────────────── */
+
+TEST(SmokeTest, ValidateWithoutRootSchema) {
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    reset_errors();
+    json_t* inst = json_loads("42", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    int n = celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr);
+    EXPECT_EQ(1, n);
+    ASSERT_GE(captured_messages.size(), 1u);
+    EXPECT_STREQ("no root schema set", captured_messages[0].c_str());
+
+    json_decref(inst);
+    free_validator(v);
+}
+
+/* ── Set root schema with invalid types ────────────────────────────────── */
+
+TEST(SmokeTest, SetRootSchemaInvalidTypes) {
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    /* Integer */
+    {
+        json_t* sch = json_integer(42);
+        char* errmsg = nullptr;
+        int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+        EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, rc);
+        ASSERT_NE(nullptr, errmsg);
+        EXPECT_STREQ("schema must be boolean or object", errmsg);
+        free(errmsg);
+        json_decref(sch);
+    }
+
+    /* String */
+    {
+        json_t* sch = json_string("not a schema");
+        char* errmsg = nullptr;
+        int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+        EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, rc);
+        ASSERT_NE(nullptr, errmsg);
+        free(errmsg);
+        json_decref(sch);
+    }
+
+    /* Array */
+    {
+        json_t* sch = json_array();
+        char* errmsg = nullptr;
+        int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+        EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, rc);
+        ASSERT_NE(nullptr, errmsg);
+        free(errmsg);
+        json_decref(sch);
+    }
+
+    free_validator(v);
+}
+
+TEST(SmokeTest, DestroyNullValidator) {
+    celix_jansson_schema_validator_destroy(nullptr); /* safe no-op */
+}

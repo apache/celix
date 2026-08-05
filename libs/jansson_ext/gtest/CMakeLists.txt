@@ -31,6 +31,9 @@ set(TEST_SOURCES
     src/test_json_patch.cpp
     src/test_validate_uri.cpp
     src/test_abort.cpp
+    src/test_format_check_extended.cpp
+    src/test_schema_keywords.cpp
+    src/test_uri_extended.cpp
 )
 
 foreach(T ${TEST_SOURCES})

@@ -264,7 +264,6 @@ typedef struct celix_jansson_schema_file_t {
         unresolved; /* fragment string -> celix_jansson_schema_node_t* (CELIX_JANSSON_SCHEMA_KIND_REF, owning ref) */
     json_t* document;        /* original JSON document for this location (owned), or NULL */
     char* base_uri;          /* base URI used when compiling this document (owned), or NULL */
-    json_t* unknown_keywords; /* JSON object tree of non-schema keywords */
     celix_jansson_vec_t retained; /* resolved placeholders kept alive for weak-ref indirection */
 } celix_jansson_schema_file_t;
 
@@ -291,24 +290,11 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
                                      celix_jansson_schema_node_t* sch);
 celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_jansson_schema_root_t* root,
                                                                          const celix_jansson_uri_t* uri);
-int celix_jansson_schema_root_insert_unknown_keyword(celix_jansson_schema_root_t* root,
-                                                     const celix_jansson_uri_t* uri,
-                                                     const char* key,
-                                                     json_t* value);
-int celix_jansson_schema_root_set_root_schema(celix_jansson_schema_root_t* root, json_t* schema);
 int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
                                        const char* initial_uri,
                                        json_t* instance,
                                        celix_jansson_validation_context_t* ctx);
 void celix_jansson_schema_root_destroy(celix_jansson_schema_root_t* root);
-
-/* ── Schema compilation ────────────────────────────────────────────────── */
-
-int celix_jansson_schema_make(json_t* sch,
-                              celix_jansson_schema_root_t* root,
-                              const celix_jansson_vec_t* keys,
-                              const celix_jansson_vec_t* uris,
-                              celix_jansson_schema_node_t** out);
 
 /* ── Type mapping ──────────────────────────────────────────────────────── */
 

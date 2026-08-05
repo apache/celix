@@ -968,3 +968,81 @@ TEST(PointerTest, StackReuse) {
     EXPECT_STREQ("z", celix_json_pointer_token(&p, 2));
     celix_json_pointer_clear(&p);
 }
+
+/* ── celix_json_pointer_contains ───────────────────────────────────────── */
+
+TEST(PointerTest, Contains) {
+    json_t* doc = json_loads(R"({"foo":{"bar":42},"arr":[1,2,3]})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, doc);
+
+    celix_json_pointer_t p;
+    memset(&p, 0, sizeof(p));
+
+    /* Root pointer always exists */
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+
+    /* Existing paths */
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/foo"));
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/foo/bar"));
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr"));
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr/1"));
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    /* Non-existing paths */
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr/3"));
+    EXPECT_EQ(0, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/foo/baz"));
+    EXPECT_EQ(0, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/missing"));
+    EXPECT_EQ(0, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    /* "-" token returns 0 (no such array element) */
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr/-"));
+    EXPECT_EQ(0, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    json_decref(doc);
+}
+
+TEST(PointerTest, ContainsNullDoc) {
+    celix_json_pointer_t p;
+    memset(&p, 0, sizeof(p));
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
+
+    /* NULL doc is safe — treated as not containing */
+    EXPECT_EQ(0, celix_json_pointer_contains(nullptr, &p));
+
+    celix_json_pointer_clear(&p);
+}
+
+TEST(PointerTest, ContainsScalarDoc) {
+    json_t* doc = json_integer(42);
+
+    celix_json_pointer_t p;
+    memset(&p, 0, sizeof(p));
+
+    /* Root pointer on scalar returns 1 */
+    EXPECT_EQ(1, celix_json_pointer_contains(doc, &p));
+
+    /* Non-root on scalar returns 0 */
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
+    EXPECT_EQ(0, celix_json_pointer_contains(doc, &p));
+    celix_json_pointer_clear(&p);
+
+    json_decref(doc);
+}
