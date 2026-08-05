@@ -174,12 +174,17 @@ typedef struct {
     celix_jansson_schema_error_fn fn;
     void* ud;
     int count;
+    bool abort_on_error;
+    celix_jansson_validation_context_t* ctx; /* back-pointer for setting ctx->aborted */
 } user_sink_t;
 static void user_emit(celix_jansson_error_sink_t* s, const char* p, json_t* i, const char* m) {
     user_sink_t* us = (user_sink_t*)s;
     if (us->fn)
         us->fn(p, i, m, us->ud);
     us->count++;
+    if (us->abort_on_error && us->ctx) {
+        us->ctx->aborted = true;
+    }
 }
 static void user_destroy(celix_jansson_error_sink_t* s) { free(s); }
 
@@ -681,6 +686,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
         if (!json_object_get(inst, n->u.object.required[i])) {
             emit_error(ctx, p, "required property '%s' not found in object", n->u.object.required[i]);
             errs++;
+            if (ctx->aborted) return errs;
         }
     }
 
@@ -688,6 +694,8 @@ static int v_object(const celix_jansson_schema_node_t* n,
     const char* key;
     json_t* val;
     json_object_foreach(inst, key, val) {
+        if (ctx->aborted) break;
+
         /* propertyNames */
         if (n->u.object.property_names) {
             json_t* kname = json_string(key);
@@ -699,6 +707,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
             errs += n->u.object.property_names->vtable->validate(n->u.object.property_names, kname, &kp, ctx);
             celix_jansson_path_free(&kp);
             json_decref(kname);
+            if (ctx->aborted) break;
         }
 
         celix_jansson_path_t cp;
@@ -719,6 +728,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
 
         /* patternProperties */
         for (size_t j = 0; j < n->u.object.pp_len; j++) {
+            if (ctx->aborted) break;
             if (regexec(&n->u.object.pattern_properties[j].re, key, 0, NULL, 0) == 0) {
                 matched = true;
                 errs += n->u.object.pattern_properties[j].sch->vtable->validate(
@@ -737,6 +747,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
             if (fs->got) {
                 emit_error(ctx, &cp, "validation failed for additional property '%s': %s", key, fs->msg ? fs->msg : "");
                 errs++;
+                if (ctx->aborted) { fs->base.destroy(&fs->base); celix_jansson_path_free(&cp); break; }
             }
             fs->base.destroy(&fs->base);
         }
@@ -811,6 +822,7 @@ static void obj_validate_deps(const celix_jansson_schema_node_t* n,
     const char* key;
     json_t* val;
     json_object_foreach(inst, key, val) {
+        if (ctx->aborted) break;
         celix_jansson_schema_node_t* dep =
             (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&n->u.object.dependencies, key);
         if (dep) {
@@ -872,6 +884,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
     /* items */
     if (n->u.array.items_schema) {
         for (size_t i = 0; i < sz; i++) {
+            if (ctx->aborted) break;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_jansson_path_t cp;
@@ -886,6 +899,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
     } else if (n->u.array.items_len > 0) {
         /* tuple form */
         for (size_t i = 0; i < sz && i < n->u.array.items_len; i++) {
+            if (ctx->aborted) break;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_jansson_path_t cp;
@@ -898,6 +912,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
         }
         if (n->u.array.additional_items && sz > n->u.array.items_len) {
             for (size_t i = n->u.array.items_len; i < sz; i++) {
+                if (ctx->aborted) break;
                 char idx[32];
                 snprintf(idx, sizeof(idx), "%zu", i);
                 celix_jansson_path_t cp;
@@ -1058,6 +1073,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
         return 1;
     }
     errs += typed->vtable->validate(typed, inst, p, ctx);
+    if (ctx->aborted) return errs;
 
     /* enum */
     if (n->u.type_schema.has_enum) {
@@ -1085,6 +1101,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
 
     /* logical combinators */
     for (size_t i = 0; i < n->u.type_schema.logic_len; i++) {
+        if (ctx->aborted) break;
         errs += n->u.type_schema.logic[i]->vtable->validate(n->u.type_schema.logic[i], inst, p, ctx);
     }
 
@@ -1099,11 +1116,15 @@ static int v_type(const celix_jansson_schema_node_t* n,
         fs->base.destroy(&fs->base);
 
         if (if_errs == 0) {
-            if (n->u.type_schema.then_schema)
+            if (n->u.type_schema.then_schema) {
                 errs += n->u.type_schema.then_schema->vtable->validate(n->u.type_schema.then_schema, inst, p, ctx);
+                if (ctx->aborted) return errs;
+            }
         } else {
-            if (n->u.type_schema.else_schema)
+            if (n->u.type_schema.else_schema) {
                 errs += n->u.type_schema.else_schema->vtable->validate(n->u.type_schema.else_schema, inst, p, ctx);
+                if (ctx->aborted) return errs;
+            }
         }
     }
 
@@ -2421,6 +2442,7 @@ void celix_jansson_error_list_clear(celix_jansson_error_list_t* el) {
 
 struct celix_jansson_schema_validator_t {
     celix_jansson_schema_root_t* root;
+    bool abort_on_error;
 };
 
 celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_jansson_schema_loader_fn loader,
@@ -2452,6 +2474,11 @@ void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v)
         return;
     celix_jansson_schema_root_destroy(v->root);
     free(v);
+}
+
+void celix_jansson_schema_validator_set_abort_on_error(celix_jansson_schema_validator_t* v, bool enable) {
+    if (v)
+        v->abort_on_error = enable;
 }
 
 int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, json_t* schema, char** errmsg) {
@@ -2487,6 +2514,9 @@ int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
     ctx.sink = &sink->base;
     ctx.patch = json_array();
 
+    sink->abort_on_error = v->abort_on_error;
+    sink->ctx = &ctx;
+
     int errs = celix_jansson_schema_root_validate(v->root, "#", instance, &ctx);
 
     if (patch_out)
@@ -2519,6 +2549,9 @@ int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
     ctx.root = v->root;
     ctx.sink = &sink->base;
     ctx.patch = json_array();
+
+    sink->abort_on_error = v->abort_on_error;
+    sink->ctx = &ctx;
 
     int errs = celix_jansson_schema_root_validate(v->root, initial_uri ? initial_uri : "#", instance, &ctx);
 

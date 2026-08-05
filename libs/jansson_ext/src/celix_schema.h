@@ -253,6 +253,7 @@ struct celix_jansson_validation_context_t {
     celix_jansson_error_sink_t* sink;
     json_t* patch;                  /* owned JSON array of {op,path,value} objects */
     celix_jansson_strbuf_t scratch; /* reusable message formatting buffer */
+    bool aborted;                   /* set by abort-on-error sink; checked by validators to stop early */
 };
 
 /* ── Schema file (per-location registry entry) ─────────────────────────── */

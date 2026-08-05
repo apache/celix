@@ -23,6 +23,7 @@
 #define CELIX_CELIX_JANSSON_SCHEMA_H
 
 #include <jansson.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -189,6 +190,26 @@ CELIX_JANSSON_EXT_EXPORT celix_jansson_schema_validator_t* celix_jansson_schema_
 
 /** Free a validator and all compiled schemas. */
 CELIX_JANSSON_EXT_EXPORT void celix_jansson_schema_validator_destroy(celix_jansson_schema_validator_t* v);
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Configuration
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Enable or disable abort-on-first-error behavior.
+ *
+ * When enabled, validate() and validate_uri() return as soon as the first
+ * validation error is encountered, instead of collecting all errors.
+ *
+ * Default is false — all errors are collected and reported.
+ * This setting can be changed between validate() calls; it does not affect
+ * schema compilation.
+ *
+ * @param v      Validator handle
+ * @param enable true to stop at first error, false to collect all errors
+ */
+CELIX_JANSSON_EXT_EXPORT void celix_jansson_schema_validator_set_abort_on_error(celix_jansson_schema_validator_t* v,
+                                                                                bool enable);
 
 /* ────────────────────────────────────────────────────────────────────────
  * Schema compilation

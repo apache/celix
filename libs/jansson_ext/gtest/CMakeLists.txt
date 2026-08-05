@@ -30,6 +30,7 @@ set(TEST_SOURCES
     src/test_patch.cpp
     src/test_json_patch.cpp
     src/test_validate_uri.cpp
+    src/test_abort.cpp
 )
 
 foreach(T ${TEST_SOURCES})
