@@ -17,7 +17,6 @@
  * under the License.
  */
 #include "celix_hash_table.h"
-#include "celix_util.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -123,7 +122,7 @@ int celix_jansson_hash_table_put(celix_jansson_hash_table_t* ht, const char* key
 
         if (!e->key || e->used == 2) {
             /* Empty or tombstone — insert */
-            char* kcopy = celix_jansson_strdup(key);
+            char* kcopy = strdup(key);
             if (!kcopy)
                 return -1;
             if (e->key)

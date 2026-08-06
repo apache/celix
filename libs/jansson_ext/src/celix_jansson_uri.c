@@ -62,10 +62,10 @@ int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str) {
     bool has_scheme = (loc_len > 0 && strstr(uri_str, "://") != NULL);
 
     /* Save old components for relative resolution */
-    char* old_path = u->path ? celix_jansson_strdup(u->path) : NULL;
-    char* old_scheme = (loc_len > 0 && !has_scheme) ? (u->scheme ? celix_jansson_strdup(u->scheme) : NULL) : NULL;
+    char* old_path = u->path ? strdup(u->path) : NULL;
+    char* old_scheme = (loc_len > 0 && !has_scheme) ? (u->scheme ? strdup(u->scheme) : NULL) : NULL;
     char* old_authority =
-        (loc_len > 0 && !has_scheme) ? (u->authority ? celix_jansson_strdup(u->authority) : NULL) : NULL;
+        (loc_len > 0 && !has_scheme) ? (u->authority ? strdup(u->authority) : NULL) : NULL;
 
     /* Fragment-only refs keep the location, only update fragment */
     if (fragment_only) {
@@ -155,16 +155,16 @@ int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str) {
                         memcpy(u->authority, p, auth_len);
                         u->authority[auth_len] = '\0';
                     }
-                    u->path = celix_jansson_strdup(slash);
+                    u->path = strdup(slash);
                 } else {
-                    u->authority = celix_jansson_strdup(p);
+                    u->authority = strdup(p);
                     u->path = NULL;
                 }
             } else {
                 /* Relative path (no scheme://) */
                 if (p[0] == '/') {
                     /* Absolute path */
-                    u->path = celix_jansson_strdup(p);
+                    u->path = strdup(p);
                 } else if (old_path && *p) {
                     /* Resolve relative to old path's directory */
                     const char* last_slash = strrchr(old_path, '/');
@@ -177,10 +177,10 @@ int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str) {
                         celix_jansson_strbuf_appends(&sb, p);
                         u->path = celix_jansson_strbuf_detach(&sb);
                     } else {
-                        u->path = celix_jansson_strdup(p);
+                        u->path = strdup(p);
                     }
                 } else {
-                    u->path = celix_jansson_strdup(p);
+                    u->path = strdup(p);
                 }
             }
             free(location);
@@ -198,12 +198,12 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
     celix_jansson_uri_clear(out);
 
     /* Copy base components */
-    out->scheme = base->scheme ? celix_jansson_strdup(base->scheme) : NULL;
-    out->authority = base->authority ? celix_jansson_strdup(base->authority) : NULL;
-    out->path = base->path ? celix_jansson_strdup(base->path) : NULL;
-    out->urn = base->urn ? celix_jansson_strdup(base->urn) : NULL;
+    out->scheme = base->scheme ? strdup(base->scheme) : NULL;
+    out->authority = base->authority ? strdup(base->authority) : NULL;
+    out->path = base->path ? strdup(base->path) : NULL;
+    out->urn = base->urn ? strdup(base->urn) : NULL;
     if (base->identifier) {
-        out->identifier = celix_jansson_strdup(base->identifier);
+        out->identifier = strdup(base->identifier);
     } else {
         /* Copy pointer tokens */
         for (size_t i = 0; i < base->pointer.len; i++) {
@@ -218,13 +218,13 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out) {
     /* Start with a copy */
     celix_jansson_uri_clear(out);
-    out->scheme = u->scheme ? celix_jansson_strdup(u->scheme) : NULL;
-    out->authority = u->authority ? celix_jansson_strdup(u->authority) : NULL;
-    out->path = u->path ? celix_jansson_strdup(u->path) : NULL;
-    out->urn = u->urn ? celix_jansson_strdup(u->urn) : NULL;
+    out->scheme = u->scheme ? strdup(u->scheme) : NULL;
+    out->authority = u->authority ? strdup(u->authority) : NULL;
+    out->path = u->path ? strdup(u->path) : NULL;
+    out->urn = u->urn ? strdup(u->urn) : NULL;
 
     if (u->identifier) {
-        out->identifier = celix_jansson_strdup(u->identifier);
+        out->identifier = strdup(u->identifier);
         return 0; /* no-op for identifier URIs */
     }
 
@@ -242,7 +242,7 @@ int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, ce
 
 char* celix_jansson_uri_location(const celix_jansson_uri_t* u) {
     if (u->urn) {
-        return celix_jansson_strdup(u->urn);
+        return strdup(u->urn);
     }
 
     celix_jansson_strbuf_t sb;
@@ -257,10 +257,10 @@ char* celix_jansson_uri_location(const celix_jansson_uri_t* u) {
         celix_jansson_strbuf_appends(&sb, u->path);
 
     if (sb.len == 0)
-        return celix_jansson_strdup("");
+        return strdup("");
 
     char* result = celix_jansson_strbuf_detach(&sb);
-    return result ? result : celix_jansson_strdup("");
+    return result ? result : strdup("");
 }
 
 char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u) {
@@ -279,7 +279,7 @@ char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u) {
     free(frag);
 
     char* result = celix_jansson_strbuf_detach(&sb);
-    return result ? result : celix_jansson_strdup("");
+    return result ? result : strdup("");
 }
 
 char* celix_jansson_uri_escape(const char* src) {
@@ -300,13 +300,13 @@ char* celix_jansson_uri_escape(const char* src) {
 
 char* celix_jansson_uri_fragment(const celix_jansson_uri_t* u) {
     if (u->identifier)
-        return celix_jansson_strdup(u->identifier);
+        return strdup(u->identifier);
 
     if (u->pointer.len > 0) {
         return celix_json_pointer_to_string(&u->pointer);
     }
 
-    return celix_jansson_strdup("");
+    return strdup("");
 }
 
 bool celix_jansson_uri_equals(const celix_jansson_uri_t* a, const celix_jansson_uri_t* b) {

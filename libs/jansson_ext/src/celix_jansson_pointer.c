@@ -37,16 +37,6 @@ static int ensure_cap(celix_json_pointer_t* p, size_t needed) {
     return 0;
 }
 
-static char* str_dup(const char* s) {
-    if (!s)
-        return NULL;
-    size_t n = strlen(s);
-    char* d = (char*)malloc(n + 1);
-    if (d)
-        memcpy(d, s, n + 1);
-    return d;
-}
-
 /* ── Lifecycle ─────────────────────────────────────────────────────── */
 
 celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str) {
@@ -154,7 +144,7 @@ celix_json_pointer_t* celix_json_pointer_copy(const celix_json_pointer_t* src) {
         return NULL;
     }
     for (size_t i = 0; i < src->len; i++) {
-        dst->tokens[i] = str_dup(src->tokens[i]);
+        dst->tokens[i] = strdup(src->tokens[i]);
         if (!dst->tokens[i]) {
             celix_json_pointer_destroy(dst);
             return NULL;
@@ -193,7 +183,7 @@ const char* celix_json_pointer_token(const celix_json_pointer_t* ptr, size_t idx
 int celix_json_pointer_push(celix_json_pointer_t* ptr, const char* token) {
     if (!ptr || !token || ensure_cap(ptr, ptr->len + 1) != 0)
         return -1;
-    ptr->tokens[ptr->len] = str_dup(token);
+    ptr->tokens[ptr->len] = strdup(token);
     if (!ptr->tokens[ptr->len])
         return -1;
     ptr->len++;
@@ -542,7 +532,7 @@ celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr,
         return NULL;
     }
     for (size_t i = 0; i < ptr->len - 1; i++) {
-        r->tokens[i] = str_dup(ptr->tokens[i]);
+        r->tokens[i] = strdup(ptr->tokens[i]);
         if (!r->tokens[i]) {
             celix_json_pointer_clear(r);
             if (!out)

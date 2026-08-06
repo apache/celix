@@ -81,7 +81,7 @@ int celix_jansson_path_push(celix_jansson_path_t* p, const char* token) {
         p->tokens = nt;
         p->cap = nc;
     }
-    p->tokens[p->len] = celix_jansson_strdup(token);
+    p->tokens[p->len] = strdup(token);
     if (!p->tokens[p->len])
         return -1;
     p->len++;
@@ -117,7 +117,7 @@ const char* celix_jansson_path_str(celix_jansson_path_t* p) {
         }
         p->cached = celix_jansson_strbuf_detach(&sb);
         if (!p->cached)
-            p->cached = celix_jansson_strdup("");
+            p->cached = strdup("");
     }
     return p->cached;
 }
@@ -200,8 +200,8 @@ static void first_emit(celix_jansson_error_sink_t* s, const char* p, json_t* i, 
     first_sink_t* fs = (first_sink_t*)s;
     if (!fs->got) {
         fs->got = true;
-        fs->ptr = celix_jansson_strdup(p);
-        fs->msg = celix_jansson_strdup(m);
+        fs->ptr = strdup(p);
+        fs->msg = strdup(m);
         fs->inst = i;
         json_incref(i);
     }
@@ -1340,7 +1340,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             }
             if ((v = json_object_get(sch, "pattern"))) {
                 const char* ps = json_string_value(v);
-                snode->u.string.pattern_str = celix_jansson_strdup(ps);
+                snode->u.string.pattern_str = strdup(ps);
                 snode->u.string.has_pattern = true;
                 if (regcomp(&snode->u.string.pattern, ps, REG_EXTENDED) != 0) {
                     d_type(n);
@@ -1349,7 +1349,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             }
             if ((v = json_object_get(sch, "format"))) {
                 snode->u.string.has_format = true;
-                snode->u.string.format = celix_jansson_strdup(json_string_value(v));
+                snode->u.string.format = strdup(json_string_value(v));
                 if (!root->format) {
                     d_type(n);
                     return CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER;
@@ -1357,7 +1357,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             }
             if ((v = json_object_get(sch, "contentEncoding"))) {
                 snode->u.string.has_content = true;
-                snode->u.string.content_encoding = celix_jansson_strdup(json_string_value(v));
+                snode->u.string.content_encoding = strdup(json_string_value(v));
                 if (!root->content) {
                     d_type(n);
                     return CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER;
@@ -1365,7 +1365,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             }
             if ((v = json_object_get(sch, "contentMediaType"))) {
                 snode->u.string.has_content = true;
-                snode->u.string.content_media_type = celix_jansson_strdup(json_string_value(v));
+                snode->u.string.content_media_type = strdup(json_string_value(v));
             }
         }
     }
@@ -1432,7 +1432,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 onode->u.object.required = (char**)calloc(rlen, sizeof(char*));
                 onode->u.object.required_len = rlen;
                 for (size_t i = 0; i < rlen; i++)
-                    onode->u.object.required[i] = celix_jansson_strdup(json_string_value(json_array_get(v, i)));
+                    onode->u.object.required[i] = strdup(json_string_value(json_array_get(v, i)));
             }
             if ((v = json_object_get(sch, "properties"))) {
                 celix_jansson_hash_table_init(&onode->u.object.properties);
@@ -1480,7 +1480,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                         rn->u.required.names = (char**)calloc(alen, sizeof(char*));
                         rn->u.required.len = alen;
                         for (size_t ai = 0; ai < alen; ai++)
-                            rn->u.required.names[ai] = celix_jansson_strdup(json_string_value(json_array_get(dv, ai)));
+                            rn->u.required.names[ai] = strdup(json_string_value(json_array_get(dv, ai)));
                         dep = rn;
                     } else {
                         schema_make_internal(dv, root, base, &dep);
@@ -1690,7 +1690,7 @@ static int schema_make_internal_depth(json_t* sch,
     /* Process definitions first — compile and register using effective base location */
     json_t* defs = json_object_get(sch, "definitions");
     if (defs && json_is_object(defs)) {
-        char* base_loc = effective_base ? celix_jansson_uri_location(effective_base) : celix_jansson_strdup("");
+        char* base_loc = effective_base ? celix_jansson_uri_location(effective_base) : strdup("");
         celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, base_loc);
         free(base_loc);
         const char* dk;
@@ -1982,7 +1982,7 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
         json_decref(sf->document);
         sf->document = doc;  /* ownership transferred */
         free(sf->base_uri);
-        sf->base_uri = celix_jansson_strdup(location);
+        sf->base_uri = strdup(location);
     } else {
         json_decref(doc);
     }
@@ -2056,7 +2056,7 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
             celix_jansson_vec_init(&locs);
             for (size_t i = 0; i < root->files.cap; i++) {
                 if (root->files.buckets[i].used == 1 && root->files.buckets[i].key)
-                    celix_jansson_vec_push(&locs, celix_jansson_strdup(root->files.buckets[i].key));
+                    celix_jansson_vec_push(&locs, strdup(root->files.buckets[i].key));
             }
 
             for (size_t i = 0; i < locs.len; i++) {
@@ -2096,8 +2096,8 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
                 for (size_t j = 0; j < sf->unresolved.cap; j++) {
                     if (sf->unresolved.buckets[j].used == 1 && sf->unresolved.buckets[j].key) {
                         struct pf_pair* p = (struct pf_pair*)malloc(sizeof(*p));
-                        p->loc = celix_jansson_strdup(root->files.buckets[i].key);
-                        p->frag = celix_jansson_strdup(sf->unresolved.buckets[j].key);
+                        p->loc = strdup(root->files.buckets[i].key);
+                        p->frag = strdup(sf->unresolved.buckets[j].key);
                         celix_jansson_vec_push(&pairs, p);
                     }
                 }
@@ -2320,8 +2320,8 @@ void celix_jansson_error_list_add(celix_jansson_error_list_t* el, const char* pt
         el->cap = nc;
     }
     celix_jansson_error_entry_t* e = &el->entries[el->len++];
-    e->ptr = celix_jansson_strdup(ptr);
-    e->message = celix_jansson_strdup(msg);
+    e->ptr = strdup(ptr);
+    e->message = strdup(msg);
     e->instance = inst;
     json_incref(inst);
 }
@@ -2383,7 +2383,7 @@ void celix_jansson_schema_validator_set_abort_on_error(celix_jansson_schema_vali
 int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, json_t* schema, char** errmsg) {
     if (!v || !schema) {
         if (errmsg)
-            *errmsg = celix_jansson_strdup("validator and schema required");
+            *errmsg = strdup("validator and schema required");
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     }
 
@@ -2397,7 +2397,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
     json_t* copy = json_deep_copy(schema);
     if (!copy) {
         if (errmsg)
-            *errmsg = celix_jansson_strdup(celix_jansson_schema_strerror(CELIX_JANSSON_SCHEMA_ERROR_NOMEM));
+            *errmsg = strdup(celix_jansson_schema_strerror(CELIX_JANSSON_SCHEMA_ERROR_NOMEM));
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     }
 
@@ -2412,7 +2412,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
     if (err != CELIX_JANSSON_SCHEMA_OK) {
         celix_jansson_uri_clear(&root_base);
         if (errmsg)
-            *errmsg = celix_jansson_strdup(celix_jansson_schema_strerror(err));
+            *errmsg = strdup(celix_jansson_schema_strerror(err));
         return err;
     }
 
@@ -2426,7 +2426,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
             json_decref(rsf->document);
             rsf->document = json_incref(root->original_schema);
             free(rsf->base_uri);
-            rsf->base_uri = celix_jansson_strdup(rloc);
+            rsf->base_uri = strdup(rloc);
         }
         free(rloc);
     }
@@ -2434,7 +2434,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
 
     err = resolve_external_refs(root);
     if (err != CELIX_JANSSON_SCHEMA_OK && errmsg)
-        *errmsg = celix_jansson_strdup(celix_jansson_schema_strerror(err));
+        *errmsg = strdup(celix_jansson_schema_strerror(err));
     return err;
 }
 

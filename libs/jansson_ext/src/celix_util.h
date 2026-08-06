@@ -104,16 +104,4 @@ static inline void* celix_jansson_vec_get(const celix_jansson_vec_t* v, size_t i
 
 static inline size_t celix_jansson_vec_size(const celix_jansson_vec_t* v) { return v->len; }
 
-/* ── Allocation helpers ─────────────────────────────────────────────────── */
-
-static inline char* celix_jansson_strdup(const char* s) {
-    if (!s)
-        return NULL;
-    size_t len = strlen(s);
-    char* d = (char*)malloc(len + 1);
-    if (d)
-        memcpy(d, s, len + 1);
-    return d;
-}
-
 #endif /* CELIX_CELIX_UTIL_H */
