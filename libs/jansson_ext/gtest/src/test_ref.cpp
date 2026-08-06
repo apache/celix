@@ -16,6 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <cstring>
+
 #include "test_common.h"
 
 /* ── $ref to definitions ──────────────────────────────────────────────── */
@@ -212,6 +214,58 @@ TEST(RefTest, RefWithDefaultOverride) {
 
     json_decref(inst);
     json_decref(patch);
+    json_decref(sch);
+    free_validator(v);
+}
+
+/* ── $ref default passthrough (ref has no default, target has one) ──────── */
+
+TEST(RefTest, RefDefaultValuePassthrough) {
+    static const char* schema = R"({
+		"definitions": {
+			"withDefault": {
+				"type": "integer",
+				"default": 42
+			}
+		},
+		"type": "object",
+		"properties": {
+			"val": {
+				"$ref": "#/definitions/withDefault"
+			}
+		}
+	})";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Validate empty object — the ref node carries no default of its own, so
+     * dv_ref must inherit the default from the referenced definition. */
+    reset_errors();
+    json_t* patch = nullptr;
+    json_t* inst = json_loads("{}", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    int n = celix_jansson_schema_validate(v, inst, capture_error, nullptr, &patch);
+    EXPECT_EQ(0, n);
+
+    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    ASSERT_NE(nullptr, filled);
+    json_t* expected = json_loads(R"({"val":42})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, expected);
+    EXPECT_TRUE(json_equal(filled, expected));
+
+    json_decref(inst);
+    json_decref(patch);
+    json_decref(filled);
+    json_decref(expected);
     json_decref(sch);
     free_validator(v);
 }
@@ -452,4 +506,266 @@ TEST(RefTest, DuplicateUnresolvedExternalRef) {
 
     json_decref(sch);
     free_validator(v);
+}
+
+/* ── Chained external $ref loader (root → A.json → B.json) ─────────────── */
+
+struct chained_loader_ctx {
+    json_t* a_schema; /* cached docs — loader deep-copies per call */
+    json_t* b_schema;
+    int a_calls;
+    int b_calls;
+    int fail_b; /* when set, loader returns LOADER error for B.json */
+};
+
+static int chained_loader(const char* uri, json_t** out, void* ud) {
+    auto* ctx = static_cast<chained_loader_ctx*>(ud);
+    if (strcmp(uri, "http://example.com/A.json") == 0) {
+        ctx->a_calls++;
+        *out = json_deep_copy(ctx->a_schema);
+    } else if (strcmp(uri, "http://example.com/B.json") == 0) {
+        ctx->b_calls++;
+        if (ctx->fail_b) {
+            return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+        }
+        *out = json_deep_copy(ctx->b_schema);
+    } else {
+        return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+    }
+    return *out ? CELIX_JANSSON_SCHEMA_OK : CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+}
+
+static void init_chained_ctx(chained_loader_ctx* ctx, const char* a_json,
+                             const char* b_json, int fail_b) {
+    std::memset(ctx, 0, sizeof(*ctx));
+    ctx->a_schema = json_loads(a_json, 0, nullptr);
+    ctx->b_schema = json_loads(b_json, 0, nullptr);
+    ctx->fail_b = fail_b;
+    ASSERT_NE(nullptr, ctx->a_schema);
+    ASSERT_NE(nullptr, ctx->b_schema);
+}
+
+static void free_chained_ctx(chained_loader_ctx* ctx) {
+    json_decref(ctx->a_schema);
+    json_decref(ctx->b_schema);
+}
+
+/* Shared root for the chained external-ref tests: root → A.json */
+static const char* chained_ref_root = R"({
+    "type": "object",
+    "properties": {
+        "value": { "$ref": "http://example.com/A.json" }
+    }
+})";
+
+/* ── Chained external refs: B.json loaded in-place, whole-document ref ──── */
+
+TEST(RefTest, ChainedExternalRefNoFragment) {
+    /* Root → A.json → B.json.  A is loaded by Phase A of
+     * resolve_external_refs; B's file entry is created during A's compile,
+     * so B is loaded in-place by resolve_placeholder — the whole-document
+     * ref gets auto-resolved by the root registration. */
+    static const char* a_json = R"({"$ref": "http://example.com/B.json"})";
+    static const char* b_json = R"({"type": "integer", "minimum": 1})";
+
+    chained_loader_ctx ctx;
+    init_chained_ctx(&ctx, a_json, b_json, 0);
+
+    auto* v = celix_jansson_schema_validator_create(
+        chained_loader, &ctx, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(chained_ref_root, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Valid: 5 is an integer >= 1 */
+    json_t* inst = json_loads(R"({"value":5})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Invalid: 0 is < 1 */
+    inst = json_loads(R"({"value":0})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_GT(celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr), 0);
+    json_decref(inst);
+
+    /* Each document loaded exactly once */
+    EXPECT_EQ(1, ctx.a_calls);
+    EXPECT_EQ(1, ctx.b_calls);
+
+    json_decref(sch);
+    free_validator(v);
+    free_chained_ctx(&ctx);
+}
+
+/* ── Chained external refs with a fragment walk ────────────────────────── */
+
+TEST(RefTest, ChainedExternalRefWithFragment) {
+    /* B.json is loaded in-place, then the /definitions/X fragment is
+     * compiled by the document-fragment walk. */
+    static const char* a_json = R"({"$ref": "http://example.com/B.json#/definitions/X"})";
+    static const char* b_json = R"({
+        "definitions": {
+            "X": { "type": "integer", "minimum": 1 }
+        }
+    })";
+
+    chained_loader_ctx ctx;
+    init_chained_ctx(&ctx, a_json, b_json, 0);
+
+    auto* v = celix_jansson_schema_validator_create(
+        chained_loader, &ctx, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(chained_ref_root, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Valid: 5 is an integer >= 1 */
+    json_t* inst = json_loads(R"({"value":5})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Invalid: 0 is < 1 */
+    inst = json_loads(R"({"value":0})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_GT(celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr), 0);
+    json_decref(inst);
+
+    EXPECT_EQ(1, ctx.a_calls);
+    EXPECT_EQ(1, ctx.b_calls);
+
+    json_decref(sch);
+    free_validator(v);
+    free_chained_ctx(&ctx);
+}
+
+/* ── Chained external ref to a missing fragment → REF_UNRESOLVED ───────── */
+
+TEST(RefTest, ChainedExternalRefMissingFragment) {
+    /* B.json loads fine but the requested fragment does not exist; the
+     * fragment walk fails and the ref stays unresolved. */
+    static const char* a_json = R"({"$ref": "http://example.com/B.json#/definitions/doesNotExist"})";
+    static const char* b_json = R"({
+        "definitions": {
+            "X": { "type": "integer" }
+        }
+    })";
+
+    chained_loader_ctx ctx;
+    init_chained_ctx(&ctx, a_json, b_json, 0);
+
+    auto* v = celix_jansson_schema_validator_create(
+        chained_loader, &ctx, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(chained_ref_root, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_REF_UNRESOLVED, rc);
+    EXPECT_NE(nullptr, errmsg);
+    free(errmsg);
+
+    EXPECT_EQ(1, ctx.a_calls);
+    EXPECT_EQ(1, ctx.b_calls);
+
+    json_decref(sch);
+    free_validator(v);
+    free_chained_ctx(&ctx);
+}
+
+/* ── Chained external ref where the second load fails → LOADER ─────────── */
+
+TEST(RefTest, ChainedExternalRefLoaderError) {
+    /* The in-place load of B.json fails in resolve_placeholder; the next
+     * iteration's Phase A retries it and aborts with the loader's rc.
+     * b_calls == 2 proves both the in-place attempt and the retry ran. */
+    static const char* a_json = R"({"$ref": "http://example.com/B.json"})";
+    static const char* b_json = R"({"type": "integer"})";
+
+    chained_loader_ctx ctx;
+    init_chained_ctx(&ctx, a_json, b_json, 1 /* fail_b */);
+
+    auto* v = celix_jansson_schema_validator_create(
+        chained_loader, &ctx, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(chained_ref_root, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_LOADER, rc);
+    free(errmsg);
+
+    /* One call from the in-place load, one from Phase A's retry */
+    EXPECT_EQ(1, ctx.a_calls);
+    EXPECT_EQ(2, ctx.b_calls);
+
+    json_decref(sch);
+    free_validator(v);
+    free_chained_ctx(&ctx);
+}
+
+/* ── Baseline: single-level external ref (Phase A only) ────────────────── */
+
+TEST(RefTest, SingleLevelExternalRef) {
+    /* Root → A.json only; handled entirely by Phase A of
+     * resolve_external_refs, never touching the in-place load path.
+     * b_json is never requested, so the loader must never be called for it. */
+    static const char* a_json = R"({"type": "integer", "minimum": 1})";
+    static const char* b_json = R"({"type": "integer"})";
+
+    chained_loader_ctx ctx;
+    init_chained_ctx(&ctx, a_json, b_json, 0);
+
+    auto* v = celix_jansson_schema_validator_create(
+        chained_loader, &ctx, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(chained_ref_root, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Valid: 5 is an integer >= 1 */
+    json_t* inst = json_loads(R"({"value":5})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    /* Invalid: 0 is < 1 */
+    inst = json_loads(R"({"value":0})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_GT(celix_jansson_schema_validate(v, inst, capture_error, nullptr, nullptr), 0);
+    json_decref(inst);
+
+    EXPECT_EQ(1, ctx.a_calls);
+    EXPECT_EQ(0, ctx.b_calls);
+
+    json_decref(sch);
+    free_validator(v);
+    free_chained_ctx(&ctx);
 }

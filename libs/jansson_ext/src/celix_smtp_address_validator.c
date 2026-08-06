@@ -253,7 +253,6 @@ static const int address_start = 1;
 
 bool celix_jansson_smtp_is_address(const char* p, const char* pe) {
     int cs = 0;
-    const char* eof = pe;
     bool result = false;
 
     {
@@ -266,9 +265,7 @@ bool celix_jansson_smtp_is_address(const char* p, const char* pe) {
         const signed char* _acts;
         unsigned int _nacts;
     _resume: {}
-        if (p == pe && p != eof)
-            goto _out;
-        if (p == eof) {
+        if (p == pe) {
             if (_address_eof_trans[cs] > 0) {
                 _trans = (unsigned int)_address_eof_trans[cs] - 1;
             }
@@ -351,7 +348,7 @@ bool celix_jansson_smtp_is_address(const char* p, const char* pe) {
             }
         }
 
-        if (p == eof) {
+        if (p == pe) {
             if (cs >= 196)
                 goto _out;
         } else {

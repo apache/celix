@@ -57,6 +57,7 @@ TEST(SchemaCompileTest, FormatWithoutChecker) {
     int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER, rc);
     ASSERT_NE(nullptr, errmsg);
+    EXPECT_STREQ("format checker required but not provided", errmsg);
     free(errmsg);
 
     json_decref(sch);
@@ -73,6 +74,48 @@ TEST(SchemaCompileTest, ContentEncodingWithoutChecker) {
     char* errmsg = nullptr;
     int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER, rc);
+    ASSERT_NE(nullptr, errmsg);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+TEST(SchemaCompileTest, TupleItemsCompileError) {
+    /* Cover cleanup of already-compiled tuple items when a later item fails.
+     * Line 1561 in celix_jansson_schema.c: celix_jansson_schema_unref(anode->u.array.items[k]) */
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(
+        R"({"type":"array","items":[{"type":"integer"},{"type":"string","pattern":"***invalid"}]})",
+        0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN, rc);
+    ASSERT_NE(nullptr, errmsg);
+    free(errmsg);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+TEST(SchemaCompileTest, AllOfCompileError) {
+    /* Cover cleanup of already-compiled allOf sub-schemas when a later one fails.
+     * Line 1647 in celix_jansson_schema.c: celix_jansson_schema_unref(cn->u.combination.items[k]) */
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(
+        R"({"allOf":[{"type":"integer"},{"type":"string","pattern":"***invalid"}]})",
+        0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN, rc);
     ASSERT_NE(nullptr, errmsg);
     free(errmsg);
 
@@ -135,6 +178,19 @@ TEST_F(SchemaKeywordsTest, Contains) {
 
     /* Non-array instance — contains is ignored */
     assert_valid("42");
+}
+
+TEST_F(SchemaKeywordsTest, ContainsNested) {
+    /* Nested under an object property: parent path carries tokens, exercising
+     * the token-copy loop in v_array's contains block (line 912). */
+    load_schema(R"({"type":"object","properties":{"arr":{"contains":{"type":"integer"}}}})");
+    assert_valid(R"({"arr":[1,"x"]})");      /* hits line 912 with p->len == 1 */
+    assert_invalid(R"({"arr":["x"]})", 1);
+
+    /* Nested inside an array (items): parent path = ["0"], same loop. */
+    load_schema(R"({"type":"array","items":{"contains":{"type":"integer"}}})");
+    assert_valid(R"([[1,"x"],[2]])");
+    assert_invalid(R"([["x"]])", 1);
 }
 
 /* ── minProperties / maxProperties ───────────────────────────────────────── */
@@ -557,11 +613,241 @@ TEST_F(SchemaKeywordsTest, TypeArrayForm) {
  * Recursion depth guard
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* NOTE: RecursionDepthGuard (L1627) is unreachable through public API.
- * schema_make_internal_depth's `depth` parameter is always passed as 0
- * by schema_make_internal, and sub-schemas are compiled via
- * schema_make_internal (which resets depth), not schema_make_internal_depth.
- * L1627 moved to Category B (dead code). */
+/* Self-referencing $ref "#" compiles but validation hits the ref_depth guard.
+ * This is because $ref: "#" on the root creates a self-loop at validation time. */
+TEST_F(SchemaKeywordsTest, SelfRefRoot) {
+    load_schema(R"({"$ref":"#"})");
+    /* Validation detects circular ref recursion */
+    assert_invalid("42", 1);
+    ASSERT_GE(captured_messages.size(), 1u);
+    EXPECT_STREQ("exceeded maximum $ref recursion depth", captured_messages[0].c_str());
+    assert_invalid(R"("hello")", 1);
+}
+
+/* Official test-suite "root pointer ref" semantics: a {"$ref":"#"} inside
+ * properties points back at the root schema, so the property value must
+ * recursively satisfy the root constraints. This is wired up at compile time
+ * (placeholder + phase-2 resolution), no runtime fallback involved. */
+TEST_F(SchemaKeywordsTest, RecursiveRootRef) {
+    load_schema(R"({
+        "properties": {
+            "foo": {"$ref": "#"}
+        },
+        "additionalProperties": false
+    })");
+
+    /* foo: false — no object properties to check, passes */
+    assert_valid(R"({"foo": false})");
+    /* recursive match: inner {"foo": false} satisfies the root again */
+    assert_valid(R"({"foo": {"foo": false}})");
+    /* additionalProperties rejects "bar" at the root */
+    assert_invalid(R"({"bar": false})", 1);
+    /* recursion: the inner object's "bar" is rejected by the same rule */
+    assert_invalid(R"({"foo": {"bar": false}})", 1);
+}
+
+/* Circular definitions ref compiles successfully via eager definition compilation.
+ * Validation of a circular ref triggers the ref_depth guard and reports an error. */
+TEST_F(SchemaKeywordsTest, CircularDefinitionsRef) {
+    load_schema(R"({
+        "definitions": {
+            "A": {"$ref": "#/definitions/A"}
+        },
+        "$ref": "#/definitions/A"
+    })");
+    /* Validation hits infinite recursion guard */
+    assert_invalid("42", 1);
+}
+
+/* Mutual cross-refs between properties: the first property resolves the target
+ * via fragment walk and caches it in the hash table, so the second property's
+ * ref hits the cache. No infinite recursion — compilation succeeds. */
+TEST(SchemaCompileTest, CircularPropertiesRefResolves) {
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    /* a → b → a cycle through properties — but hash table cache breaks the cycle */
+    json_t* sch = json_loads(R"({
+        "properties": {
+            "a": {"$ref": "#/properties/b"},
+            "b": {"$ref": "#/properties/a"}
+        }
+    })", 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    /* Compilation succeeds because fragment walk caches resolved schemas */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
+    free(errmsg);
+    json_decref(sch);
+    celix_jansson_schema_validator_destroy(v);
+}
+
+/* Deeply nested but still within the limit: 20 levels of allOf should compile. */
+TEST(SchemaCompileTest, DeepNestingUnderLimit) {
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    /* Build a 20-level allOf chain programmatically */
+    json_t* inner = json_pack("{s:s}", "type", "integer");
+    json_t* current = inner;
+    for (int i = 0; i < 20; i++) {
+        json_t* wrapper = json_pack("{s:[o]}", "allOf", current);
+        current = wrapper;
+    }
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, current, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "unknown error");
+    json_decref(current);
+    free(errmsg);
+
+    /* Validate integer — should pass */
+    json_t* inst = json_integer(42);
+    int n = celix_jansson_schema_validate(v, inst, [](const char*, json_t*, const char*, void*) {}, nullptr, nullptr);
+    EXPECT_EQ(0, n);
+    json_decref(inst);
+
+    celix_jansson_schema_validator_destroy(v);
+}
+
+/* Exceeding the depth limit: 25 levels of allOf triggers the guard.
+ * With the error-propagation fix, make_type_schema now returns the error. */
+TEST(SchemaCompileTest, DeepNestingExceedsLimit) {
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    /* Build a 25-level allOf chain */
+    json_t* inner = json_pack("{s:s}", "type", "integer");
+    json_t* current = inner;
+    for (int i = 0; i < 25; i++) {
+        json_t* wrapper = json_pack("{s:[o]}", "allOf", current);
+        current = wrapper;
+    }
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, current, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, rc);
+
+    json_decref(current);
+    free(errmsg);
+    celix_jansson_schema_validator_destroy(v);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Error propagation from each keyword — depth guard triggers inside
+ * sub-schema, error must propagate through make_type_schema to caller.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Helper: build a 25-level allOf chain with {"type":"integer"} at the leaf.
+ * This chain exceeds the depth guard (depth > 20). */
+static json_t* build_deep_allof_chain(int levels) {
+    json_t* inner = json_pack("{s:s}", "type", "integer");
+    json_t* current = inner;
+    for (int i = 0; i < levels; i++) {
+        json_t* wrapper = json_pack("{s:[o]}", "allOf", current);
+        current = wrapper;
+    }
+    return current;
+}
+
+/* Helper: compile a schema wrapping the deep chain in a keyword; expect error. */
+static void expect_deep_nesting_error(json_t* schema) {
+    auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, schema, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, rc);
+    json_decref(schema);
+    free(errmsg);
+    celix_jansson_schema_validator_destroy(v);
+}
+
+TEST(SchemaCompileTest, DeepNot) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "not", chain));
+}
+
+TEST(SchemaCompileTest, DeepPatternProperties) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:{s:o}}", "patternProperties", ".*", chain));
+}
+
+TEST(SchemaCompileTest, DeepAdditionalProperties) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "additionalProperties", chain));
+}
+
+TEST(SchemaCompileTest, DeepPropertyNames) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "propertyNames", chain));
+}
+
+TEST(SchemaCompileTest, DeepItemsSingle) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "items", chain));
+}
+
+TEST(SchemaCompileTest, DeepItemsTuple) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:[o]}", "items", chain));
+}
+
+TEST(SchemaCompileTest, DeepAdditionalItems) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "additionalItems", chain));
+}
+
+TEST(SchemaCompileTest, DeepContains) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "contains", chain));
+}
+
+TEST(SchemaCompileTest, DeepDependenciesSchema) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:{s:o}}", "dependencies", "x", chain));
+}
+
+TEST(SchemaCompileTest, DeepIfThenElse) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o}", "if", chain));
+}
+
+TEST(SchemaCompileTest, DeepThen) {
+    /* if compiles OK, then exceeds depth guard -> cleanup at lines 1642-1643 */
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(
+        json_pack("{s:o, s:o}", "if", json_pack("{s:s}", "type", "integer"), "then", chain));
+}
+
+TEST(SchemaCompileTest, DeepElse) {
+    /* if and then compile OK, else exceeds depth guard -> cleanup at lines 1650-1651 */
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:o, s:o, s:o}",
+                                        "if", json_pack("{s:s}", "type", "integer"),
+                                        "then", json_pack("{s:s}", "type", "string"),
+                                        "else", chain));
+}
+
+TEST(SchemaCompileTest, DeepDefinitions) {
+    json_t* chain = build_deep_allof_chain(25);
+    expect_deep_nesting_error(json_pack("{s:{s:o}}", "definitions", "A", chain));
+}
+
+TEST(SchemaCompileTest, DefinitionsErrorWithIdCleanup) {
+    /* Cover lines 1788-1789 in celix_jansson_schema.c: a schema carrying both
+     * a derivable $id and a failing definitions entry must celix_jansson_uri_clear(&my_base)
+     * before propagating the error.
+     * Nested under allOf so compiled via schema_make_internal (eff_base_out == NULL),
+     * which keeps id_stored_in_out == false. */
+    json_t* chain = build_deep_allof_chain(25);
+    json_t* sub = json_pack("{s:s, s:{s:o}}",
+                            "$id", "https://example.com/defs-with-id",
+                            "definitions", "A", chain);
+    ASSERT_NE(nullptr, sub);
+    expect_deep_nesting_error(json_pack("{s:[o]}", "allOf", sub));
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * Non-string $ref

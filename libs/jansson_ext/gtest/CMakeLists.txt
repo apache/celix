@@ -26,6 +26,7 @@ set(TEST_SOURCES
     src/test_defaults.cpp
     src/test_combinations.cpp
     src/test_suite.cpp
+    src/test_path.cpp
     src/test_pointer.cpp
     src/test_patch.cpp
     src/test_json_patch.cpp

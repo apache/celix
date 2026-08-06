@@ -254,6 +254,7 @@ struct celix_jansson_validation_context_t {
     json_t* patch;                  /* owned JSON array of {op,path,value} objects */
     celix_jansson_strbuf_t scratch; /* reusable message formatting buffer */
     bool aborted;                   /* set by abort-on-error sink; checked by validators to stop early */
+    int ref_depth;                  /* guards against infinite recursion through circular $ref */
 };
 
 /* ── Schema file (per-location registry entry) ─────────────────────────── */
