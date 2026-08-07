@@ -1924,19 +1924,37 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
             }
             char* token = celix_jansson_strbuf_detach(&tsb);
             if (!token) {
+                /* strbuf_detach also returns NULL for an empty buffer, so an
+                 * empty token (double slash) is rejected here as well. */
                 celix_jansson_uri_clear(&cur_base);
                 return NULL;
             }
 
             prev_container = cur;
 
-            if (!json_is_object(cur)) {
+            if (!json_is_object(cur) && !json_is_array(cur)) {
                 free(token);
                 celix_jansson_uri_clear(&cur_base);
                 return NULL;
             }
 
-            json_t* child = json_object_get(cur, token);
+            json_t* child = NULL;
+            if (json_is_array(cur)) {
+                /* RFC 6901: array index token — must be a non-negative integer;
+                 * an empty token never reaches this point (see detach above). */
+                const char* t = token;
+                for (const char* c = t; *c; c++) {
+                    if (*c < '0' || *c > '9') {
+                        free(token);
+                        celix_jansson_uri_clear(&cur_base);
+                        return NULL;
+                    }
+                }
+                size_t idx = (size_t)strtoul(t, NULL, 10);
+                child = (idx < json_array_size(cur)) ? json_array_get(cur, idx) : NULL;
+            } else {
+                child = json_object_get(cur, token);
+            }
 
             /* If entering a schema-position node with $id, update base */
             if (child && json_is_object(child) &&
@@ -2513,10 +2531,48 @@ int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
 }
 
 json_t* celix_jansson_schema_draft7_meta_schema(void) {
-    const char* s = "{"
-                    "\"$schema\":\"http://json-schema.org/draft-07/schema#\","
-                    "\"$id\":\"http://json-schema.org/draft-07/schema#\","
-                    "\"type\":[\"object\",\"boolean\"]"
-                    "}";
+    /* Full draft-07 meta-schema (from json-schema-org/JSON-Schema-Test-Suite,
+     * as embedded in the reference json-schema-validator project).
+     * A stub (type-only) here lets instances like {"minLength": -1} pass the
+     * "remote ref, containing refs itself" suite cases that must be rejected. */
+    const char* s = "{\"$schema\":\"http://json-schema.org/draft-07/schema#\","
+        "\"$id\":\"http://json-schema.org/draft-07/schema#\",\"title\":\"Core schema meta-schema\","
+        "\"definitions\":{\"schemaArray\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"$ref\":\"#\"}},"
+        "\"nonNegativeInteger\":{\"type\":\"integer\",\"minimum\":0},"
+        "\"nonNegativeIntegerDefault0\":{\"allOf\":[{\"$ref\":\"#/definitions/nonNegativeInteger\"},"
+        "{\"default\":0}]},\"simpleTypes\":{\"enum\":[\"array\",\"boolean\",\"integer\",\"null\",\"number\","
+        "\"object\",\"string\"]},\"stringArray\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},"
+        "\"uniqueItems\":true,\"default\":[]}},\"type\":[\"object\",\"boolean\"],"
+        "\"properties\":{\"$id\":{\"type\":\"string\",\"format\":\"uri-reference\"},"
+        "\"$schema\":{\"type\":\"string\",\"format\":\"uri\"},\"$ref\":{\"type\":\"string\","
+        "\"format\":\"uri-reference\"},\"$comment\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"},"
+        "\"description\":{\"type\":\"string\"},\"default\":true,\"readOnly\":{\"type\":\"boolean\","
+        "\"default\":false},\"examples\":{\"type\":\"array\",\"items\":true},"
+        "\"multipleOf\":{\"type\":\"number\",\"exclusiveMinimum\":0},\"maximum\":{\"type\":\"number\"},"
+        "\"exclusiveMaximum\":{\"type\":\"number\"},\"minimum\":{\"type\":\"number\"},"
+        "\"exclusiveMinimum\":{\"type\":\"number\"},"
+        "\"maxLength\":{\"$ref\":\"#/definitions/nonNegativeInteger\"},"
+        "\"minLength\":{\"$ref\":\"#/definitions/nonNegativeIntegerDefault0\"},"
+        "\"pattern\":{\"type\":\"string\",\"format\":\"regex\"},\"additionalItems\":{\"$ref\":\"#\"},"
+        "\"items\":{\"anyOf\":[{\"$ref\":\"#\"},{\"$ref\":\"#/definitions/schemaArray\"}],\"default\":true},"
+        "\"maxItems\":{\"$ref\":\"#/definitions/nonNegativeInteger\"},"
+        "\"minItems\":{\"$ref\":\"#/definitions/nonNegativeIntegerDefault0\"},"
+        "\"uniqueItems\":{\"type\":\"boolean\",\"default\":false},\"contains\":{\"$ref\":\"#\"},"
+        "\"maxProperties\":{\"$ref\":\"#/definitions/nonNegativeInteger\"},"
+        "\"minProperties\":{\"$ref\":\"#/definitions/nonNegativeIntegerDefault0\"},"
+        "\"required\":{\"$ref\":\"#/definitions/stringArray\"},\"additionalProperties\":{\"$ref\":\"#\"},"
+        "\"definitions\":{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#\"},\"default\":{}},"
+        "\"properties\":{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#\"},\"default\":{}},"
+        "\"patternProperties\":{\"type\":\"object\",\"additionalProperties\":{\"$ref\":\"#\"},"
+        "\"propertyNames\":{\"format\":\"regex\"},\"default\":{}},\"dependencies\":{\"type\":\"object\","
+        "\"additionalProperties\":{\"anyOf\":[{\"$ref\":\"#\"},{\"$ref\":\"#/definitions/stringArray\"}]}},"
+        "\"propertyNames\":{\"$ref\":\"#\"},\"const\":true,\"enum\":{\"type\":\"array\",\"items\":true,"
+        "\"minItems\":1,\"uniqueItems\":true},\"type\":{\"anyOf\":[{\"$ref\":\"#/definitions/simpleTypes\"},"
+        "{\"type\":\"array\",\"items\":{\"$ref\":\"#/definitions/simpleTypes\"},\"minItems\":1,"
+        "\"uniqueItems\":true}]},\"format\":{\"type\":\"string\"},\"contentMediaType\":{\"type\":\"string\"},"
+        "\"contentEncoding\":{\"type\":\"string\"},\"if\":{\"$ref\":\"#\"},\"then\":{\"$ref\":\"#\"},"
+        "\"else\":{\"$ref\":\"#\"},\"allOf\":{\"$ref\":\"#/definitions/schemaArray\"},"
+        "\"anyOf\":{\"$ref\":\"#/definitions/schemaArray\"},"
+        "\"oneOf\":{\"$ref\":\"#/definitions/schemaArray\"},\"not\":{\"$ref\":\"#\"}},\"default\":true}";
     return json_loads(s, 0, NULL);
 }

@@ -44,7 +44,6 @@ static bool is_expected_fail(const std::string& fn) {
                                  "unicode",
                                  "content",
                                  "zeroTerminatedFloats",
-                                 "ref.json",
                                  NULL};
     for (const char** p = list; *p; p++)
         if (fn.find(*p) != std::string::npos)

@@ -284,6 +284,110 @@ TEST(ValidateUriTest, NonExistentFragmentFallback) {
     free_validator(v);
 }
 
+/* ── validate_uri with malformed pointer fragments ──────────────────────── */
+
+/* The document-fragment walker (resolve_document_fragment) rejects fragments
+ * that cannot name a node.  Each of these drives a distinct error path; in
+ * every case the walk fails and validate_uri falls back to the unconstrained
+ * root schema, so validation passes. */
+
+TEST(ValidateUriTest, InvalidPointerOnScalarFallback) {
+    /* enum members are values (not schema positions), so
+     * "#/definitions/A/enum/0/foo" is never pre-registered and triggers the
+     * walker.  Walk: definitions -> A -> enum (array) -> "0" (the string "x")
+     * -> "foo" applied to a scalar -> error block at L1933-1937. */
+    static const char* schema = R"({
+        "definitions": {
+            "A": { "type": "string", "enum": ["x", "y"] }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    json_t* inst = json_loads("42", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate_uri(v, inst, "#/definitions/A/enum/0/foo", capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+TEST(ValidateUriTest, EmptyArrayIndexFallback) {
+    /* An empty token is rejected by the walker: strbuf_detach returns NULL
+     * for an empty buffer, so the empty token is caught at the detach check
+     * (celix_jansson_schema.c L1926-1928) and the walk fails -> fallback.
+     * Note: a *trailing* double slash (".../enum//") is normalized away by the
+     * URI pointer round-trip (celix_json_pointer_init/uri_fragment), so the
+     * empty token must be followed by another token (".../enum//0") to survive
+     * and reach the walker. */
+    static const char* schema = R"({
+        "definitions": {
+            "A": { "type": "string", "enum": ["x", "y"] }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    json_t* inst = json_loads("42", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate_uri(v, inst, "#/definitions/A/enum//0", capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
+TEST(ValidateUriTest, NonNumericArrayIndexFallback) {
+    /* Non-digit token applied to the enum array
+     * -> error block at L1949-1953. */
+    static const char* schema = R"({
+        "definitions": {
+            "A": { "type": "string", "enum": ["x", "y"] }
+        }
+    })";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    json_t* inst = json_loads("42", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(0, celix_jansson_schema_validate_uri(v, inst, "#/definitions/A/enum/foo", capture_error, nullptr, nullptr));
+    json_decref(inst);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
 /* ── validate_uri with fragment of an unloaded external document ────────── */
 
 static int unloaded_fragment_loader(const char* /*uri*/, json_t** /*out*/, void* /*ud*/) {
