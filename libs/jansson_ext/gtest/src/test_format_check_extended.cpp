@@ -79,6 +79,7 @@ TEST(FormatCheckTest, Time) {
         {"12:60:00Z", false},    /* minute > 59 */
         {"12:34:56", false},     /* no timezone */
         {"12:34:56+24:00", false}, /* offset hour > 23 */
+        {"10:30:00+01:00x", false}, /* trailing garbage after timezone */
         {"", false},
     };
 
@@ -100,11 +101,16 @@ TEST(FormatCheckTest, Time) {
  */
 
 TEST(FormatCheckTest, Email) {
-    /* Only test clearly invalid inputs — the SMTP validator rejects
-     * seemingly valid addresses too, so positive cases are unreliable. */
+    /* NOTE: The Ragel-generated SMTP address validator (celix_smtp_address_validator.c)
+     * returns false for EVERY input — verified empirically with a probe harness, and
+     * consistent with the JSON Schema Test Suite treating email.json as expected-fail.
+     * The OK return path of check_email is therefore unreachable until the validator
+     * is fixed (separate investigation comparing with pboettch/json-schema-validator).
+     * Non-ASCII input fails earlier in is_ascii and is covered here. */
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("not-an-email"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("user@"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("@example.com"));
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("\xc3\xbc@example.com")); /* ü@example.com — non-ASCII */
 }
 
 /* ── International Email (RFC 6531) ──────────────────────────────────────── */
@@ -112,6 +118,7 @@ TEST(FormatCheckTest, Email) {
 TEST(FormatCheckTest, IdnEmail) {
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("not-an-email"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("user@"));
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("\xc3\xbc@example.com"));
 }
 
 /* ── Hostname (RFC 3986 Appendix A labels) ──────────────────────────────── */
@@ -132,6 +139,11 @@ TEST(FormatCheckTest, Hostname) {
         {"bad..example", false},   /* empty label */
         {"a b.example", false},    /* space in label */
     };
+
+    /* 4 labels of 63 chars + 3 dots = 255 chars > 253 limit */
+    std::string long_label(63, 'a');
+    std::string long_host = long_label + "." + long_label + "." + long_label + "." + long_label;
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT, celix_jansson_check_hostname(long_host.c_str()));
 
     for (auto& c : cases) {
         int rc = celix_jansson_check_hostname(c.value);
@@ -159,6 +171,7 @@ TEST(FormatCheckTest, Ipv6) {
         {"2001:db8", false},       /* incomplete */
         {"2001:db8:::1", false},   /* triple colon */
         {"gggg:db8::1", false},    /* invalid hex */
+        {"fe80::1%eth0", false},   /* zone-id form (glibc's inet_pton rejects '%' itself) */
         {"", false},
     };
 

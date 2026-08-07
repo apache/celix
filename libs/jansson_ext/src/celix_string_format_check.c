@@ -19,6 +19,7 @@
 #include "celix_string_format_check.h"
 #include "celix_smtp_address_validator.h"
 #include <arpa/inet.h>
+#include <assert.h>
 #include <ctype.h>
 #include <regex.h>
 #include <stdbool.h>
@@ -33,8 +34,8 @@ static int is_leap_year(int year) { return (year % 4 == 0 && year % 100 != 0) ||
 
 static int days_in_month(int year, int month) {
     static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-    if (month < 1 || month > 12)
-        return 0;
+    /* Caller (check_date_part) guarantees 1 <= month <= 12 */
+    assert(month >= 1 && month <= 12);
     if (month == 2 && is_leap_year(year))
         return 29;
     return days[month - 1];
@@ -54,8 +55,10 @@ static int check_date_part(const char* s) {
             return -1;
     }
     int year, month, day;
-    if (sscanf(s, "%4d-%2d-%2d", &year, &month, &day) != 3)
-        return -1;
+    /* All non-separator chars were validated as digits above, so the parse always succeeds */
+    int n = sscanf(s, "%4d-%2d-%2d", &year, &month, &day);
+    assert(n == 3);
+    (void)n;
     if (month < 1 || month > 12)
         return -1;
     if (day < 1 || day > days_in_month(year, month))
@@ -109,20 +112,19 @@ static int check_leap_second(int hour, int min, int sec, int offset_hour, int of
 }
 
 static int parse_timezone(const char* s, int* out_hh, int* out_mm) {
-    if (!s || *s == '\0')
-        return -1;
+    /* Callers pass the result of strpbrk(s, "+-Zz"), so s is non-NULL and non-empty */
+    assert(s != NULL && *s != '\0');
     if (*s == 'Z' || *s == 'z') {
         *out_hh = 0;
         *out_mm = 0;
         return 0;
     }
-    /* ±HH:MM */
+    /* ±HH:MM — s[0] is '+' or '-' (Z/z handled above) */
     int hh, mm;
     char sign;
     if (sscanf(s, "%c%2d:%2d", &sign, &hh, &mm) != 3)
         return -1;
-    if (sign != '+' && sign != '-')
-        return -1;
+    assert(sign == '+' || sign == '-');
     if (hh < 0 || hh > 23)
         return -1;
     if (mm < 0 || mm > 59)
@@ -309,8 +311,10 @@ int celix_jansson_check_ipv4(const char* value) {
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     /* Reject leading zeros (e.g., "192.168.01.001") */
     char octet[16];
-    if (snprintf(octet, sizeof(octet), "%u.%u.%u.%u", a, b, c, d) >= (int)sizeof(octet))
-        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    /* a,b,c,d <= 255 was validated above, so the formatted string always fits in octet */
+    int n = snprintf(octet, sizeof(octet), "%u.%u.%u.%u", a, b, c, d);
+    assert(n < (int)sizeof(octet));
+    (void)n;
     if (strcmp(value, octet) != 0)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     return CELIX_JANSSON_SCHEMA_OK;

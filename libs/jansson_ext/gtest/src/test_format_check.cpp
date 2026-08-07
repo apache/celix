@@ -41,6 +41,13 @@ TEST(FormatCheckTest, DateTime) {
         {"date-time", "1985-04-12t23:20:50Z", true},       /* lowercase T */
         {"date-time", "1985-04-12T23:20:50+24:00", false}, /* offset too large */
         {"date-time", "not-a-date", false},
+        {"date-time", "2020-01-01", false},                  /* missing T separator */
+        {"date-time", "2020-01-01T10:30:00", false},         /* missing timezone */
+        {"date-time", "2020-01-01T+01:00", false},           /* empty time part */
+        {"date-time", "2020-01-01T10:30:00.123456789012345678901234567890Z", false}, /* time part >= 32 chars */
+        {"date-time", "2020-01-01T00:00:60Z", false},        /* leap second not at 23:59:60 UTC */
+        {"date-time", "2020-01-01T10:30:00+12x30", false},   /* malformed timezone */
+        {"date-time", "2020-01-01T10:30:00+1230", false},    /* timezone missing colon */
     };
 
     for (auto& c : cases) {
@@ -149,6 +156,34 @@ TEST(FormatCheckTest, UriInvalidChars) {
     /* Invalid: bare double quote in path (not pct-encoded) */
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
               celix_jansson_schema_default_format_check("uri", "http://example.com/path\"quote", nullptr));
+}
+
+TEST(FormatCheckTest, UriAuthority) {
+    /* Valid URIs */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://[::1]:8080/", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://a%20b/", nullptr));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com:8080/", nullptr));
+    /* Invalid: empty URI */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "", nullptr));
+    /* Invalid: unclosed IPv6 literal */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://[::1", nullptr));
+    /* Invalid: bad percent-encoding in reg-name */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://a%zz/", nullptr));
+    /* Invalid: non-digit in port */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://example.com:8a80/", nullptr));
+    /* Invalid: space in query */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://a.b/?x y", nullptr));
+    /* Invalid: space in fragment */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK,
+              celix_jansson_schema_default_format_check("uri", "http://a.b/#x y", nullptr));
 }
 
 /* ── NULL argument guard ─────────────────────────────────────────────────── */
