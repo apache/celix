@@ -1707,7 +1707,8 @@ static int schema_make_internal_depth(json_t* sch,
             celix_jansson_uri_clear(&empty);
     }
 
-    if (json_is_true(sch)) {
+    if (json_is_boolean(sch))
+    {
         celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
         if (!n)
             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
@@ -1715,20 +1716,7 @@ static int schema_make_internal_depth(json_t* sch,
         n->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN;
         n->root = root;
         n->refcount = 1;
-        n->u.boolean.value = true;
-        *out = n;
-        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, n);
-        return CELIX_JANSSON_SCHEMA_OK;
-    }
-    if (json_is_false(sch)) {
-        celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
-        if (!n)
-            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-        n->vtable = &vt_boolean;
-        n->kind = CELIX_JANSSON_SCHEMA_KIND_BOOLEAN;
-        n->root = root;
-        n->refcount = 1;
-        n->u.boolean.value = false;
+        n->u.boolean.value = json_boolean_value(sch);
         *out = n;
         if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, n);
         return CELIX_JANSSON_SCHEMA_OK;
@@ -1887,8 +1875,7 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
 {
     celix_jansson_schema_file_t* sf =
         (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
-    if (!sf)
-        return NULL;
+    assert(sf != NULL); /* all callers guard on sf first */
 
     json_t* doc = sf->document;
     if (!doc && location[0] == '\0')
@@ -2054,27 +2041,21 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
 static bool resolve_placeholder(celix_jansson_schema_root_t* root,
                                 const char* location, const char* fragment,
                                 celix_jansson_schema_node_t* ref_node) {
-    (void)ref_node;
     /* Use the location+fragment to look up in schemas */
     celix_jansson_schema_file_t* sf =
         (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
-    if (!sf)
-        return false;
+    assert(sf != NULL); /* sole caller resolve_external_refs Phase B already guarantees sf */
 
     /* Already resolved? */
     celix_jansson_schema_node_t* existing =
         (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, fragment);
     if (existing) {
-        /* Wire up the placeholder if not yet done */
-        celix_jansson_schema_node_t* waiting =
-            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, fragment);
-        if (waiting && waiting->kind == CELIX_JANSSON_SCHEMA_KIND_REF) {
-            waiting->u.ref.target_weak = existing;
-            celix_jansson_hash_table_remove(&sf->unresolved, fragment);
-            celix_jansson_vec_push(&sf->retained, waiting);
-            return true;
-        }
-        return false;
+        /* ref_node is the REF-kind placeholder the caller fetched from sf->unresolved
+         * (same table and key this function was called with), so wire it directly */
+        ref_node->u.ref.target_weak = existing;
+        celix_jansson_hash_table_remove(&sf->unresolved, fragment);
+        celix_jansson_vec_push(&sf->retained, ref_node);
+        return true;
     }
 
     /* Try document fragment walk */

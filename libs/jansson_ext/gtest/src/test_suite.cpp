@@ -47,9 +47,7 @@ static bool is_expected_fail(const std::string& fn) {
                                  /* Format checkers with known limitations */
                                  "email",
                                  "idn-email",
-                                 "bignum",
                                  "ref.json",
-                                 "bignum",
                                  NULL};
     for (const char** p = list; *p; p++)
         if (fn.find(*p) != std::string::npos)

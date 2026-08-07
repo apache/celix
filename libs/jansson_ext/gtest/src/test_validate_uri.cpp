@@ -284,6 +284,51 @@ TEST(ValidateUriTest, NonExistentFragmentFallback) {
     free_validator(v);
 }
 
+/* ── validate_uri with fragment of an unloaded external document ────────── */
+
+static int unloaded_fragment_loader(const char* /*uri*/, json_t** /*out*/, void* /*ud*/) {
+    return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+}
+
+TEST(ValidateUriTest, UnloadedExternalFragmentFallback) {
+    /* Root schema references an external document that the loader fails to
+     * load.  The file entry exists (document == NULL).  validate_uri with a
+     * fragment of that location drives the on-demand document-fragment
+     * resolution, which finds no document and falls back to the root
+     * schema's placeholder $ref. */
+    static const char* schema = R"({
+        "$ref": "http://example.com/schema#/definitions/x"
+    })";
+
+    auto* v = celix_jansson_schema_validator_create(
+        unloaded_fragment_loader, nullptr,
+        celix_jansson_schema_default_format_check, nullptr,
+        nullptr, nullptr);
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_LOADER, rc);
+    free(errmsg);
+
+    /* The external document was never loaded, so fragment resolution finds
+     * nothing; the fallback root $ref has no target and reports it. */
+    json_t* inst = json_integer(42);
+    ASSERT_NE(nullptr, inst);
+    reset_errors();
+    EXPECT_EQ(1, celix_jansson_schema_validate_uri(v, inst,
+        "http://example.com/schema#/definitions/x", capture_error, nullptr, nullptr));
+    json_decref(inst);
+    ASSERT_EQ(1u, captured_messages.size());
+    EXPECT_EQ("unresolved or freed schema-reference", captured_messages[0]);
+
+    json_decref(sch);
+    free_validator(v);
+}
+
 /* ── validate_uri with $ref-based subschema ────────────────────────────── */
 
 TEST(ValidateUriTest, SubschemaReachedViaRef) {
