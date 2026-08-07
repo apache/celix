@@ -1774,19 +1774,29 @@ static int schema_make_internal_depth(json_t* sch,
         char* rfra = celix_jansson_uri_fragment(&ref_uri);
         celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, rloc);
         celix_jansson_schema_node_t* target = NULL;
-        if (sf)
-            target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, rfra);
-
         bool plain_self_ref = (strcmp(ref_str, "#") == 0 && rloc[0] == '\0' && rfra[0] == '\0');
-
-        /* Document fragment walk for internal refs and external docs with document loaded */
-        if (!target && !plain_self_ref && sf &&
-            (sf->document || (rloc[0] == '\0' && root->original_schema))) {
-            target = resolve_document_fragment(root, rloc, rfra, depth + 1);
+        if (sf) {
+            target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, rfra);
+            /* Document fragment walk for internal refs and external docs with document loaded */
+            if (!target && !plain_self_ref && (sf->document || (rloc[0] == '\0' && root->original_schema))) {
+                target = resolve_document_fragment(root, rloc, rfra, depth + 1);
+            }
+            if (!target) {
+                target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, rfra);
+            }
+            if (!target) {
+                target = (celix_jansson_schema_node_t*)calloc(1, sizeof(*target));
+                if (target) {
+                    target->vtable = &vt_ref;
+                    target->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
+                    target->root = root;
+                    target->refcount = 1;
+                    char* uristr = celix_jansson_uri_to_string(&ref_uri);
+                    target->u.ref.id = uristr;
+                    celix_jansson_hash_table_put(&sf->unresolved, rfra, target);
+                }
+            }
         }
-
-        if (!target)
-            target = celix_jansson_schema_root_get_or_create_ref(root, &ref_uri);
 
         if (!target && !plain_self_ref) {
             free(rloc); free(rfra); celix_jansson_uri_clear(&ref_uri);
@@ -2221,52 +2231,6 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
     free(loc);
     free((char*)frag);
     return CELIX_JANSSON_SCHEMA_OK;
-}
-
-celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_jansson_schema_root_t* root,
-                                                                         const celix_jansson_uri_t* uri) {
-    char* loc = celix_jansson_uri_location(uri);
-    char* frag = celix_jansson_uri_fragment(uri);
-    celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
-    if (!sf) {
-        free(loc);
-        free(frag);
-        return NULL;
-    }
-
-    celix_jansson_schema_node_t* existing =
-        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
-    if (existing) {
-        free(loc);
-        free(frag);
-        return existing;
-    }
-
-    celix_jansson_schema_node_t* pending =
-        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
-    if (pending) {
-        free(loc);
-        free(frag);
-        return pending;
-    }
-
-    /* Create unresolved ref placeholder */
-    celix_jansson_schema_node_t* ref = (celix_jansson_schema_node_t*)calloc(1, sizeof(*ref));
-    if (!ref) {
-        free(loc);
-        free(frag);
-        return NULL;
-    }
-    ref->vtable = &vt_ref;
-    ref->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
-    ref->root = root;
-    ref->refcount = 1;
-    char* uristr = celix_jansson_uri_to_string(uri);
-    ref->u.ref.id = uristr;
-    celix_jansson_hash_table_put(&sf->unresolved, frag, ref);
-    free(loc);
-    free(frag);
-    return ref;
 }
 
 static void celix_jansson_schema_file_free(void* value) {

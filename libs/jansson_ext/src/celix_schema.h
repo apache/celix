@@ -289,8 +289,6 @@ celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_
 int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
                                      const celix_jansson_uri_t* uri,
                                      celix_jansson_schema_node_t* sch);
-celix_jansson_schema_node_t* celix_jansson_schema_root_get_or_create_ref(celix_jansson_schema_root_t* root,
-                                                                         const celix_jansson_uri_t* uri);
 int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
                                        const char* initial_uri,
                                        json_t* instance,
