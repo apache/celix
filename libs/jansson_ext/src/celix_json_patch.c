@@ -76,7 +76,7 @@ void celix_json_patch_truncate(json_t* patch, size_t old_size) {
 
 /* ── Patch application ─────────────────────────────────────────────────── */
 
-json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch) {
+json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
     if (!original || !patch || !json_is_array(patch))
         return NULL;
 
@@ -101,8 +101,10 @@ json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch) {
             continue;
 
         if (strcmp(op_type, "add") == 0 || strcmp(op_type, "replace") == 0) {
-            if (!value)
+            if (!value) {
+                celix_json_pointer_clear(&ptr);
                 continue;
+            }
 
             if (ptr.len == 0) {
                 /* Root replacement */
@@ -126,12 +128,12 @@ json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch) {
                         long idx = strtol(ptr.tokens[j], &end, 10);
                         if (*end != '\0')
                             break;
-                        while ((size_t)idx >= json_array_size(parent))
+                        while ((size_t)idx > json_array_size(parent))
                             json_array_append_new(parent, json_null());
                         child = json_array_get(parent, (size_t)idx);
                         if (!child) {
                             child = json_object();
-                            json_array_set_new(parent, (size_t)idx, child);
+                            json_array_append_new(parent, child);
                         }
                     }
                     parent = child;

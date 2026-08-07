@@ -17,6 +17,7 @@
  * under the License.
  */
 #include "celix_jansson_schema.h"
+#include "celix_json_patch.h"
 #include <gtest/gtest.h>
 #include <cstring>
 
@@ -33,7 +34,7 @@ TEST(PatchApplyTest, AddRoot) {
     json_object_set_new(op, "value", json_integer(99));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_EQ(99, json_integer_value(result));
 
@@ -53,7 +54,7 @@ TEST(PatchApplyTest, AddToObject) {
     json_object_set_new(op, "value", json_integer(2));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"a":1,"b":2})", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, expected);
@@ -76,7 +77,7 @@ TEST(PatchApplyTest, AddNested) {
     json_object_set_new(op, "value", json_string("deep"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"x":{"y":{"z":"deep"}}})", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, expected);
@@ -101,7 +102,7 @@ TEST(PatchApplyTest, ReplaceExisting) {
     json_object_set_new(op, "value", json_integer(99));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"a":1,"b":99})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -123,7 +124,7 @@ TEST(PatchApplyTest, ReplaceInArray) {
     json_object_set_new(op, "value", json_integer(99));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"arr":[10,99,30]})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -143,7 +144,7 @@ TEST(PatchApplyTest, ReplaceRoot) {
     json_object_set_new(op, "value", json_string("world"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_STREQ("world", json_string_value(result));
 
@@ -164,7 +165,7 @@ TEST(PatchApplyTest, RemoveKey) {
     json_object_set_new(op, "path", json_string("/b"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"a":1,"c":3})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -185,7 +186,7 @@ TEST(PatchApplyTest, RemoveFromArray) {
     json_object_set_new(op, "path", json_string("/arr/1"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"arr":[10,30]})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -204,7 +205,7 @@ TEST(PatchApplyTest, RemoveRoot) {
     json_object_set_new(op, "path", json_string(""));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_TRUE(json_is_null(result));
 
@@ -241,7 +242,7 @@ TEST(PatchApplyTest, MultipleOperations) {
     json_object_set_new(op3, "path", json_string("/b"));
     json_array_append_new(patch, op3);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"a":99,"c":3})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -270,7 +271,7 @@ TEST(PatchApplyTest, SequenceDependent) {
     json_object_set_new(op2, "value", json_integer(99));
     json_array_append_new(patch, op2);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"a":[1,99]})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -285,14 +286,14 @@ TEST(PatchApplyTest, SequenceDependent) {
 
 TEST(PatchApplyTest, NullDocReturnsNull) {
     json_t* patch = json_array();
-    json_t* result = celix_jansson_schema_patch_apply(nullptr, patch);
+    json_t* result = celix_json_patch_apply(nullptr, patch);
     EXPECT_EQ(nullptr, result);
     json_decref(patch);
 }
 
 TEST(PatchApplyTest, NullPatchReturnsNull) {
     json_t* doc = json_integer(1);
-    json_t* result = celix_jansson_schema_patch_apply(doc, nullptr);
+    json_t* result = celix_json_patch_apply(doc, nullptr);
     EXPECT_EQ(nullptr, result);
     json_decref(doc);
 }
@@ -300,7 +301,7 @@ TEST(PatchApplyTest, NullPatchReturnsNull) {
 TEST(PatchApplyTest, NonArrayPatchReturnsNull) {
     json_t* doc = json_integer(1);
     json_t* patch = json_string("bad");
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     EXPECT_EQ(nullptr, result);
     json_decref(doc);
     json_decref(patch);
@@ -310,7 +311,7 @@ TEST(PatchApplyTest, EmptyPatchReturnsCopy) {
     json_t* doc = json_loads(R"({"a":1})", JSON_DECODE_ANY, nullptr);
     json_t* patch = json_array();
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_TRUE(json_equal(doc, result));
     EXPECT_NE(doc, result); /* must be a copy, not the same object */
@@ -329,7 +330,7 @@ TEST(PatchApplyTest, UnknownOpSkipped) {
     json_object_set_new(op, "value", json_integer(1));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_object();
     EXPECT_TRUE(json_equal(result, expected));
@@ -348,7 +349,7 @@ TEST(PatchApplyTest, MissingOpField) {
     json_object_set_new(op, "value", json_integer(1));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     /* No op field → skipped */
     EXPECT_TRUE(json_equal(result, doc));
@@ -365,7 +366,7 @@ TEST(PatchApplyTest, MissingPathField) {
     json_object_set_new(op, "op", json_string("remove"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_TRUE(json_equal(result, doc));
 
@@ -387,7 +388,7 @@ TEST(PatchApplyTest, AddToArrayIndex) {
     json_object_set_new(op, "value", json_integer(99));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"arr":[1,99,2]})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -409,7 +410,7 @@ TEST(PatchApplyTest, AddToArrayAppend) {
     json_object_set_new(op, "value", json_integer(3));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"arr":[1,2,3]})", JSON_DECODE_ANY, nullptr);
     EXPECT_TRUE(json_equal(result, expected));
@@ -431,7 +432,7 @@ TEST(PatchApplyTest, ReplaceNonExistentInArray) {
     json_object_set_new(op, "value", json_integer(99));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     /* Non-existent index → operation skipped, document unchanged */
     EXPECT_TRUE(json_equal(result, doc));
@@ -452,7 +453,7 @@ TEST(PatchApplyTest, OriginalUnchanged) {
     json_object_set_new(op, "value", json_integer(2));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_FALSE(json_equal(doc, result)); /* doc should be unchanged */
 
@@ -477,7 +478,7 @@ TEST(PatchApplyTest, RemoveNonNumericArrayIndex) {
     json_object_set_new(op, "path", json_string("/arr/one"));
     json_array_append_new(patch, op);
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     /* Non-numeric index → skip, doc unchanged */
     EXPECT_TRUE(json_equal(result, doc));

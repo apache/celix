@@ -21,7 +21,8 @@
 #include "celix_jansson_ext_export.h"
 #define CELIX_CELIX_JSON_PATCH_H
 
-#include "celix_jansson_schema.h"
+#include <jansson.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +34,7 @@ extern "C" {
  * The patch array is modified in-place.  The @p value is consumed —
  * ownership is transferred to the patch (steal semantics).
  * The stored value will be deep-copied later when the patch is applied
- * via celix_jansson_schema_patch_apply().
+ * via celix_json_patch_apply().
  *
  * @param patch     The JSON Patch array (json_t* array, modified in-place)
  * @param path_str  JSON Pointer path for the operation (e.g., "/a/b")
@@ -76,6 +77,21 @@ CELIX_JANSSON_EXT_EXPORT int celix_json_patch_remove(json_t* patch, const char* 
  * @param old_size  Target number of entries to retain
  */
 CELIX_JANSSON_EXT_EXPORT void celix_json_patch_truncate(json_t* patch, size_t old_size);
+
+/**
+ * Apply a JSON Patch (RFC 6902) to a JSON document.
+ *
+ * The patch is an array of operations as returned by celix_jansson_schema_validate().
+ * The original document is NOT modified — a patched copy is returned.
+ *
+ * Supported operations: "add", "remove", "replace".
+ *
+ * @param original  The original JSON document (not modified)
+ * @param patch     JSON Patch array (e.g., from celix_jansson_schema_validate)
+ * @return A new json_t* with the patch applied, or NULL on error.
+ *         The caller must json_decref() the result.
+ */
+CELIX_JANSSON_EXT_EXPORT json_t* celix_json_patch_apply(json_t* original, json_t* patch);
 
 #ifdef __cplusplus
 }

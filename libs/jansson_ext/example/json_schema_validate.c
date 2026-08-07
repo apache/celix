@@ -17,6 +17,7 @@
  * under the License.
  */
 #include "celix_jansson_schema.h"
+#include "celix_json_patch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,7 +132,7 @@ int main(int argc, char** argv) {
         free(patch_str);
 
         /* Apply the patch to get a document with defaults filled in */
-        json_t* filled = celix_jansson_schema_patch_apply(instance, patch);
+        json_t* filled = celix_json_patch_apply(instance, patch);
         if (filled) {
             char* filled_str = json_dumps(filled, JSON_INDENT(2));
             fprintf(stderr, "Document with defaults:\n%s\n", filled_str ? filled_str : "");

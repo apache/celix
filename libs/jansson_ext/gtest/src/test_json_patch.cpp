@@ -124,7 +124,7 @@ TEST(JsonPatchTest, ApplyAddArrayBegin) {
     json_t* patch = json_array();
     celix_json_patch_add(patch, "/0", json_integer(5));
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_EQ(5, json_integer_value(json_array_get(result, 0)));
     EXPECT_EQ(10, json_integer_value(json_array_get(result, 1)));
@@ -140,7 +140,7 @@ TEST(JsonPatchTest, ApplyAddArrayMiddle) {
     json_t* patch = json_array();
     celix_json_patch_add(patch, "/1", json_integer(15));
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_EQ(10, json_integer_value(json_array_get(result, 0)));
     EXPECT_EQ(15, json_integer_value(json_array_get(result, 1)));
@@ -160,7 +160,7 @@ TEST(JsonPatchTest, ApplyMixedOps) {
     celix_json_patch_replace(patch, "/users/0/name", json_string("Alpha"));
     celix_json_patch_add(patch, "/count", json_integer(1));
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
 
     json_t* expected = json_loads(R"({"users":[{"name":"Alpha"}],"count":1})", JSON_DECODE_ANY, nullptr);
@@ -179,7 +179,7 @@ TEST(JsonPatchTest, ApplyRemoveLastElement) {
     json_t* patch = json_array();
     celix_json_patch_remove(patch, "/2");
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
     EXPECT_EQ(2u, json_array_size(result));
     EXPECT_EQ(1, json_integer_value(json_array_get(result, 0)));
@@ -197,7 +197,7 @@ TEST(JsonPatchTest, ApplyReplaceDeep) {
     json_t* patch = json_array();
     celix_json_patch_replace(patch, "/a/b/c", json_integer(99));
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
 
     json_t* expected = json_loads(R"({"a":{"b":{"c":99}}})", JSON_DECODE_ANY, nullptr);
@@ -216,7 +216,7 @@ TEST(JsonPatchTest, ApplyAddNumericKey) {
     json_t* patch = json_array();
     celix_json_patch_add(patch, "/123", json_string("numeric key"));
 
-    json_t* result = celix_jansson_schema_patch_apply(doc, patch);
+    json_t* result = celix_json_patch_apply(doc, patch);
     ASSERT_NE(nullptr, result);
 
     json_t* val = json_object_get(result, "123");
@@ -226,4 +226,169 @@ TEST(JsonPatchTest, ApplyAddNumericKey) {
     json_decref(doc);
     json_decref(patch);
     json_decref(result);
+}
+
+/* ── Apply: ops with invalid path / missing value are skipped ─────────── */
+
+TEST(JsonPatchTest, ApplyAddInvalidPath) {
+    json_t* doc = json_loads(R"({})", JSON_DECODE_ANY, nullptr);
+    /* path without leading '/' fails to parse as a JSON Pointer */
+    json_t* patch = json_loads(R"([{"op":"add","path":"foo","value":5}])", JSON_DECODE_ANY, nullptr);
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    json_t* expected = json_loads(R"({})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyMissingValue) {
+    json_t* doc = json_loads(R"({})", JSON_DECODE_ANY, nullptr);
+    /* add/replace ops without a "value" are skipped, later ops still apply */
+    json_t* patch = json_loads(R"([{"op":"add","path":"/a"},{"op":"replace","path":"/b"},{"op":"add","path":"/c","value":1}])", JSON_DECODE_ANY, nullptr);
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    json_t* expected = json_loads(R"({"c":1})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+/* ── Apply: walk through array parents creating intermediate nodes ────── */
+
+TEST(JsonPatchTest, ApplyAddThroughArrayCreatingNode) {
+    json_t* doc = json_loads(R"({"arr":[]})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_add(patch, "/arr/2/x", json_integer(5));
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* gap filled with nulls, missing element created as object */
+    json_t* expected = json_loads(R"({"arr":[null,null,{"x":5}]})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyAddThroughArrayInvalidToken) {
+    json_t* doc = json_loads(R"({"arr":[1,2]})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_add(patch, "/arr/foo/bar", json_integer(5));
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* non-numeric array token aborts the walk, op is dropped */
+    json_t* expected = json_loads(R"({"arr":[1,2]})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyAddBeyondArrayEnd) {
+    json_t* doc = json_loads(R"({"arr":[10]})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_add(patch, "/arr/3", json_integer(5));
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* gap filled with nulls, value appended at the end */
+    json_t* expected = json_loads(R"({"arr":[10,null,null,5]})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyAddThroughScalarParent) {
+    json_t* doc = json_loads(R"({"a":5})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_add(patch, "/a/b/c", json_integer(1));
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* scalar parent mid-walk → NULL → walk aborted, op is dropped */
+    json_t* expected = json_loads(R"({"a":5})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+/* ── Apply: remove through array parents ──────────────────────────────── */
+
+TEST(JsonPatchTest, ApplyRemoveThroughArray) {
+    json_t* doc = json_loads(R"({"arr":[{"key":1},{"key":2}]})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_remove(patch, "/arr/0/key");
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    json_t* expected = json_loads(R"({"arr":[{},{"key":2}]})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyRemoveThroughScalar) {
+    json_t* doc = json_loads(R"({"a":5})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_remove(patch, "/a/b/c");
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* scalar parent mid-walk → NULL → walk aborted, op is dropped */
+    json_t* expected = json_loads(R"({"a":5})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
+}
+
+TEST(JsonPatchTest, ApplyRemoveThroughArrayInvalidIndex) {
+    json_t* doc = json_loads(R"({"arr":[{"key":1}]})", JSON_DECODE_ANY, nullptr);
+    json_t* patch = json_array();
+    celix_json_patch_remove(patch, "/arr/5/key");
+
+    json_t* result = celix_json_patch_apply(doc, patch);
+    ASSERT_NE(nullptr, result);
+
+    /* out-of-range array index → parent NULL → op is dropped */
+    json_t* expected = json_loads(R"({"arr":[{"key":1}]})", JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_equal(result, expected));
+
+    json_decref(doc);
+    json_decref(patch);
+    json_decref(result);
+    json_decref(expected);
 }

@@ -276,25 +276,6 @@ CELIX_JANSSON_EXT_EXPORT int celix_jansson_schema_validate_uri(celix_jansson_sch
                                       json_t** patch_out);
 
 /* ────────────────────────────────────────────────────────────────────────
- * JSON Patch application (RFC 6902)
- * ──────────────────────────────────────────────────────────────────────── */
-
-/**
- * Apply a JSON Patch (RFC 6902) to a JSON document.
- *
- * The patch is an array of operations as returned by celix_jansson_schema_validate().
- * The original document is NOT modified — a patched copy is returned.
- *
- * Supported operations: "add", "remove", "replace".
- *
- * @param original  The original JSON document (not modified)
- * @param patch     JSON Patch array (e.g., from celix_jansson_schema_validate)
- * @return A new json_t* with the patch applied, or NULL on error.
- *         The caller must json_decref() the result.
- */
-CELIX_JANSSON_EXT_EXPORT json_t* celix_jansson_schema_patch_apply(json_t* original, json_t* patch);
-
-/* ────────────────────────────────────────────────────────────────────────
  * Built-in draft-7 meta-schema
  * ──────────────────────────────────────────────────────────────────────── */
 

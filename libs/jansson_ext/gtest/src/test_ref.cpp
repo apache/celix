@@ -18,6 +18,7 @@
  */
 #include <cstring>
 
+#include "celix_json_patch.h"
 #include "test_common.h"
 
 /* ── $ref to definitions ──────────────────────────────────────────────── */
@@ -256,7 +257,7 @@ TEST(RefTest, RefDefaultValuePassthrough) {
     int n = celix_jansson_schema_validate(v, inst, capture_error, nullptr, &patch);
     EXPECT_EQ(0, n);
 
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
     json_t* expected = json_loads(R"({"val":42})", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, expected);

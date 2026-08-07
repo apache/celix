@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "celix_json_patch.h"
 #include "test_common.h"
 
 /* ── Object property default ──────────────────────────────────────────── */
@@ -228,7 +229,7 @@ TEST(DefaultsTest, PatchApply) {
     json_object_set_new(add_op, "value", json_integer(2));
     json_array_append_new(patch, add_op);
 
-    json_t* result = celix_jansson_schema_patch_apply(original, patch);
+    json_t* result = celix_json_patch_apply(original, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads("{\"a\":1,\"b\":2}", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, expected);
@@ -252,7 +253,7 @@ TEST(DefaultsTest, PatchApplyNested) {
     json_object_set_new(add_op, "value", json_string("Main St"));
     json_array_append_new(patch, add_op);
 
-    json_t* result = celix_jansson_schema_patch_apply(original, patch);
+    json_t* result = celix_json_patch_apply(original, patch);
     ASSERT_NE(nullptr, result);
     json_t* expected = json_loads(R"({"address":{"street":"Main St"}})", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, expected);
@@ -290,7 +291,7 @@ TEST(DefaultsTest, EndToEndDefaultsWithApply) {
     int n = celix_jansson_schema_validate(v, inst, capture_error, nullptr, &patch);
     EXPECT_EQ(0, n);
 
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
 
     json_t* expected = json_loads(R"({"name":"anonymous","age":0})", JSON_DECODE_ANY, nullptr);
@@ -358,7 +359,7 @@ TEST(DefaultsTest, ObjectTypeDefault) {
     ASSERT_NE(nullptr, patch);
 
     /* Apply patch to get filled document */
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
 
     /* filled should have the nested config object */
@@ -439,7 +440,7 @@ TEST(DefaultsTest, ObjectDefaultWhenMissing) {
     EXPECT_EQ(0, n);
     ASSERT_NE(nullptr, patch);
 
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
 
     json_t* cfg = json_object_get(filled, "config");
@@ -492,7 +493,7 @@ TEST(DefaultsTest, PerPropertyDefaultPartialOverride) {
     EXPECT_EQ(0, n);
     ASSERT_NE(nullptr, patch);
 
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
 
     json_t* cfg = json_object_get(filled, "config");
@@ -552,7 +553,7 @@ TEST(DefaultsTest, ArrayOfObjectsDefault) {
     EXPECT_EQ(0, n);
     ASSERT_NE(nullptr, patch);
 
-    json_t* filled = celix_jansson_schema_patch_apply(inst, patch);
+    json_t* filled = celix_json_patch_apply(inst, patch);
     ASSERT_NE(nullptr, filled);
 
     json_t* arr = json_object_get(filled, "items");
