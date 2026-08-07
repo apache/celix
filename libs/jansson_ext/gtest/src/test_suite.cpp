@@ -44,9 +44,6 @@ static bool is_expected_fail(const std::string& fn) {
                                  "unicode",
                                  "content",
                                  "zeroTerminatedFloats",
-                                 /* Format checkers with known limitations */
-                                 "email",
-                                 "idn-email",
                                  "ref.json",
                                  NULL};
     for (const char** p = list; *p; p++)

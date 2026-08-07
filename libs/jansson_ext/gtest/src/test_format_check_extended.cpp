@@ -101,24 +101,25 @@ TEST(FormatCheckTest, Time) {
  */
 
 TEST(FormatCheckTest, Email) {
-    /* NOTE: The Ragel-generated SMTP address validator (celix_smtp_address_validator.c)
-     * returns false for EVERY input — verified empirically with a probe harness, and
-     * consistent with the JSON Schema Test Suite treating email.json as expected-fail.
-     * The OK return path of check_email is therefore unreachable until the validator
-     * is fixed (separate investigation comparing with pboettch/json-schema-validator).
-     * Non-ASCII input fails earlier in is_ascii and is covered here. */
+    /* Valid ASCII address */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("joe.bloggs@example.com"));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("a@b.com"));
+    /* Non-ASCII input fails the is_ascii pre-check */
+    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("\xc3\xbc@example.com")); /* ü@example.com */
+    /* Clearly invalid inputs */
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("not-an-email"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("user@"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("@example.com"));
-    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_email("\xc3\xbc@example.com")); /* ü@example.com — non-ASCII */
 }
 
 /* ── International Email (RFC 6531) ──────────────────────────────────────── */
 
 TEST(FormatCheckTest, IdnEmail) {
+    /* No is_ascii pre-check — UTF-8 addresses are passed to the SMTP validator */
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("joe.bloggs@example.com"));
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("\xc3\xbc@example.com"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("not-an-email"));
     EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("user@"));
-    EXPECT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_check_idn_email("\xc3\xbc@example.com"));
 }
 
 /* ── Hostname (RFC 3986 Appendix A labels) ──────────────────────────────── */
