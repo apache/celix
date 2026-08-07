@@ -324,10 +324,12 @@ int celix_jansson_check_ipv4(const char* value) {
 
 int celix_jansson_check_ipv6(const char* value) {
     struct in6_addr addr;
-    if (inet_pton(AF_INET6, value, &addr) != 1)
-        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
-    /* Reject zone-id forms (%eth0 etc.) */
+    /* Reject zone-id forms (%eth0 etc.) — checked before inet_pton,
+     * which never accepts '%', so this makes the rejection explicit
+     * and deterministic across platforms */
     if (strchr(value, '%'))
+        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    if (inet_pton(AF_INET6, value, &addr) != 1)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
     return CELIX_JANSSON_SCHEMA_OK;
 }

@@ -172,7 +172,7 @@ TEST(FormatCheckTest, Ipv6) {
         {"2001:db8", false},       /* incomplete */
         {"2001:db8:::1", false},   /* triple colon */
         {"gggg:db8::1", false},    /* invalid hex */
-        {"fe80::1%eth0", false},   /* zone-id form (glibc's inet_pton rejects '%' itself) */
+        {"fe80::1%eth0", false},   /* zone-id form — rejected by explicit '%' check */
         {"", false},
     };
 
