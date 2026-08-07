@@ -65,6 +65,17 @@ TEST(UriTest, ParseWithIdentifierFragment) {
     celix_jansson_uri_clear(&u);
 }
 
+TEST(UriTest, ParseAuthorityWithoutPath) {
+    celix_jansson_uri_t u;
+    memset(&u, 0, sizeof(u));
+    int rc = celix_jansson_uri_init(&u, "http://example.com");
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, rc);
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("http://example.com", loc);
+    free(loc);
+    celix_jansson_uri_clear(&u);
+}
+
 TEST(UriTest, DeriveRelative) {
     celix_jansson_uri_t base, derived;
     memset(&base, 0, sizeof(base));

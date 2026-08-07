@@ -82,6 +82,36 @@ TEST(UriExtendedTest, UpdateAbsolutePath) {
     celix_jansson_uri_clear(&u);
 }
 
+TEST(UriExtendedTest, UpdateRelativeToPathWithoutDirectory) {
+    celix_jansson_uri_t u;
+    memset(&u, 0, sizeof(u));
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&u, "schema.json"));
+
+    /* Old path has no directory, so the relative path replaces it entirely */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_update(&u, "other.json"));
+
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("other.json", loc);
+    free(loc);
+
+    celix_jansson_uri_clear(&u);
+}
+
+TEST(UriExtendedTest, UpdateRelativeWithoutBase) {
+    celix_jansson_uri_t u;
+    memset(&u, 0, sizeof(u));
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&u, ""));
+
+    /* No previous location to resolve against */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_update(&u, "relative/path"));
+
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("relative/path", loc);
+    free(loc);
+
+    celix_jansson_uri_clear(&u);
+}
+
 TEST(UriExtendedTest, UpdateFullReplacement) {
     celix_jansson_uri_t u;
     memset(&u, 0, sizeof(u));
@@ -216,4 +246,62 @@ TEST(UriExtendedTest, PercentDecodedFragment) {
     EXPECT_STREQ("a b", frag);
     free(frag);
     celix_jansson_uri_clear(&u);
+}
+
+/* ── celix_jansson_uri_derive with fragments ─────────────────────────────── */
+
+TEST(UriExtendedTest, DeriveFromIdentifierUri) {
+    celix_jansson_uri_t base, derived;
+    memset(&base, 0, sizeof(base));
+    memset(&derived, 0, sizeof(derived));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema#foo"));
+
+    /* update(NULL) keeps the copied identifier */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, nullptr, &derived));
+
+    char* frag = celix_jansson_uri_fragment(&derived);
+    EXPECT_STREQ("foo", frag);
+    free(frag);
+
+    celix_jansson_uri_clear(&base);
+    celix_jansson_uri_clear(&derived);
+}
+
+TEST(UriExtendedTest, DeriveFromPointerUri) {
+    celix_jansson_uri_t base, derived;
+    memset(&base, 0, sizeof(base));
+    memset(&derived, 0, sizeof(derived));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema#/definitions/foo"));
+
+    /* update(NULL) keeps the copied pointer tokens */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, nullptr, &derived));
+
+    char* frag = celix_jansson_uri_fragment(&derived);
+    EXPECT_STREQ("/definitions/foo", frag);
+    free(frag);
+
+    celix_jansson_uri_clear(&base);
+    celix_jansson_uri_clear(&derived);
+}
+
+/* ── celix_jansson_uri_append with identifier URI ────────────────────────── */
+
+TEST(UriExtendedTest, AppendToIdentifierUriIsNoOp) {
+    celix_jansson_uri_t base, result;
+    memset(&base, 0, sizeof(base));
+    memset(&result, 0, sizeof(result));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema#foo"));
+
+    /* Appending to an identifier URI is a no-op */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_append(&base, "bar", &result));
+
+    char* frag = celix_jansson_uri_fragment(&result);
+    EXPECT_STREQ("foo", frag);
+    free(frag);
+
+    celix_jansson_uri_clear(&base);
+    celix_jansson_uri_clear(&result);
 }
