@@ -315,12 +315,7 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
             size_t idx = (size_t)strtoul(tok, NULL, 10);
             while (json_array_size(cur) <= idx)
                 json_array_append_new(cur, json_null());
-            json_t* child = json_array_get(cur, idx);
-            if (!child) {
-                child = is_last ? json_null() : json_object();
-                json_array_set_new(cur, idx, child);
-            }
-            cur = child;
+            cur = json_array_get(cur, idx);
         } else
             return NULL;
     }
