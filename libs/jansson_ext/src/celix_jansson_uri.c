@@ -212,7 +212,10 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
     }
 
     /* Now resolve uri_str relative to this */
-    return celix_jansson_uri_update(out, uri_str);
+    int rc = celix_jansson_uri_update(out, uri_str);
+    if (rc != 0)
+        celix_jansson_uri_clear(out); /* release the copied base components on failure */
+    return rc;
 }
 
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out) {

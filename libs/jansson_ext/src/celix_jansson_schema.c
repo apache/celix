@@ -305,8 +305,10 @@ int celix_jansson_type_index(json_t* value) {
         return 5;
     case JSON_REAL:
         return 6;
+    //LCOV_EXCL_START: all legal jansson types are covered by the cases above
     default:
         return -1;
+    //LCOV_EXCL_STOP
     }
 }
 
@@ -964,9 +966,23 @@ static int v_comb(const celix_jansson_schema_node_t* n,
     size_t old_patch = json_array_size(ctx->patch);
     int count = 0;
     collecting_sink_t* master = coll_new();
+    if (!master) {
+        /* Fail closed: return the same "combination failed, error emitted"
+         * convention as the other failing paths below (0 = passed) */
+        emit_error(ctx, p, "out of memory while validating combination");
+        return 1;
+    }
 
     for (size_t i = 0; i < n->u.combination.len; i++) {
         collecting_sink_t* cs = coll_new();
+        if (!cs) {
+            emit_error(ctx, p, "out of memory while validating combination");
+            /* Flush the errors collected by the earlier branches, then clean up */
+            coll_propagate(master, ctx->sink, NULL);
+            master->base.destroy(&master->base);
+            celix_json_patch_truncate(ctx->patch, old_patch);
+            return 1;
+        }
         celix_jansson_validation_context_t cctx = *ctx;
         cctx.sink = &cs->base;
 
@@ -1240,6 +1256,12 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     slot = 6;
                 if (slot >= 0) {
                     celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+                    if (!typed) {
+                        /* Earlier iterations of the array form may already have filled
+                         * type_slots → unref(n) (d_type unrefs each slot) not free(n) */
+                        celix_jansson_schema_unref(n);
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    }
                     typed->root = root;
                     typed->refcount = 1;
                     switch (slot) {
@@ -1281,7 +1303,8 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
         for (int slot = 0; slot < 7; slot++) {
             celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
             if (!typed) {
-                free(n);
+                /* Earlier iterations may already have filled type_slots */
+                celix_jansson_schema_unref(n);
                 return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
             }
             typed->root = root;
@@ -1410,6 +1433,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             if ((v = json_object_get(sch, "required"))) {
                 size_t rlen = json_array_size(v);
                 onode->u.object.required = (char**)calloc(rlen, sizeof(char*));
+                /* Check before setting required_len (d_object loops over required_len) */
+                if (rlen > 0 && !onode->u.object.required) {
+                    celix_jansson_schema_unref(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 onode->u.object.required_len = rlen;
                 for (size_t i = 0; i < rlen; i++)
                     onode->u.object.required[i] = strdup(json_string_value(json_array_get(v, i)));
@@ -1423,15 +1451,26 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 const char* k;
                 json_t* pv;
                 json_object_foreach(v, k, pv) {
-                    celix_jansson_schema_node_t* ps;
-                    if (schema_make_internal(pv, root, base, &ps, depth + 1) == CELIX_JANSSON_SCHEMA_OK)
-                        celix_stringHashMap_put(onode->u.object.properties, k, ps);
+                    celix_jansson_schema_node_t* ps = NULL;
+                    int rc = schema_make_internal(pv, root, base, &ps, depth + 1);
+                    if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                        /* Propagate the subschema compile error; d_object destroys the
+                         * properties map and unrefs the subschemas already inserted */
+                        celix_jansson_schema_unref(n);
+                        return rc;
+                    }
+                    celix_stringHashMap_put(onode->u.object.properties, k, ps);
                 }
             }
             if ((v = json_object_get(sch, "patternProperties"))) {
                 size_t ppc = json_object_size(v);
                 onode->u.object.pattern_properties = (typeof(onode->u.object.pattern_properties))calloc(
                     ppc, sizeof(*onode->u.object.pattern_properties));
+                /* Check before setting pp_len (d_object loops over pp_len) */
+                if (ppc > 0 && !onode->u.object.pattern_properties) {
+                    celix_jansson_schema_unref(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 onode->u.object.pp_len = ppc;
                 const char* pk;
                 json_t* psch;
@@ -1477,12 +1516,22 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     if (json_is_array(dv)) {
                         /* Array form → required list */
                         celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+                        if (!rn) {
+                            celix_jansson_schema_unref(n);
+                            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                        }
                         rn->vtable = &vt_required;
                         rn->kind = CELIX_JANSSON_SCHEMA_KIND_REQUIRED;
                         rn->root = root;
                         rn->refcount = 1;
                         size_t alen = json_array_size(dv);
                         rn->u.required.names = (char**)calloc(alen, sizeof(char*));
+                        /* Check before setting len (d_required loops over len) */
+                        if (alen > 0 && !rn->u.required.names) {
+                            free(rn); /* rn owns nothing yet */
+                            celix_jansson_schema_unref(n);
+                            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                        }
                         rn->u.required.len = alen;
                         for (size_t ai = 0; ai < alen; ai++)
                             rn->u.required.names[ai] = strdup(json_string_value(json_array_get(dv, ai)));
@@ -1534,6 +1583,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     size_t ilen = json_array_size(v);
                     anode->u.array.items =
                         (celix_jansson_schema_node_t**)calloc(ilen, sizeof(celix_jansson_schema_node_t*));
+                    /* Check before setting items_len (d_array loops over items_len) */
+                    if (ilen > 0 && !anode->u.array.items) {
+                        celix_jansson_schema_unref(n);
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    }
                     anode->u.array.items_len = ilen;
                     for (size_t i = 0; i < ilen; i++) {
                         int rc = schema_make_internal(json_array_get(v, i), root, base,
@@ -1599,6 +1653,12 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 return rc;
             }
             celix_jansson_schema_node_t* nn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*nn));
+            if (!nn) {
+                celix_jansson_schema_unref(sub); /* sub was compiled successfully above */
+                celix_jansson_schema_unref(n);
+                celix_jansson_vec_free(&logic);
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+            }
             nn->vtable = &vt_not;
             nn->kind = CELIX_JANSSON_SCHEMA_KIND_NOT;
             nn->root = root;
@@ -1613,12 +1673,29 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             if ((v = json_object_get(sch, combos[ci]))) {
                 size_t clen = json_array_size(v);
                 celix_jansson_schema_node_t* cn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*cn));
+                if (!cn) {
+                    /* logic may already hold a not node or earlier combos */
+                    for (size_t k = 0; k < logic.len; k++)
+                        celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                    celix_jansson_schema_unref(n);
+                    celix_jansson_vec_free(&logic);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 cn->vtable = &vt_comb;
                 cn->kind = ckinds[ci];
                 cn->root = root;
                 cn->refcount = 1;
                 cn->u.combination.items =
                     (celix_jansson_schema_node_t**)calloc(clen, sizeof(celix_jansson_schema_node_t*));
+                /* Check before setting len (d_comb loops over len) */
+                if (clen > 0 && !cn->u.combination.items) {
+                    free(cn); /* cn is not registered in logic yet */
+                    for (size_t k = 0; k < logic.len; k++)
+                        celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                    celix_jansson_schema_unref(n);
+                    celix_jansson_vec_free(&logic);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 cn->u.combination.len = clen;
                 for (size_t j = 0; j < clen; j++) {
                     int rc = schema_make_internal(json_array_get(v, j), root, base,
@@ -1629,6 +1706,10 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                             celix_jansson_schema_unref(cn->u.combination.items[k]);
                         free(cn->u.combination.items);
                         free(cn);
+                        /* vec_free only frees the array, not the elements: unref the
+                         * not/earlier-combo nodes pushed into logic so far */
+                        for (size_t k = 0; k < logic.len; k++)
+                            celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
                         celix_jansson_schema_unref(n);
                         celix_jansson_vec_free(&logic);
                         return rc;
@@ -1688,8 +1769,10 @@ static int schema_make_internal_depth(json_t* sch,
                                       celix_jansson_uri_t* eff_base_out,
                                       celix_jansson_schema_node_t** out,
                                       int depth) {
+    //LCOV_EXCL_START: defensive — all call sites pass non-NULL arguments
     if (!sch || !root || !out)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_ARGUMENT;
+    //LCOV_EXCL_STOP
     /* Guard against infinite recursion for self-referencing schemas */
     if (depth > 20)
         return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA;
@@ -1737,7 +1820,8 @@ static int schema_make_internal_depth(json_t* sch,
         n->refcount = 1;
         n->u.boolean.value = json_boolean_value(sch);
         *out = n;
-        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, n);
+        /* No $id registration: a boolean schema cannot carry $id (json_object_get
+         * returns NULL for non-objects, so has_id is always false here) */
         return CELIX_JANSSON_SCHEMA_OK;
     }
     if (!json_is_object(sch))
@@ -1749,6 +1833,12 @@ static int schema_make_internal_depth(json_t* sch,
         char* base_loc = effective_base ? celix_jansson_uri_location(effective_base) : strdup("");
         celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, base_loc);
         free(base_loc);
+        if (!sf) {
+            /* Mirror the my_base cleanup of the other failing paths */
+            if (has_id && !id_stored_in_out)
+                celix_jansson_uri_clear(&my_base);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         const char* dk;
         json_t* dv;
         json_object_foreach(defs, dk, dv) {
@@ -1844,14 +1934,28 @@ static int schema_make_internal_depth(json_t* sch,
         free(rloc); free(rfra);
         celix_jansson_uri_clear(&ref_uri);
 
-        if (has_id) (void)celix_jansson_schema_root_insert(root, &my_base, rn);
+        /* No $id registration: draft-7 treats $id alongside $ref as not a real
+         * $id (JSON Reference: members other than $ref are ignored — see the
+         * !refv guard above), so has_id is always false here */
         *out = rn;
         return CELIX_JANSSON_SCHEMA_OK;
     }
 
     int rc = make_type_schema(sch, root, effective_base, out, depth);
-    if (rc == CELIX_JANSSON_SCHEMA_OK && has_id && *out)
-        (void)celix_jansson_schema_root_insert(root, &my_base, *out);
+    if (rc == CELIX_JANSSON_SCHEMA_OK && has_id && *out) {
+        int ir = celix_jansson_schema_root_insert(root, &my_base, *out);
+        if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
+            /* The registry did not ref *out; unref it and clear it so the caller
+             * does not take ownership on the error path */
+            celix_jansson_schema_unref(*out);
+            *out = NULL;
+            if (!id_stored_in_out)
+                celix_jansson_uri_clear(&my_base);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
+        /* DUPLICATE_URI is benign: with $id:"" the registration above already
+         * happened and set_root_schema's root_insert must tolerate it as well */
+    }
     if (has_id && !id_stored_in_out)
         celix_jansson_uri_clear(&my_base);
     return rc;
@@ -2023,8 +2127,18 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
             celix_json_pointer_clear(&ptr);
         }
     }
-    (void)celix_jansson_schema_root_insert(root, &full_uri, sch);
+    int ir = celix_jansson_schema_root_insert(root, &full_uri, sch);
     celix_jansson_uri_clear(&full_uri);
+    //LCOV_EXCL_START: unreachable — the file for `location` was created before
+    //the walk (get_or_create_file always hits the cache, so insert cannot OOM)
+    if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
+        /* The registry did not ref sch (NOMEM precedes the ref); unref it and
+         * return NULL instead of a dangling pointer */
+        celix_jansson_schema_unref(sch);
+        return NULL;
+    }
+    //LCOV_EXCL_STOP
+    /* DUPLICATE_URI is benign: the fragment may already be registered */
     celix_jansson_schema_unref(sch); /* registry holds the owning ref now */
 
     return sch;
@@ -2063,7 +2177,21 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
     }
 
     /* Register root at retrieval URI — auto-resolves waiting fragment="" placeholder */
-    (void)celix_jansson_schema_root_insert(root, &retr, sch);
+    int ir = celix_jansson_schema_root_insert(root, &retr, sch);
+    //LCOV_EXCL_START: unreachable — compile_external_document is only called for
+    //files that already exist (the placeholder creation created them), so
+    //get_or_create_file always hits the cache and insert cannot OOM
+    if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
+        /* The registry did not ref sch; propagate the OOM instead of returning a
+         * fake OK that would leave the placeholder unresolved forever */
+        json_decref(doc); /* doc has not been transferred to sf->document */
+        celix_jansson_uri_clear(&retr);
+        celix_jansson_schema_unref(sch);
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
+    //LCOV_EXCL_STOP
+    /* DUPLICATE_URI is benign: a document whose own $id equals the retrieval URI
+     * was already registered during make */
 
     /* Retain document for fragment resolution */
     celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, location);
@@ -2072,9 +2200,11 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
         sf->document = doc;  /* ownership transferred */
         free(sf->base_uri);
         sf->base_uri = strdup(location);
+    //LCOV_EXCL_START: unreachable — callers guarantee the file already exists
     } else {
         json_decref(doc);
     }
+    //LCOV_EXCL_STOP
 
     celix_jansson_uri_clear(&retr);
     celix_jansson_schema_unref(sch);
@@ -2274,8 +2404,7 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
 
 static void celix_jansson_schema_file_free(void* value) {
     celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)value;
-    if (!sf)
-        return;
+    assert(sf != NULL);
     celix_stringHashMap_destroy(sf->schemas); /* values freed via creation-time removed callback */
     celix_stringHashMap_destroy(sf->unresolved);
     for (size_t i = 0; i < sf->retained.len; i++)
@@ -2451,6 +2580,15 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
     }
 
     root->original_schema = json_deep_copy(schema);
+    if (!root->original_schema) {
+        /* The first copy (L2446) is still owned by this frame; the decref at
+         * the end of the compile path (after schema_make_internal_depth) is not
+         * reached here, so release it explicitly. */
+        json_decref(copy);
+        if (errmsg)
+            *errmsg = strdup(celix_jansson_schema_strerror(CELIX_JANSSON_SCHEMA_ERROR_NOMEM));
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
 
     celix_jansson_uri_t root_base;
     celix_jansson_uri_init(&root_base, "");
@@ -2466,7 +2604,22 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
     }
 
     root->root = sch;
-    (void)celix_jansson_schema_root_insert(root, &root_base, sch);
+    int rir = celix_jansson_schema_root_insert(root, &root_base, sch);
+    if (rir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
+        /* root_insert's NOMEM happens before its registry ref (L2256), so the
+         * registry holds no reference; root->root still owns the only one.
+         * Unref it and leave the root in the same clean state as the other
+         * failing paths below (root->root == NULL). */
+        celix_jansson_schema_unref(root->root);
+        root->root = NULL;
+        celix_jansson_uri_clear(&root_base);
+        if (errmsg)
+            *errmsg = strdup(celix_jansson_schema_strerror(CELIX_JANSSON_SCHEMA_ERROR_NOMEM));
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
+    /* DUPLICATE_URI is benign here: root->files was cleared above (L2444), so the
+     * only way the "" key already exists is the top-level $id:"" registration done
+     * during make (L1853); the registry already holds a reference in that case. */
 
     {
         char* rloc = celix_jansson_uri_location(&root_base);

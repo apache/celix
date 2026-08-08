@@ -138,4 +138,11 @@ json_t* __wrap_json_loads(const char* input, size_t flags, json_error_t* error) 
     return __real_json_loads(input, flags, error);
 }
 
+json_t* __real_json_deep_copy(const json_t* value);
+CELIX_EI_DEFINE(json_deep_copy, json_t*)
+json_t* __wrap_json_deep_copy(const json_t* value) {
+    CELIX_EI_IMPL(json_deep_copy);
+    return __real_json_deep_copy(value);
+}
+
 }

@@ -48,3 +48,24 @@ foreach(T ${TEST_SOURCES})
     add_test(NAME ${NAME} COMMAND ${NAME})
     setup_target_for_coverage(${NAME} SCAN_DIR ..)
 endforeach()
+
+if (EI_TESTS)
+    # Note: the error-injection tests are separated from the regular tests because
+    # they link the error-injector wrappers (--wrap) and set injection expectations
+    # that must not leak into the normal test run.
+    add_executable(test_jansson_ext_with_ei
+        src/ErrorInjectionTestSuite.cc
+        src/SchemaErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_jansson_ext_with_ei PRIVATE
+        jansson_ext_cut
+        Celix::malloc_ei
+        Celix::string_ei
+        Celix::jansson_ei
+        Celix::string_hash_map_ei
+        GTest::gtest GTest::gtest_main
+    )
+    target_include_directories(test_jansson_ext_with_ei PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME test_jansson_ext_with_ei COMMAND test_jansson_ext_with_ei)
+    setup_target_for_coverage(test_jansson_ext_with_ei SCAN_DIR ..)
+endif ()
