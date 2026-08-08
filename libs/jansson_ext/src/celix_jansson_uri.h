@@ -39,10 +39,13 @@ typedef struct celix_jansson_uri_t {
     char* identifier;             /* fragment, when it's a plain-name identifier */
 } celix_jansson_uri_t;
 
-/** Initialize/parse a URI from a string. Returns JSS error code. */
+/** Initialize/parse a URI from a string. Returns JSS error code.
+ * On failure (NOMEM) @p u is left fully cleared. */
 int celix_jansson_uri_init(celix_jansson_uri_t* u, const char* uri_str);
 
-/** Update a URI in-place by resolving @p uri_str against it. */
+/** Update a URI in-place by resolving @p uri_str against it.
+ * On failure (NOMEM) @p u may be left partially modified; callers must call
+ * celix_jansson_uri_clear() (init and derive already clear on failure). */
 int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str);
 
 /**
@@ -57,13 +60,16 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
  */
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out);
 
-/** Reconstruct the location part (scheme://authority/path or URN). Returns malloc'd string; caller must free(). */
+/** Reconstruct the location part (scheme://authority/path or URN). Returns malloc'd string; caller must free().
+ * Returns NULL on any allocation failure (OOM signal); callers must check. */
 char* celix_jansson_uri_location(const celix_jansson_uri_t* u);
 
-/** Full URI string "location # fragment".  Returns malloc'd string. */
+/** Full URI string "location # fragment".  Returns malloc'd string.
+ * Returns NULL on any allocation failure (OOM signal); callers must check. */
 char* celix_jansson_uri_to_string(const celix_jansson_uri_t* u);
 
-/** Escape special chars for JSON Pointer (~ and /). Returns malloc'd. */
+/** Escape special chars for JSON Pointer (~ and /). Returns malloc'd.
+ * Returns NULL on any allocation failure (OOM signal); escape("") returns "" (never NULL unless OOM). */
 char* celix_jansson_uri_escape(const char* src);
 
 /** Return the fragment as a string (concatenation of pointer or identifier). Returns malloc'd string; caller must free(). */

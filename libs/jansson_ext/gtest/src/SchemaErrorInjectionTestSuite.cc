@@ -20,8 +20,11 @@
 #include <gtest/gtest.h>
 
 #include "celix_cleanup.h"
+#include "celix_jansson_pointer.h"
 #include "celix_jansson_schema.h"
+#include "celix_jansson_uri.h"
 #include "celix_string_hash_map_ei.h"
+#include "celix_util.h"
 #include "jansson_ei.h"
 #include "malloc_ei.h"
 #include "string_ei.h"
@@ -62,9 +65,27 @@ protected:
         return celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
+    static celix_jansson_schema_validator_t* makeValidatorWithLoader() {
+        return celix_jansson_schema_validator_create(testLoader, nullptr, nullptr, nullptr, nullptr, nullptr);
+    }
+
     static json_t* loadSchema(const char* text) {
         json_error_t err{};
         return json_loads(text, 0, &err);
+    }
+
+    /* Loader used by the external-ref tests. The returned document registers
+     * both a definitions entry (resolved directly after loading) and a
+     * properties entry (only reachable via the document-fragment walk). */
+    static int testLoader(const char* location, json_t** out, void* ud) {
+        (void)ud;
+        if (strcmp(location, "http://example.com/doc") != 0)
+            return CELIX_JANSSON_SCHEMA_ERROR_LOADER;
+        *out = json_loads(
+            "{\"definitions\":{\"x\":{\"type\":\"string\"}},\"properties\":{\"b\":{\"type\":\"string\"}}}",
+            0,
+            nullptr);
+        return *out ? CELIX_JANSSON_SCHEMA_OK : CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     }
 };
 
@@ -205,6 +226,32 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefNodeCallocFail) {
     ASSERT_NE(nullptr, schema);
     celix_ei_expect_calloc((void*)celix_jansson_schema_set_root_schema, 1, nullptr, 2);
     //Then compiling the schema should fail with NOMEM
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefLocationOomFail) {
+    //Given strdup is injected to fail inside uri_location during $ref compilation.
+    //The schema has no $id, so the first uri_location call is for the $ref URI;
+    //today its NULL return reaches get_or_create_file and crashes the hashmap.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"urn:foo\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_location, 0, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRootInsertLocationOomFail) {
+    //Given strdup is injected to fail inside uri_location during root_insert.
+    //The first uri_location call in this flow is root_insert's; it also
+    //exercises the root->root cleanup path of set_root_schema.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_location, 0, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of crashing
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
 
@@ -609,3 +656,188 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaNestedIdInsertFileCallocFa
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
 
+/* ── Remaining OOM branches of schema_make_internal_depth and the
+ *    document-fragment resolver (reached via error injection) ──────────── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefinitionsBaseLocOomFail) {
+    //Given realloc is injected to fail in strbuf_append, hit by the definitions
+    //block of a nested schema with its own $id. The nested schema is compiled
+    //with eff_base_out == NULL (schema_make_internal), so base_loc comes from
+    //uri_location(my_base) and the failure must also clear my_base.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"properties\":{\"p\":{\"$id\":\"http://x/nested\",\"definitions\":{\"x\":{\"type\":\"string\"}}}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr);
+    //Then compiling the schema should fail with NOMEM
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefNoBaseUriInitOomFail) {
+    //Given malloc is injected to fail inside uri_update while parsing the $ref
+    //URI with no effective base (root schema without $id). The first
+    //uri_update allocation is the location buffer of the ref URI.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_malloc((void*)celix_jansson_uri_update, 0, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefPlaceholderToStringOomFail) {
+    //Given strdup is injected to fail inside uri_location, hit by the second
+    //empty-location strdup: the placeholder node's uri_to_string during $ref
+    //compilation (1st = rloc, 2nd = uri_to_string's location).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"#/definitions/missing\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_location, 0, nullptr, 2);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefNodeToStringOomFail) {
+    //Given strdup is injected to fail inside uri_location, hit by the second
+    //empty-location strdup: the $ref node's uri_to_string when the target is
+    //already registered (1st = rloc, 2nd = uri_to_string's location).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"definitions\":{\"x\":{\"type\":\"string\"}},\"$ref\":\"#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_location, 0, nullptr, 2);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentCurBaseUriOomFail) {
+    //Given strdup is injected to fail in uri_update, hit by the document-fragment
+    //walk's cur_base init in resolve_document_fragment (1st = root $ref path,
+    //2nd = retrieval URI path, 3rd = cur_base path). The walk returns NULL and
+    //the ref is resolved on the next resolve_external_refs iteration.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/properties/b\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_update, 0, nullptr, 3);
+    //Then the schema still compiles (the failed walk self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentNoBaseUriOomFail) {
+    //Given strdup is injected to fail inside compile_external_document, keeping
+    //the external file's base_uri NULL. The 2nd frame-2 strdup matches (1st =
+    //root_insert's fragment strdup, 2nd = strdup(location) in
+    //compile_external_document). And malloc is injected to fail in uri_update,
+    //hit by the walk's cur_base init taken from the location instead of
+    //base_uri (10th uri_update malloc: 3 for the root $id derive, 3 for the
+    //$ref URI, 3 for the retrieval URI, then cur_base).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema(
+        "{\"$id\":\"http://x/root\",\"properties\":{\"p\":{\"$ref\":\"http://example.com/doc#/properties/b\"}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr, 2);
+    celix_ei_expect_malloc((void*)celix_jansson_uri_update, 0, nullptr, 10);
+    //Then the schema still compiles (the failed walk self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentFullUriOomFail) {
+    //Given strdup is injected to fail in uri_update, hit by the walk's full_uri
+    //init in resolve_document_fragment (1st = root $ref path, 2nd = retrieval
+    //URI path, 3rd = cur_base path, 4th = full_uri path).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/properties/b\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_update, 0, nullptr, 4);
+    //Then the schema still compiles (the failed walk self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentPointerPushOomFail) {
+    //Given strdup is injected to fail in celix_json_pointer_push, hit by the
+    //walk's fragment re-attach loop. The push is also used internally by
+    //pointer_init (1st-2nd = $ref URI pointer_init, 3rd-4th = walk pointer_init,
+    //5th = re-attach push). The walk returns NULL and the ref is resolved on
+    //the next resolve_external_refs iteration.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"properties\":{\"b\":{\"type\":\"string\"}},\"$ref\":\"#/properties/b\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_json_pointer_push, 0, nullptr, 5);
+    //Then the schema still compiles (the failed walk self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaCompileExternalUriInitOomFail) {
+    //Given strdup is injected to fail in uri_update, hit by the retrieval-URI
+    //init in compile_external_document (1st = root $ref path, 2nd = retrieval
+    //URI path). The loader-based document compile fails and propagates NOMEM.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_update, 0, nullptr, 2);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseAvecOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //Phase A location-key snapshot of resolve_external_refs (1st vec_push).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseBPairAllocOomFail) {
+    //Given malloc is injected to fail for the Phase B (location, fragment) pair
+    //allocation of resolve_external_refs (1st frame-1 malloc of set_root_schema).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_malloc((void*)celix_jansson_schema_set_root_schema, 1, nullptr);
+    //Then the schema still compiles (the failed snapshot self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseBPairVecPushOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //Phase B pairs-vec push (1st realloc = Phase A locs-vec push, 2nd = pairs
+    //push, which triggers the pair cleanup).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr, 2);
+    //Then the schema still compiles (the failed snapshot self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseAKeyStrdupOomFail) {
+    //Given strdup is injected to fail for the Phase A location-key snapshot of
+    //resolve_external_refs. The 3rd frame-1 strdup matches (1st = the
+    //set_root_schema rloc-block uri_location strdup, which is tolerated, 2nd =
+    //first file key, 3rd = second file key — failing it exercises the snapshot
+    //cleanup loop over the already-collected keys).
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 1, nullptr, 3);
+    //Then compiling the schema should fail with NOMEM instead of crashing
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}

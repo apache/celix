@@ -19,6 +19,7 @@
 #ifndef CELIX_CELIX_UTIL_H
 #define CELIX_CELIX_UTIL_H
 
+#include "celix_cleanup.h"
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -48,6 +49,10 @@ static inline void celix_jansson_strbuf_free(celix_jansson_strbuf_t* sb) {
     sb->len = 0;
     sb->cap = 0;
 }
+
+/* Enables `celix_auto(celix_jansson_strbuf_t) sb;` for scope-based automatic
+ * cleanup. Safe on uninitialized (zeroed) buffers and after detach. */
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_jansson_strbuf_t, celix_jansson_strbuf_free)
 
 /** Append @p len bytes from @p s. Returns 0 on success, -1 on ENOMEM. */
 int celix_jansson_strbuf_append(celix_jansson_strbuf_t* sb, const char* s, size_t len);

@@ -1831,6 +1831,12 @@ static int schema_make_internal_depth(json_t* sch,
     json_t* defs = json_object_get(sch, "definitions");
     if (defs && json_is_object(defs)) {
         char* base_loc = effective_base ? celix_jansson_uri_location(effective_base) : strdup("");
+        if (!base_loc) {
+            /* Mirror the my_base cleanup of the other failing paths */
+            if (has_id && !id_stored_in_out)
+                celix_jansson_uri_clear(&my_base);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, base_loc);
         free(base_loc);
         if (!sf) {
@@ -1876,11 +1882,18 @@ static int schema_make_internal_depth(json_t* sch,
             if (celix_jansson_uri_derive(effective_base, ref_str, &ref_uri) != 0)
                 return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
         } else {
-            celix_jansson_uri_init(&ref_uri, ref_str);
+            if (celix_jansson_uri_init(&ref_uri, ref_str) != 0)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* init clears ref_uri on failure */
         }
 
         char* rloc = celix_jansson_uri_location(&ref_uri);
         char* rfra = celix_jansson_uri_fragment(&ref_uri);
+        if (!rloc || !rfra) {
+            free(rloc);
+            free(rfra);
+            celix_jansson_uri_clear(&ref_uri);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, rloc);
         celix_jansson_schema_node_t* target = NULL;
         bool plain_self_ref = (strcmp(ref_str, "#") == 0 && rloc[0] == '\0' && rfra[0] == '\0');
@@ -1901,6 +1914,14 @@ static int schema_make_internal_depth(json_t* sch,
                     target->root = root;
                     target->refcount = 1;
                     char* uristr = celix_jansson_uri_to_string(&ref_uri);
+                    if (!uristr) {
+                        /* target is not yet in the unresolved map; unref releases it */
+                        celix_jansson_schema_unref(target);
+                        free(rloc);
+                        free(rfra);
+                        celix_jansson_uri_clear(&ref_uri);
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    }
                     target->u.ref.id = uristr;
                     celix_stringHashMap_put(sf->unresolved, rfra, target);
                 }
@@ -1923,6 +1944,14 @@ static int schema_make_internal_depth(json_t* sch,
         rn->root = root;
         rn->refcount = 1;
         rn->u.ref.id = celix_jansson_uri_to_string(&ref_uri);
+        if (!rn->u.ref.id) {
+            /* rn is not in any map and target_weak is still NULL here; unref releases it */
+            celix_jansson_schema_unref(rn);
+            free(rloc);
+            free(rfra);
+            celix_jansson_uri_clear(&ref_uri);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         if (target) {
             rn->u.ref.target_weak = target;
         }
@@ -2018,10 +2047,12 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
 
     /* Build the base URI for this walk */
     celix_jansson_uri_t cur_base;
-    if (sf->base_uri)
-        celix_jansson_uri_init(&cur_base, sf->base_uri);
-    else
-        celix_jansson_uri_init(&cur_base, location[0] ? location : "");
+    if (sf->base_uri) {
+        if (celix_jansson_uri_init(&cur_base, sf->base_uri) != 0)
+            return NULL; /* init leaves cur_base cleared */
+    } else if (celix_jansson_uri_init(&cur_base, location[0] ? location : "") != 0) {
+        return NULL;
+    }
 
     /* Walk the fragment tokens */
     json_t* cur = doc;
@@ -2116,21 +2147,37 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
 
     /* Register under the full URI so waiting refs get resolved */
     celix_jansson_uri_t full_uri;
-    celix_jansson_uri_init(&full_uri, location);
+    if (celix_jansson_uri_init(&full_uri, location) != 0) {
+        /* init leaves full_uri cleared; sch is owned by this frame */
+        celix_jansson_schema_unref(sch);
+        return NULL;
+    }
     /* Re-attach fragment to the URI */
     if (fragment[0] == '/') {
         celix_json_pointer_t ptr;
         memset(&ptr, 0, sizeof(ptr));
         if (celix_json_pointer_init(&ptr, fragment) == 0) {
-            for (size_t i = 0; i < ptr.len; i++)
-                celix_json_pointer_push(&full_uri.pointer, ptr.tokens[i]);
+            bool push_ok = true;
+            for (size_t i = 0; i < ptr.len; i++) {
+                if (celix_json_pointer_push(&full_uri.pointer, ptr.tokens[i]) != 0) {
+                    push_ok = false;
+                    break;
+                }
+            }
             celix_json_pointer_clear(&ptr);
+            if (!push_ok) {
+                /* do not register under a partial fragment — it would wrongly
+                 * satisfy a shorter-fragment waiting ref */
+                celix_jansson_uri_clear(&full_uri);
+                celix_jansson_schema_unref(sch);
+                return NULL;
+            }
         }
     }
     int ir = celix_jansson_schema_root_insert(root, &full_uri, sch);
     celix_jansson_uri_clear(&full_uri);
-    //LCOV_EXCL_START: unreachable — the file for `location` was created before
-    //the walk (get_or_create_file always hits the cache, so insert cannot OOM)
+    //LCOV_EXCL_START: reachable only on OOM inside root_insert's location/fragment
+    //allocation (the file cache-hit reasoning no longer applies); no current test drives this
     if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
         /* The registry did not ref sch (NOMEM precedes the ref); unref it and
          * return NULL instead of a dangling pointer */
@@ -2167,7 +2214,10 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
     }
 
     celix_jansson_uri_t retr;
-    celix_jansson_uri_init(&retr, location);
+    if (celix_jansson_uri_init(&retr, location) != 0) {
+        json_decref(doc); /* doc has not been transferred to sf->document */
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* init leaves retr cleared */
+    }
     celix_jansson_schema_node_t* sch = NULL;
     rc = schema_make_internal_depth(doc, root, &retr, NULL, &sch, 0);
     if (rc != CELIX_JANSSON_SCHEMA_OK || !sch) {
@@ -2178,9 +2228,8 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
 
     /* Register root at retrieval URI — auto-resolves waiting fragment="" placeholder */
     int ir = celix_jansson_schema_root_insert(root, &retr, sch);
-    //LCOV_EXCL_START: unreachable — compile_external_document is only called for
-    //files that already exist (the placeholder creation created them), so
-    //get_or_create_file always hits the cache and insert cannot OOM
+    //LCOV_EXCL_START: reachable only on OOM inside root_insert's location/fragment
+    //allocation (the file cache-hit reasoning no longer applies); no current test drives this
     if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
         /* The registry did not ref sch; propagate the OOM instead of returning a
          * fake OK that would leave the placeholder unresolved forever */
@@ -2198,8 +2247,12 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
     if (sf) {
         json_decref(sf->document);
         sf->document = doc;  /* ownership transferred */
-        free(sf->base_uri);
-        sf->base_uri = strdup(location);
+        /* strdup-then-swap: on OOM keep the old (content-identical) base_uri */
+        char* nb = strdup(location);
+        if (nb) {
+            free(sf->base_uri);
+            sf->base_uri = nb;
+        }
     //LCOV_EXCL_START: unreachable — callers guarantee the file already exists
     } else {
         json_decref(doc);
@@ -2270,8 +2323,16 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
             /* Snapshot file keys — loading adds new entries */
             celix_jansson_vec_t locs;
             celix_jansson_vec_init(&locs);
-            CELIX_STRING_HASH_MAP_ITERATE(root->files, iter)
-                celix_jansson_vec_push(&locs, strdup(iter.key));
+            CELIX_STRING_HASH_MAP_ITERATE(root->files, iter) {
+                char* lk = strdup(iter.key);
+                if (!lk || celix_jansson_vec_push(&locs, lk) != 0) {
+                    free(lk); /* vec_push failure leaves the vec unchanged */
+                    for (size_t j = 0; j < locs.len; j++)
+                        free(locs.items[j]);
+                    celix_jansson_vec_free(&locs);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
+            }
 
             for (size_t i = 0; i < locs.len; i++) {
                 const char* loc = (const char*)locs.items[i];
@@ -2306,9 +2367,16 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
                     continue;
                 CELIX_STRING_HASH_MAP_ITERATE(sf->unresolved, uiter) {
                     struct pf_pair* p = (struct pf_pair*)malloc(sizeof(*p));
+                    if (!p)
+                        goto pairs_cleanup;
                     p->loc = strdup(fiter.key);
                     p->frag = strdup(uiter.key);
-                    celix_jansson_vec_push(&pairs, p);
+                    if (!p->loc || !p->frag || celix_jansson_vec_push(&pairs, p) != 0) {
+                        free(p->loc);
+                        free(p->frag);
+                        free(p);
+                        goto pairs_cleanup;
+                    }
                 }
             }
 
@@ -2322,6 +2390,10 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
                     if (ref_node)
                         progress |= resolve_placeholder(root, p->loc, p->frag, ref_node);
                 }
+            }
+        pairs_cleanup:
+            for (size_t i = 0; i < pairs.len; i++) {
+                struct pf_pair* p = (struct pf_pair*)pairs.items[i];
                 free(p->loc);
                 free(p->frag);
                 free(p);
@@ -2372,6 +2444,11 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
                                      celix_jansson_schema_node_t* sch) {
     char* loc = celix_jansson_uri_location(uri);
     const char* frag = celix_jansson_uri_fragment(uri);
+    if (!loc || !frag) {
+        free(loc);
+        free((char*)frag);
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
     celix_jansson_schema_file_t* sf = celix_jansson_schema_root_get_or_create_file(root, loc);
     if (!sf) {
         free(loc);
@@ -2440,18 +2517,20 @@ int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
             char* loc = celix_jansson_uri_location(&uri);
             const char* frag = celix_jansson_uri_fragment(&uri);
 
-            celix_jansson_schema_file_t* sf =
-                (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, loc);
-            if (sf) {
-                if (frag && frag[0] != '\0') {
-                    sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, frag);
-                    if (!sch) {
-                        /* Attempt on-demand compilation from the original document */
-                        sch = resolve_document_fragment(root, loc, frag, 0);
+            if (loc) {
+                celix_jansson_schema_file_t* sf =
+                    (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, loc);
+                if (sf) {
+                    if (frag && frag[0] != '\0') {
+                        sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, frag);
+                        if (!sch) {
+                            /* Attempt on-demand compilation from the original document */
+                            sch = resolve_document_fragment(root, loc, frag, 0);
+                        }
+                    } else {
+                        /* Empty fragment — resolve the root of this file */
+                        sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, "");
                     }
-                } else {
-                    /* Empty fragment — resolve the root of this file */
-                    sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, "");
                 }
             }
             free(loc);
@@ -2623,12 +2702,18 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
 
     {
         char* rloc = celix_jansson_uri_location(&root_base);
-        celix_jansson_schema_file_t* rsf = celix_jansson_schema_root_get_or_create_file(root, rloc);
-        if (rsf) {
-            json_decref(rsf->document);
-            rsf->document = json_incref(root->original_schema);
-            free(rsf->base_uri);
-            rsf->base_uri = strdup(rloc);
+        if (rloc) {
+            celix_jansson_schema_file_t* rsf = celix_jansson_schema_root_get_or_create_file(root, rloc);
+            if (rsf) {
+                json_decref(rsf->document);
+                rsf->document = json_incref(root->original_schema);
+                /* strdup-then-swap: on OOM keep the old (content-identical) base_uri */
+                char* nb = strdup(rloc);
+                if (nb) {
+                    free(rsf->base_uri);
+                    rsf->base_uri = nb;
+                }
+            }
         }
         free(rloc);
     }
