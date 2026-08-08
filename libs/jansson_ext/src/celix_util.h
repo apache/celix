@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* ── Dynamic string buffer ─────────────────────────────────────────────── */
 
 typedef struct celix_jansson_strbuf_t {
@@ -49,14 +53,10 @@ static inline void celix_jansson_strbuf_free(celix_jansson_strbuf_t* sb) {
 int celix_jansson_strbuf_append(celix_jansson_strbuf_t* sb, const char* s, size_t len);
 
 /** Append a printf-formatted string. Returns 0 on success, -1 on ENOMEM. */
-int celix_jansson_strbuf_appendf(celix_jansson_strbuf_t* sb, const char* fmt, ...)
-#ifdef __GNUC__
-    __attribute__((format(printf, 2, 3)))
-#endif
-    ;
+int celix_jansson_strbuf_appendf(celix_jansson_strbuf_t* sb, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
 
 /** Va_list variant of celix_jansson_strbuf_appendf. */
-int celix_jansson_strbuf_vappendf(celix_jansson_strbuf_t* sb, const char* fmt, va_list ap);
+int celix_jansson_strbuf_vappendf(celix_jansson_strbuf_t* sb, const char* fmt, va_list ap) __attribute__((format(printf,2,0)));
 
 /** Append a single character. */
 static inline int celix_jansson_strbuf_appendc(celix_jansson_strbuf_t* sb, char c) {
@@ -103,5 +103,9 @@ static inline void* celix_jansson_vec_get(const celix_jansson_vec_t* v, size_t i
 }
 
 static inline size_t celix_jansson_vec_size(const celix_jansson_vec_t* v) { return v->len; }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CELIX_CELIX_UTIL_H */

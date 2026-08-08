@@ -35,6 +35,7 @@ set(TEST_SOURCES
     src/test_format_check_extended.cpp
     src/test_schema_keywords.cpp
     src/test_uri_extended.cpp
+    src/test_util.cpp
 )
 
 foreach(T ${TEST_SOURCES})
