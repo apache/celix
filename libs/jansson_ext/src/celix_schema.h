@@ -19,8 +19,8 @@
 #ifndef CELIX_CELIX_SCHEMA_H
 #define CELIX_CELIX_SCHEMA_H
 
-#include "celix_hash_table.h"
 #include "celix_jansson_uri.h"
+#include "celix_string_hash_map.h"
 #include "celix_util.h"
 #include <regex.h>
 #include <stdbool.h>
@@ -166,7 +166,7 @@ struct celix_jansson_schema_node_t {
             size_t min_p, max_p;
             char** required; /* array of required property names */
             size_t required_len;
-            celix_jansson_hash_table_t properties; /* name -> celix_jansson_schema_node_t* (owning ref) */
+            celix_string_hash_map_t* properties; /* name -> celix_jansson_schema_node_t* (owning ref) */
             /* patternProperties: array of (compiled regex, celix_jansson_schema_node_t*) */
             struct {
                 regex_t re;
@@ -174,7 +174,7 @@ struct celix_jansson_schema_node_t {
             }* pattern_properties;
             size_t pp_len;
             celix_jansson_schema_node_t* additional_properties; /* or NULL */
-            celix_jansson_hash_table_t dependencies;            /* name -> celix_jansson_schema_node_t* (owning ref,
+            celix_string_hash_map_t* dependencies;            /* name -> celix_jansson_schema_node_t* (owning ref,
                                                                    CELIX_JANSSON_SCHEMA_KIND_REQUIRED or full schema) */
             celix_jansson_schema_node_t* property_names;        /* or NULL */
         } object;
@@ -260,8 +260,8 @@ struct celix_jansson_validation_context_t {
 /* ── Schema file (per-location registry entry) ─────────────────────────── */
 
 typedef struct celix_jansson_schema_file_t {
-    celix_jansson_hash_table_t schemas; /* fragment string -> celix_jansson_schema_node_t* (owning ref) */
-    celix_jansson_hash_table_t
+    celix_string_hash_map_t* schemas; /* fragment string -> celix_jansson_schema_node_t* (owning ref) */
+    celix_string_hash_map_t*
         unresolved; /* fragment string -> celix_jansson_schema_node_t* (CELIX_JANSSON_SCHEMA_KIND_REF, owning ref) */
     json_t* document;        /* original JSON document for this location (owned), or NULL */
     char* base_uri;          /* base URI used when compiling this document (owned), or NULL */
@@ -271,7 +271,7 @@ typedef struct celix_jansson_schema_file_t {
 /* ── Root schema (the central registry) ────────────────────────────────── */
 
 struct celix_jansson_schema_root_t {
-    celix_jansson_hash_table_t files; /* location string -> celix_jansson_schema_file_t* */
+    celix_string_hash_map_t* files; /* location string -> celix_jansson_schema_file_t* */
     celix_jansson_schema_loader_fn loader;
     void* loader_ud;
     celix_jansson_schema_format_checker_fn format;

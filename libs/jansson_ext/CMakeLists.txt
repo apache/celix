@@ -24,7 +24,6 @@ if (JANSSON_EXT)
         src/celix_jansson_pointer.c
         src/celix_json_patch.c
         src/celix_jansson_uri.c
-        src/celix_hash_table.c
         src/celix_string_format_check.c
         src/celix_smtp_address_validator.c
         src/celix_util.c
@@ -37,7 +36,7 @@ if (JANSSON_EXT)
         SOVERSION 0)
     celix_target_hide_symbols(jansson_ext)
     target_link_libraries(jansson_ext
-        PUBLIC jansson::jansson Threads::Threads
+        PUBLIC jansson::jansson Threads::Threads Celix::utils
         PRIVATE m)
     target_include_directories(jansson_ext
         PRIVATE src
@@ -65,7 +64,7 @@ if (JANSSON_EXT)
     if (ENABLE_TESTING)
         add_library(jansson_ext_cut STATIC ${JANSSON_EXT_SOURCES})
         target_link_libraries(jansson_ext_cut
-            PUBLIC jansson::jansson Threads::Threads
+            PUBLIC jansson::jansson Threads::Threads Celix::utils
             PRIVATE m)
         target_include_directories(jansson_ext_cut
             PUBLIC

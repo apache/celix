@@ -68,6 +68,24 @@ const char* celix_jansson_schema_strerror(int err) {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+ * Object node helpers
+ * ════════════════════════════════════════════════════════════════════════ */
+
+/* The properties/dependencies maps are created lazily (only when the matching
+ * schema keyword is present), so they can be NULL for a valid object node. */
+static celix_jansson_schema_node_t* obj_node_get(celix_string_hash_map_t* map, const char* key) {
+    return map ? (celix_jansson_schema_node_t*)celix_stringHashMap_get(map, key) : NULL;
+}
+
+/* Create a string hash map whose values are owning schema node refs; the
+ * removed callback unrefs values when they leave the map. Returns NULL on OOM. */
+static celix_string_hash_map_t* obj_node_map_create(void) {
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = (void (*)(void*))celix_jansson_schema_unref;
+    return celix_stringHashMap_createWithOptions(&opts);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
  * Path stack
  * ════════════════════════════════════════════════════════════════════════ */
 
@@ -369,16 +387,14 @@ static void d_object(celix_jansson_schema_node_t* n) {
     for (size_t i = 0; i < n->u.object.required_len; i++)
         free(n->u.object.required[i]);
     free(n->u.object.required);
-    celix_jansson_hash_table_destroy(&n->u.object.properties,
-                                     (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    celix_stringHashMap_destroy(n->u.object.properties); /* NULL-safe; values freed via creation-time removed callback */
     for (size_t i = 0; i < n->u.object.pp_len; i++) {
         regfree(&n->u.object.pattern_properties[i].re);
         celix_jansson_schema_unref(n->u.object.pattern_properties[i].sch);
     }
     free(n->u.object.pattern_properties);
     celix_jansson_schema_unref(n->u.object.additional_properties);
-    celix_jansson_hash_table_destroy(&n->u.object.dependencies,
-                                     (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    celix_stringHashMap_destroy(n->u.object.dependencies);
     celix_jansson_schema_unref(n->u.object.property_names);
     json_decref(n->default_value);
     free(n);
@@ -704,8 +720,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
         bool matched = false;
 
         /* properties */
-        celix_jansson_schema_node_t* prop =
-            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&n->u.object.properties, key);
+        celix_jansson_schema_node_t* prop = obj_node_get(n->u.object.properties, key);
         if (prop) {
             matched = true;
             errs += prop->vtable->validate(prop, val, &cp, ctx);
@@ -742,30 +757,27 @@ static int v_object(const celix_jansson_schema_node_t* n,
     /* default values for missing properties */
     {
         const char* base_path = celix_jansson_path_str(p);
-        celix_jansson_hash_table_t* ht = (celix_jansson_hash_table_t*)&n->u.object.properties;
-        if (ht->buckets && ht->cap > 0) {
-            for (size_t bi = 0; bi < ht->cap; bi++) {
-                if (ht->buckets[bi].used == 1 && ht->buckets[bi].key) {
-                    const char* pk = ht->buckets[bi].key;
-                    celix_jansson_schema_node_t* ps = (celix_jansson_schema_node_t*)ht->buckets[bi].value;
-                    if (!json_object_get(inst, pk)) {
-                        const json_t* def = NULL;
-                        if (ps->vtable && ps->vtable->default_value) {
-                            celix_jansson_path_t dp;
-                            celix_jansson_path_init(&dp);
-                            for (size_t pi = 0; pi < p->len; pi++)
-                                celix_jansson_path_push(&dp, p->tokens[pi]);
-                            celix_jansson_path_push(&dp, pk);
-                            def = ps->vtable->default_value(ps, &dp, inst, ctx);
-                            celix_jansson_path_free(&dp);
-                        }
-                        if (!def)
-                            def = ps->default_value;
-                        if (def) {
-                            char pat[1024];
-                            snprintf(pat, sizeof(pat), "%s/%s", base_path, pk);
-                            celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def));
-                        }
+        if (n->u.object.properties) {
+            CELIX_STRING_HASH_MAP_ITERATE(n->u.object.properties, iter) {
+                const char* pk = iter.key;
+                celix_jansson_schema_node_t* ps = (celix_jansson_schema_node_t*)iter.value.ptrValue;
+                if (!json_object_get(inst, pk)) {
+                    const json_t* def = NULL;
+                    if (ps->vtable && ps->vtable->default_value) {
+                        celix_jansson_path_t dp;
+                        celix_jansson_path_init(&dp);
+                        for (size_t pi = 0; pi < p->len; pi++)
+                            celix_jansson_path_push(&dp, p->tokens[pi]);
+                        celix_jansson_path_push(&dp, pk);
+                        def = ps->vtable->default_value(ps, &dp, inst, ctx);
+                        celix_jansson_path_free(&dp);
+                    }
+                    if (!def)
+                        def = ps->default_value;
+                    if (def) {
+                        char pat[1024];
+                        snprintf(pat, sizeof(pat), "%s/%s", base_path, pk);
+                        celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def));
                     }
                 }
             }
@@ -783,15 +795,14 @@ static void obj_validate_deps(const celix_jansson_schema_node_t* n,
                               celix_jansson_path_t* p,
                               celix_jansson_validation_context_t* ctx,
                               int* errs) {
-    if (n->u.object.dependencies.count == 0)
+    if (!n->u.object.dependencies || celix_stringHashMap_size(n->u.object.dependencies) == 0)
         return;
 
     const char* key;
     json_t* val;
     json_object_foreach(inst, key, val) {
         if (ctx->aborted) break;
-        celix_jansson_schema_node_t* dep =
-            (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&n->u.object.dependencies, key);
+        celix_jansson_schema_node_t* dep = obj_node_get(n->u.object.dependencies, key);
         if (dep) {
             celix_jansson_path_t cp;
             celix_jansson_path_init(&cp);
@@ -1404,13 +1415,17 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     onode->u.object.required[i] = strdup(json_string_value(json_array_get(v, i)));
             }
             if ((v = json_object_get(sch, "properties"))) {
-                celix_jansson_hash_table_init(&onode->u.object.properties);
+                onode->u.object.properties = obj_node_map_create();
+                if (!onode->u.object.properties) {
+                    celix_jansson_schema_unref(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 const char* k;
                 json_t* pv;
                 json_object_foreach(v, k, pv) {
                     celix_jansson_schema_node_t* ps;
                     if (schema_make_internal(pv, root, base, &ps, depth + 1) == CELIX_JANSSON_SCHEMA_OK)
-                        celix_jansson_hash_table_put(&onode->u.object.properties, k, ps);
+                        celix_stringHashMap_put(onode->u.object.properties, k, ps);
                 }
             }
             if ((v = json_object_get(sch, "patternProperties"))) {
@@ -1450,7 +1465,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 }
             }
             if ((v = json_object_get(sch, "dependencies"))) {
-                celix_jansson_hash_table_init(&onode->u.object.dependencies);
+                onode->u.object.dependencies = obj_node_map_create();
+                if (!onode->u.object.dependencies) {
+                    celix_jansson_schema_unref(n);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 const char* dk;
                 json_t* dv;
                 json_object_foreach(v, dk, dv) {
@@ -1476,7 +1495,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                         }
                     }
                     if (dep)
-                        celix_jansson_hash_table_put(&onode->u.object.dependencies, dk, dep);
+                        celix_stringHashMap_put(onode->u.object.dependencies, dk, dep);
                 }
             }
             if ((v = json_object_get(sch, "propertyNames"))) {
@@ -1744,11 +1763,11 @@ static int schema_make_internal_depth(json_t* sch,
                 char frag[1024];
                 snprintf(frag, sizeof(frag), "/definitions/%s", dk);
                 celix_jansson_schema_node_t* existing =
-                    (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
+                    (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, frag);
                 if (existing) {
                     celix_jansson_schema_unref(ds);
                 } else {
-                    celix_jansson_hash_table_put(&sf->schemas, frag, ds);
+                    celix_stringHashMap_put(sf->schemas, frag, ds);
                 }
             }
         }
@@ -1776,13 +1795,13 @@ static int schema_make_internal_depth(json_t* sch,
         celix_jansson_schema_node_t* target = NULL;
         bool plain_self_ref = (strcmp(ref_str, "#") == 0 && rloc[0] == '\0' && rfra[0] == '\0');
         if (sf) {
-            target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, rfra);
+            target = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, rfra);
             /* Document fragment walk for internal refs and external docs with document loaded */
             if (!target && !plain_self_ref && (sf->document || (rloc[0] == '\0' && root->original_schema))) {
                 target = resolve_document_fragment(root, rloc, rfra, depth + 1);
             }
             if (!target) {
-                target = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, rfra);
+                target = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->unresolved, rfra);
             }
             if (!target) {
                 target = (celix_jansson_schema_node_t*)calloc(1, sizeof(*target));
@@ -1793,7 +1812,7 @@ static int schema_make_internal_depth(json_t* sch,
                     target->refcount = 1;
                     char* uristr = celix_jansson_uri_to_string(&ref_uri);
                     target->u.ref.id = uristr;
-                    celix_jansson_hash_table_put(&sf->unresolved, rfra, target);
+                    celix_stringHashMap_put(sf->unresolved, rfra, target);
                 }
             }
         }
@@ -1884,7 +1903,7 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
     int depth)
 {
     celix_jansson_schema_file_t* sf =
-        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+        (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, location);
     assert(sf != NULL); /* all callers guard on sf first */
 
     json_t* doc = sf->document;
@@ -2014,12 +2033,9 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
 /* ── Helper: count total unresolved refs across all files ───────────────── */
 static size_t total_unresolved(const celix_jansson_schema_root_t* root) {
     size_t count = 0;
-    for (size_t i = 0; i < root->files.cap; i++) {
-        if (root->files.buckets[i].used == 1 && root->files.buckets[i].value) {
-            celix_jansson_schema_file_t* sf =
-                (celix_jansson_schema_file_t*)root->files.buckets[i].value;
-            count += sf->unresolved.count;
-        }
+    CELIX_STRING_HASH_MAP_ITERATE(root->files, iter) {
+        celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)iter.value.ptrValue;
+        count += celix_stringHashMap_size(sf->unresolved);
     }
     return count;
 }
@@ -2071,17 +2087,20 @@ static bool resolve_placeholder(celix_jansson_schema_root_t* root,
                                 celix_jansson_schema_node_t* ref_node) {
     /* Use the location+fragment to look up in schemas */
     celix_jansson_schema_file_t* sf =
-        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+        (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, location);
     assert(sf != NULL); /* sole caller resolve_external_refs Phase B already guarantees sf */
 
     /* Already resolved? */
     celix_jansson_schema_node_t* existing =
-        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, fragment);
+        (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, fragment);
     if (existing) {
         /* ref_node is the REF-kind placeholder the caller fetched from sf->unresolved
          * (same table and key this function was called with), so wire it directly */
         ref_node->u.ref.target_weak = existing;
-        celix_jansson_hash_table_remove(&sf->unresolved, fragment);
+        /* the map's removed callback unrefs the value, so ref first: the ref
+         * that survives the remove is handed over to sf->retained below */
+        celix_jansson_schema_ref(ref_node);
+        celix_stringHashMap_remove(sf->unresolved, fragment);
         celix_jansson_vec_push(&sf->retained, ref_node);
         return true;
     }
@@ -2099,7 +2118,7 @@ static bool resolve_placeholder(celix_jansson_schema_root_t* root,
         if (rc == CELIX_JANSSON_SCHEMA_OK) {
             /* Re-check schemas after loading */
             celix_jansson_schema_node_t* reloaded =
-                (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, fragment);
+                (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, fragment);
             if (reloaded)
                 return true;
             /* Try fragment walk again */
@@ -2121,18 +2140,16 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
             /* Snapshot file keys — loading adds new entries */
             celix_jansson_vec_t locs;
             celix_jansson_vec_init(&locs);
-            for (size_t i = 0; i < root->files.cap; i++) {
-                if (root->files.buckets[i].used == 1 && root->files.buckets[i].key)
-                    celix_jansson_vec_push(&locs, strdup(root->files.buckets[i].key));
-            }
+            CELIX_STRING_HASH_MAP_ITERATE(root->files, iter)
+                celix_jansson_vec_push(&locs, strdup(iter.key));
 
             for (size_t i = 0; i < locs.len; i++) {
                 const char* loc = (const char*)locs.items[i];
                 if (loc[0] == '\0') { free(locs.items[i]); continue; }
 
                 celix_jansson_schema_file_t* sf =
-                    (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, loc);
-                if (sf && sf->unresolved.count > 0 && sf->document == NULL) {
+                    (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, loc);
+                if (sf && celix_stringHashMap_size(sf->unresolved) > 0 && sf->document == NULL) {
                     int rc = compile_external_document(root, loc);
                     if (rc != CELIX_JANSSON_SCHEMA_OK) {
                         for (size_t j = i; j < locs.len; j++)
@@ -2153,30 +2170,25 @@ static int resolve_external_refs(celix_jansson_schema_root_t* root) {
             struct pf_pair { char* loc; char* frag; };
             celix_jansson_vec_t pairs;
             celix_jansson_vec_init(&pairs);
-            for (size_t i = 0; i < root->files.cap; i++) {
-                if (root->files.buckets[i].used != 1 || !root->files.buckets[i].key)
+            CELIX_STRING_HASH_MAP_ITERATE(root->files, fiter) {
+                celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)fiter.value.ptrValue;
+                if (!sf || celix_stringHashMap_size(sf->unresolved) == 0)
                     continue;
-                celix_jansson_schema_file_t* sf =
-                    (celix_jansson_schema_file_t*)root->files.buckets[i].value;
-                if (!sf || sf->unresolved.count == 0)
-                    continue;
-                for (size_t j = 0; j < sf->unresolved.cap; j++) {
-                    if (sf->unresolved.buckets[j].used == 1 && sf->unresolved.buckets[j].key) {
-                        struct pf_pair* p = (struct pf_pair*)malloc(sizeof(*p));
-                        p->loc = strdup(root->files.buckets[i].key);
-                        p->frag = strdup(sf->unresolved.buckets[j].key);
-                        celix_jansson_vec_push(&pairs, p);
-                    }
+                CELIX_STRING_HASH_MAP_ITERATE(sf->unresolved, uiter) {
+                    struct pf_pair* p = (struct pf_pair*)malloc(sizeof(*p));
+                    p->loc = strdup(fiter.key);
+                    p->frag = strdup(uiter.key);
+                    celix_jansson_vec_push(&pairs, p);
                 }
             }
 
             for (size_t i = 0; i < pairs.len; i++) {
                 struct pf_pair* p = (struct pf_pair*)pairs.items[i];
                 celix_jansson_schema_file_t* sf =
-                    (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, p->loc);
+                    (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, p->loc);
                 if (sf) {
                     celix_jansson_schema_node_t* ref_node =
-                        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, p->frag);
+                        (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->unresolved, p->frag);
                     if (ref_node)
                         progress |= resolve_placeholder(root, p->loc, p->frag, ref_node);
                 }
@@ -2206,16 +2218,22 @@ static void celix_jansson_schema_file_free(void* value);
 celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_jansson_schema_root_t* root,
                                                                           const char* location) {
     celix_jansson_schema_file_t* sf =
-        (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, location);
+        (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, location);
     if (sf)
         return sf;
     sf = (celix_jansson_schema_file_t*)calloc(1, sizeof(*sf));
     if (!sf)
         return NULL;
-    celix_jansson_hash_table_init(&sf->schemas);
-    celix_jansson_hash_table_init(&sf->unresolved);
+    sf->schemas = obj_node_map_create();
+    sf->unresolved = obj_node_map_create();
+    if (!sf->schemas || !sf->unresolved) {
+        celix_stringHashMap_destroy(sf->schemas);
+        celix_stringHashMap_destroy(sf->unresolved);
+        free(sf);
+        return NULL;
+    }
     celix_jansson_vec_init(&sf->retained);
-    celix_jansson_hash_table_put(&root->files, location, sf);
+    celix_stringHashMap_put(root->files, location, sf);
     return sf;
 }
 
@@ -2230,20 +2248,23 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
         free((char*)frag);
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     }
-    if (celix_jansson_hash_table_get(&sf->schemas, frag)) {
+    if (celix_stringHashMap_get(sf->schemas, frag)) {
         free(loc);
         free((char*)frag);
         return CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI;
     }
     celix_jansson_schema_ref(sch);
-    celix_jansson_hash_table_put(&sf->schemas, frag, sch);
+    celix_stringHashMap_put(sf->schemas, frag, sch);
 
     /* Resolve waiting refs */
     celix_jansson_schema_node_t* waiting =
-        (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->unresolved, frag);
+        (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->unresolved, frag);
     if (waiting && waiting->kind == CELIX_JANSSON_SCHEMA_KIND_REF) {
         waiting->u.ref.target_weak = sch;
-        celix_jansson_hash_table_remove(&sf->unresolved, frag);
+        /* the map's removed callback unrefs the value, so ref first: the ref
+         * that survives the remove is handed over to sf->retained below */
+        celix_jansson_schema_ref(waiting);
+        celix_stringHashMap_remove(sf->unresolved, frag);
         celix_jansson_vec_push(&sf->retained, waiting);
     }
     free(loc);
@@ -2255,8 +2276,8 @@ static void celix_jansson_schema_file_free(void* value) {
     celix_jansson_schema_file_t* sf = (celix_jansson_schema_file_t*)value;
     if (!sf)
         return;
-    celix_jansson_hash_table_destroy(&sf->schemas, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
-    celix_jansson_hash_table_destroy(&sf->unresolved, (celix_jansson_hash_table_value_free_fn)celix_jansson_schema_unref);
+    celix_stringHashMap_destroy(sf->schemas); /* values freed via creation-time removed callback */
+    celix_stringHashMap_destroy(sf->unresolved);
     for (size_t i = 0; i < sf->retained.len; i++)
         celix_jansson_schema_unref((celix_jansson_schema_node_t*)sf->retained.items[i]);
     celix_jansson_vec_free(&sf->retained);
@@ -2270,7 +2291,7 @@ void celix_jansson_schema_root_destroy(celix_jansson_schema_root_t* root) {
         return;
     celix_jansson_schema_unref(root->root);
     json_decref(root->original_schema);
-    celix_jansson_hash_table_destroy(&root->files, celix_jansson_schema_file_free);
+    celix_stringHashMap_destroy(root->files); /* values freed via creation-time removed callback */
     free(root);
 }
 
@@ -2291,17 +2312,17 @@ int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
             const char* frag = celix_jansson_uri_fragment(&uri);
 
             celix_jansson_schema_file_t* sf =
-                (celix_jansson_schema_file_t*)celix_jansson_hash_table_get(&root->files, loc);
+                (celix_jansson_schema_file_t*)celix_stringHashMap_get(root->files, loc);
             if (sf) {
                 if (frag && frag[0] != '\0') {
-                    sch = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, frag);
+                    sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, frag);
                     if (!sch) {
                         /* Attempt on-demand compilation from the original document */
                         sch = resolve_document_fragment(root, loc, frag, 0);
                     }
                 } else {
                     /* Empty fragment — resolve the root of this file */
-                    sch = (celix_jansson_schema_node_t*)celix_jansson_hash_table_get(&sf->schemas, "");
+                    sch = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, "");
                 }
             }
             free(loc);
@@ -2379,7 +2400,14 @@ celix_jansson_schema_validator_t* celix_jansson_schema_validator_create(celix_ja
         free(v);
         return NULL;
     }
-    celix_jansson_hash_table_init(&v->root->files);
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = celix_jansson_schema_file_free;
+    v->root->files = celix_stringHashMap_createWithOptions(&opts); /* values freed via removed callback */
+    if (!v->root->files) {
+        free(v->root);
+        free(v);
+        return NULL;
+    }
     v->root->loader = loader;
     v->root->loader_ud = loader_ud;
     v->root->format = format;
@@ -2413,7 +2441,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
     root->root = NULL;
     json_decref(root->original_schema);
     root->original_schema = NULL;
-    celix_jansson_hash_table_clear(&root->files, celix_jansson_schema_file_free);
+    celix_stringHashMap_clear(root->files); /* values freed via creation-time removed callback */
 
     json_t* copy = json_deep_copy(schema);
     if (!copy) {
