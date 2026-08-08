@@ -232,6 +232,41 @@ TEST(PointerTest, SetArrayAppend) {
     json_decref(doc);
 }
 
+TEST(PointerTest, SetArrayIndexNullValue) {
+    json_t* doc = json_loads("[1,2]", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, doc);
+    celix_json_pointer_t* p = celix_json_pointer_create("/0");
+    ASSERT_NE(nullptr, p);
+
+    /* A NULL value cannot be inserted into an array; fails without modifying the document */
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, nullptr));
+
+    char* s = json_dumps(doc, JSON_COMPACT);
+    EXPECT_STREQ("[1,2]", s);
+    free(s);
+
+    celix_json_pointer_destroy(p);
+    json_decref(doc);
+}
+
+TEST(PointerTest, SetArraySelfReferenceFails) {
+    json_t* doc = json_loads("[1,2]", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, doc);
+    celix_json_pointer_t* p = celix_json_pointer_create("/0");
+    ASSERT_NE(nullptr, p);
+    json_incref(doc); /* set consumes a reference on failure — keep doc alive */
+
+    /* An array cannot be inserted into itself; fails without modifying the document */
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, doc));
+
+    char* s = json_dumps(doc, JSON_COMPACT);
+    EXPECT_STREQ("[1,2]", s);
+    free(s);
+
+    celix_json_pointer_destroy(p);
+    json_decref(doc);
+}
+
 /* ── Remove ────────────────────────────────────────────────────────────── */
 
 TEST(PointerTest, RemoveKey) {
@@ -1199,17 +1234,24 @@ TEST(PointerTest, GetOrCreateDashAppend) {
     celix_json_pointer_t* p = celix_json_pointer_create("/-");
     ASSERT_NE(nullptr, p);
 
-    /* "-" as the last token returns the array itself (new reference) */
+    /* "-" as the last token appends a null element and returns the array (new reference) */
     json_t* node = celix_json_pointer_get_or_create(doc, p);
     ASSERT_NE(nullptr, node);
     EXPECT_TRUE(json_equal(node, doc));
-    EXPECT_EQ(3u, json_array_size(node));
+    EXPECT_EQ(4u, json_array_size(node));
+    EXPECT_TRUE(json_is_null(json_array_get(node, 3)));
     json_decref(node);
 
-    /* Document unchanged */
+    /* Document has the appended null element */
     char* s = json_dumps(doc, JSON_COMPACT);
-    EXPECT_STREQ("[1,2,3]", s);
+    EXPECT_STREQ("[1,2,3,null]", s);
     free(s);
+
+    /* "-" can never resolve to an existing element: a second call appends again */
+    json_t* node2 = celix_json_pointer_get_or_create(doc, p);
+    ASSERT_NE(nullptr, node2);
+    EXPECT_EQ(5u, json_array_size(node2));
+    json_decref(node2);
 
     celix_json_pointer_destroy(p);
     json_decref(doc);

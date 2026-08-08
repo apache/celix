@@ -44,7 +44,7 @@ celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str) {
     if (!p)
         return NULL;
     if (ptr_str && celix_json_pointer_init(p, ptr_str) != 0) {
-        free(p);
+        celix_json_pointer_destroy(p);
         return NULL;
     }
     return p;
@@ -60,8 +60,13 @@ int celix_json_pointer_init(celix_json_pointer_t* p, const char* ptr_str) {
         return -1;
 
     const char* s = ptr_str + 1;
-    if (*s == '\0')
-        return celix_json_pointer_push(p, "");
+    if (*s == '\0') {
+        if (celix_json_pointer_push(p, "") != 0) {
+            celix_json_pointer_clear(p);
+            return -1;
+        }
+        return 0;
+    }
 
     int ret = -1;
     while (*s) {
@@ -284,7 +289,12 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
             if (!child) {
                 if (is_last) {
                     child = json_null();
-                    json_object_set(cur, tok, child);
+                    if (!child)
+                        return NULL;
+                    if (json_object_set(cur, tok, child) != 0) {
+                        json_decref(child);
+                        return NULL;
+                    }
                     return child;
                 }
                 bool is_num = true;
@@ -298,12 +308,16 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
                 if (is_num && tok[0] == '0' && tok[1] != '\0')
                     is_num = false;
                 child = is_num ? json_array() : json_object();
-                json_object_set_new(cur, tok, child);
+                if (!child || json_object_set_new(cur, tok, child) != 0)
+                    return NULL;
             }
             cur = child;
         } else if (json_is_array(cur)) {
             if (strcmp(tok, "-") == 0) {
                 if (is_last) {
+                    json_t* n = json_null();
+                    if (!n || json_array_append_new(cur, n) != 0)
+                        return NULL;
                     json_incref(cur);
                     return cur;
                 }
@@ -313,8 +327,11 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
                 if (!is_digit(*c))
                     return NULL;
             size_t idx = (size_t)strtoul(tok, NULL, 10);
-            while (json_array_size(cur) <= idx)
-                json_array_append_new(cur, json_null());
+            while (json_array_size(cur) <= idx) {
+                json_t* n = json_null();
+                if (!n || json_array_append_new(cur, n) != 0)
+                    return NULL;
+            }
             cur = json_array_get(cur, idx);
         } else
             return NULL;
@@ -352,7 +369,10 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
                         next_num = false;
                 }
                 child = next_num ? json_array() : json_object();
-                json_object_set_new(cur, tok, child);
+                if (!child || json_object_set_new(cur, tok, child) != 0) {
+                    json_decref(value);
+                    return -1;
+                }
             }
             cur = child;
         } else if (json_is_array(cur)) {
@@ -362,8 +382,13 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
                     return -1;
                 }
             size_t idx = (size_t)strtoul(tok, NULL, 10);
-            while (json_array_size(cur) <= idx)
-                json_array_append_new(cur, json_null());
+            while (json_array_size(cur) <= idx) {
+                json_t* n = json_null();
+                if (!n || json_array_append_new(cur, n) != 0) {
+                    json_decref(value);
+                    return -1;
+                }
+            }
             json_t* child = json_array_get(cur, idx);
             /* Replace null/primitive intermediates with containers */
             if (!child || (!json_is_object(child) && !json_is_array(child))) {
@@ -382,7 +407,10 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
                         next_num = false;
                 }
                 json_t* repl = next_num ? json_array() : json_object();
-                json_array_set_new(cur, idx, repl);
+                if (!repl || json_array_set_new(cur, idx, repl) != 0) {
+                    json_decref(value);
+                    return -1;
+                }
                 child = repl;
             }
             cur = child;
@@ -394,12 +422,14 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
 
     const char* last = ptr->tokens[ptr->len - 1];
     if (json_is_object(cur)) {
-        json_object_set_new(cur, last, value);
+        if (json_object_set_new(cur, last, value) != 0)
+            return -1;
         return 0;
     }
     if (json_is_array(cur)) {
         if (strcmp(last, "-") == 0) {
-            json_array_append_new(cur, value);
+            if (json_array_append_new(cur, value) != 0)
+                return -1;
             return 0;
         }
         for (const char* c = last; *c; c++)
@@ -408,9 +438,15 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
                 return -1;
             }
         size_t idx = (size_t)strtoul(last, NULL, 10);
-        while (json_array_size(cur) <= idx)
-            json_array_append_new(cur, json_null());
-        json_array_set_new(cur, idx, value);
+        while (json_array_size(cur) <= idx) {
+            json_t* n = json_null();
+            if (!n || json_array_append_new(cur, n) != 0) {
+                json_decref(value);
+                return -1;
+            }
+        }
+        if (json_array_set_new(cur, idx, value) != 0)
+            return -1;
         return 0;
     }
     json_decref(value);
@@ -431,8 +467,12 @@ int celix_json_pointer_remove(json_t* doc, const celix_json_pointer_t* ptr) {
 
     celix_json_pointer_t parent_ptr;
     memset(&parent_ptr, 0, sizeof(parent_ptr));
-    for (size_t i = 0; i < ptr->len - 1; i++)
-        celix_json_pointer_push(&parent_ptr, ptr->tokens[i]);
+    for (size_t i = 0; i < ptr->len - 1; i++) {
+        if (celix_json_pointer_push(&parent_ptr, ptr->tokens[i]) != 0) {
+            celix_json_pointer_clear(&parent_ptr);
+            return -1;
+        }
+    }
 
     json_t* parent = celix_json_pointer_get(doc, &parent_ptr);
     celix_json_pointer_clear(&parent_ptr);
@@ -542,6 +582,7 @@ celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr,
 int celix_json_pointer_concat(celix_json_pointer_t* ptr, const celix_json_pointer_t* suffix) {
     if (!ptr || !suffix)
         return -1;
+    /* on OOM, suffix tokens appended so far remain */
     for (size_t i = 0; i < suffix->len; i++)
         if (celix_json_pointer_push(ptr, suffix->tokens[i]) != 0)
             return -1;

@@ -48,6 +48,9 @@ public:
         celix_ei_expect_strdup(nullptr, 0, nullptr);
         celix_ei_expect_json_object(nullptr, 0, nullptr);
         celix_ei_expect_json_deep_copy(nullptr, 0, nullptr);
+        celix_ei_expect_json_object_set_new(nullptr, 0, 0);
+        celix_ei_expect_json_array_append_new(nullptr, 0, 0);
+        celix_ei_expect_json_null(nullptr, 0, nullptr);
     }
 };
 
@@ -224,6 +227,237 @@ TEST_F(JanssonExtErrorInjectionTestSuite, PointerConcatPushFail) {
     celix_ei_expect_strdup((void*)celix_json_pointer_push, 0, nullptr);
     //Then concatenating should fail
     EXPECT_EQ(-1, celix_json_pointer_concat(dst, suffix));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerInitRootEmptyPushFail) {
+    //Given strdup is injected to fail in push while init parses the root-empty pointer "/"
+    celix_ei_expect_strdup((void*)celix_json_pointer_push, 0, nullptr);
+    celix_json_pointer_t p{};
+    //Then initializing should fail and leave the pointer in the cleared state
+    EXPECT_EQ(-1, celix_json_pointer_init(&p, "/"));
+    EXPECT_EQ(nullptr, p.tokens);
+    EXPECT_EQ(0u, celix_json_pointer_depth(&p));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerCreateCleanupOnInitFail) {
+    //Given strdup is injected to fail on the second push while create parses "/a/b"
+    celix_ei_expect_strdup((void*)celix_json_pointer_push, 0, nullptr, 2);
+    //Then creating should fail without leaking the first token or the tokens buffer
+    EXPECT_EQ(nullptr, celix_json_pointer_create("/a/b"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateNullFail) {
+    //Given json_null is injected to fail for the final node in get_or_create
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_null((void*)celix_json_pointer_get_or_create, 0, nullptr);
+    //Then get_or_create should fail and not insert the node
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateSetFail) {
+    //Given json_object_set_new is injected to fail in the final write of get_or_create.
+    //json_object_set is a static inline calling set_new; level 1 resolves to get_or_create.
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object_set_new((void*)celix_json_pointer_get_or_create, 1, -1);
+    //Then get_or_create should fail and not insert the node
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateIntermediateSetNewFail) {
+    //Given json_object_set_new is injected to fail while inserting the intermediate object
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/b");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object_set_new((void*)celix_json_pointer_get_or_create, 0, -1);
+    //Then get_or_create should fail and not insert the intermediate node
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateIntermediateJsonObjectFail) {
+    //Given json_object is injected to fail for the intermediate container in get_or_create
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/b");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object((void*)celix_json_pointer_get_or_create, 0, nullptr);
+    //Then get_or_create should fail and not insert the intermediate node
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreatePaddingNullFail) {
+    //Given json_null is injected to fail while padding the target array in get_or_create
+    json_auto_t* doc = json_array();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/2");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_null((void*)celix_json_pointer_get_or_create, 0, nullptr);
+    //Then get_or_create should fail and the array must remain empty
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(0u, json_array_size(doc));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreatePaddingAppendFail) {
+    //Given json_array_append_new is injected to fail while padding the target array in get_or_create
+    json_auto_t* doc = json_array();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/2");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array_append_new((void*)celix_json_pointer_get_or_create, 0, -1);
+    //Then get_or_create should fail and the array must remain empty
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(0u, json_array_size(doc));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateDashAppendFail) {
+    //Given json_array_append_new is injected to fail while appending the "-" element in get_or_create
+    json_auto_t* doc = json_array();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/-");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array_append_new((void*)celix_json_pointer_get_or_create, 0, -1);
+    //Then get_or_create should fail and the array must remain empty
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(0u, json_array_size(doc));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerGetOrCreateDashNullFail) {
+    //Given json_null is injected to fail while appending the "-" element in get_or_create
+    json_auto_t* doc = json_array();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/-");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_null((void*)celix_json_pointer_get_or_create, 0, nullptr);
+    //Then get_or_create should fail and the array must remain empty
+    EXPECT_EQ(nullptr, celix_json_pointer_get_or_create(doc, p));
+    EXPECT_EQ(0u, json_array_size(doc));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetFinalSetNewFail) {
+    //Given json_object_set_new is injected to fail in the final write of set
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object_set_new((void*)celix_json_pointer_set, 0, -1);
+    //Then setting should fail; the value is consumed by the failed set_new
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetFinalAppendNewFail) {
+    //Given json_array_append_new is injected to fail in the final "-" write of set
+    json_auto_t* doc = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/-");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array_append_new((void*)celix_json_pointer_set, 0, -1);
+    //Then setting should fail and the document must remain unchanged
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    char* dumped = json_dumps(doc, JSON_COMPACT);
+    ASSERT_NE(nullptr, dumped);
+    EXPECT_STREQ(R"({"a":[1,2]})", dumped);
+    free(dumped);
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetIntermediateSetNewFail) {
+    //Given json_object_set_new is injected to fail while inserting the intermediate object in set
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/b");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object_set_new((void*)celix_json_pointer_set, 0, -1);
+    //Then setting should fail and the intermediate node must not be inserted
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetIntermediateJsonArrayFail) {
+    //Given json_array is injected to fail for the intermediate container in set
+    json_auto_t* doc = json_object();
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/0/x");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array((void*)celix_json_pointer_set, 0, nullptr);
+    //Then setting should fail and the intermediate node must not be inserted
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(nullptr, json_object_get(doc, "a"));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetIntermediateReplFail) {
+    //Given json_object is injected to fail for the replacement container in set
+    json_auto_t* doc = json_loads("[1]", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/0/b");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_object((void*)celix_json_pointer_set, 0, nullptr);
+    //Then setting should fail and the document must remain unchanged
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(1u, json_array_size(doc));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetPaddingAppendFail) {
+    //Given json_array_append_new is injected to fail while padding the target array in set
+    json_auto_t* doc = json_loads(R"({"arr":[]})", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/arr/2");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array_append_new((void*)celix_json_pointer_set, 0, -1);
+    //Then setting should fail and the array must remain empty
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(json_object_get(doc, "arr")));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetPaddingNullFail) {
+    //Given json_null is injected to fail while padding the target array in set
+    json_auto_t* doc = json_loads(R"({"arr":[]})", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/arr/2");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_null((void*)celix_json_pointer_set, 0, nullptr);
+    //Then setting should fail and the array must remain empty
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(json_object_get(doc, "arr")));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerSetIntermediatePaddingAppendFail) {
+    //Given json_array_append_new is injected to fail while padding an intermediate array in set.
+    //"/arr/2/0" makes the padding happen before the walk descends into the new array slot.
+    json_auto_t* doc = json_loads(R"({"arr":[]})", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/arr/2/0");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_json_array_append_new((void*)celix_json_pointer_set, 0, -1);
+    //Then setting should fail and the array must remain empty
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, p, json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(json_object_get(doc, "arr")));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PointerRemovePushFail) {
+    //Given strdup is injected to fail while building the parent pointer in remove.
+    //The root also has a key "c", so the OLD code would resolve the parent to the
+    //root and delete the wrong node.
+    json_auto_t* doc = json_loads(R"({"a":{"c":1},"c":99})", 0, nullptr);
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/c");
+    ASSERT_NE(nullptr, doc);
+    ASSERT_NE(nullptr, p);
+    celix_ei_expect_strdup((void*)celix_json_pointer_push, 0, nullptr);
+    //Then removing should fail and the document must remain unchanged
+    EXPECT_EQ(-1, celix_json_pointer_remove(doc, p));
+    char* dumped = json_dumps(doc, JSON_COMPACT);
+    ASSERT_NE(nullptr, dumped);
+    EXPECT_STREQ(R"({"a":{"c":1},"c":99})", dumped);
+    free(dumped);
 }
 
 /* ── celix_jansson_uri.c ──────────────────────────────────────────────── */
