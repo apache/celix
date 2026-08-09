@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "asprintf_ei.h"
 #include "celix_cleanup.h"
 #include "celix_jansson_pointer.h"
 #include "celix_json_patch.h"
@@ -66,6 +67,8 @@ public:
         celix_ei_expect_json_string(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_put(nullptr, 0, CELIX_ENOMEM);
+        celix_ei_expect_asprintf(nullptr, 0, 0);
+        celix_ei_expect_vasprintf(nullptr, 0, 0);
     }
 
 protected:
@@ -100,6 +103,11 @@ protected:
 static void countingErrorCb(const char*, json_t*, const char*, void* ud) {
     int* count = static_cast<int*>(ud);
     (*count)++;
+}
+
+static void captureMessageCb(const char*, json_t*, const char* msg, void* ud) {
+    std::string* out = static_cast<std::string*>(ud);
+    *out = msg ? msg : "";
 }
 
 /* ── path_push ────────────────────────────────────────────────────────── */
@@ -202,8 +210,9 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDependenciesMapCreateFail)
 
 TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefUriDeriveReallocFail) {
     //Given realloc is injected to fail in strbuf_append (used by percent_decode during $ref URI
-    //derivation). The single-char fragment "#x" makes percent_decode loop exactly once, so the
-    //single injected realloc failure is not recovered by a later iteration.
+    //derivation; realloc <- strbuf_append <- appendc <- percent_decode, so level 0). The
+    //single-char fragment "#x" makes percent_decode loop exactly once, so the single injected
+    //realloc failure is not recovered by a later iteration.
     celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
     ASSERT_NE(nullptr, v);
     json_auto_t* schema = loadSchema(
@@ -669,7 +678,8 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaNestedIdInsertFileCallocFa
 
 TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefinitionsBaseLocOomFail) {
     //Given realloc is injected to fail in strbuf_append, hit by the definitions
-    //block of a nested schema with its own $id. The nested schema is compiled
+    //block of a nested schema with its own $id (realloc <- strbuf_append <-
+    //strbuf_appends <- uri_location, so level 0). The nested schema is compiled
     //with eff_base_out == NULL (schema_make_internal), so base_loc comes from
     //uri_location(my_base) and the failure must also clear my_base.
     celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
@@ -831,6 +841,33 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseBPairV
     ASSERT_NE(nullptr, schema);
     celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr, 2);
     //Then the schema still compiles (the failed snapshot self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalRegisterRootOomFail) {
+    //Given realloc is injected to fail inside root_insert's uri_location
+    //while registering the external document at its retrieval URI (realloc <-
+    //strbuf_append <- strbuf_appends <- uri_location <- root_insert, so level 3)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_insert, 3, nullptr);
+    //Then compiling fails with NOMEM and the document/node refs are released
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalFragmentRegisterOomFail) {
+    //Given realloc is injected to fail inside root_insert's uri_location
+    //while the document-fragment walk registers the resolved node (ordinal 2:
+    //the external document itself is registered first)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_insert, 3, nullptr, 2);
+    //Then the fragment-walk registration fails and the schema still compiles
+    //(the placeholder resolution retries on the next iteration)
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
 
@@ -1141,6 +1178,19 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefinitionsPutOomFail) {
     celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 1, CELIX_ENOMEM);
     //Then compiling the schema should fail with NOMEM instead of leaking the
     //compiled definition
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefinitionsFragAsprintfFail) {
+    //Given asprintf is injected to fail for the definitions fragment key
+    //(asprintf <- depth <- set_root_schema, so level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"definitions\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_asprintf((void*)celix_jansson_schema_set_root_schema, 1, -1);
+    //Then compiling fails with NOMEM and the definition node is released
+    //(no leak: the map never took the ref)
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
 
@@ -1486,9 +1536,10 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDependenciesNonStringEleme
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
 
-TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultBasePathOomFail) {
-    //Given strdup is injected to fail for path_str's empty-string fallback,
-    //making the default-fill base_path NULL (the snprintf guard must not UB)
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultPatchPathBuildOomFail) {
+    //Given realloc is injected to fail for the second default-fill path
+    //build (the JSON Patch path; ordinal 2 — the first matching realloc is
+    //the default-value callback's path build)
     celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
     ASSERT_NE(nullptr, v);
     json_auto_t* schema =
@@ -1497,10 +1548,45 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultBasePathOom
     ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
     json_auto_t* instance = loadSchema("{}");
     int errorCount = 0;
-    celix_ei_expect_strdup((void*)celix_jansson_path_str, 0, nullptr);
-    //Then the default patch is still applied with an empty path, no crash
-    EXPECT_EQ(0, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
-    EXPECT_EQ(0, errorCount);
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr, 2);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultPatchPathOomFail) {
+    //Given realloc is injected to fail in strbuf_append while building the
+    //default patch path (realloc <- strbuf_append <- appendc <- path_str, so
+    //level 0: strbuf_append is the realloc's direct caller)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr);
+    //Then the default patch is not applied and the validation fails closed
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaEmitErrorVasprintfFail) {
+    //Given vasprintf is injected to fail while formatting a validation
+    //error message (vasprintf <- emit_error_v <- emit_error <- v_type <-
+    //root_validate, so level 3)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_integer(42);
+    std::string message;
+    celix_ei_expect_vasprintf((void*)celix_jansson_schema_root_validate, 3, -1);
+    //Then the error is still reported with the OOM hint constant
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, captureMessageCb, &message, nullptr));
+    EXPECT_EQ("out of memory: error message unavailable", message);
 }
 
 TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefaultDeepCopyOomFail) {

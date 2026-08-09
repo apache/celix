@@ -20,6 +20,7 @@
 #include "celix_json_patch.h"
 #include "celix_jansson_uri.h"
 #include "celix_schema.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_string_format_check.h"
 #include "celix_util.h"
 #include <assert.h>
@@ -183,12 +184,21 @@ void celix_jansson_schema_unref(celix_jansson_schema_node_t* n) {
 
 static void
 emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, va_list ap) {
-    char buf[1024];
-    vsnprintf(buf, sizeof(buf), fmt, ap);
+    char* msg = NULL;
+    const char* text;
+    if (vasprintf(&msg, fmt, ap) >= 0)
+        text = msg;
+    else {
+        /* OOM: the formatted message is unavailable; surface a constant hint
+         * (allocating the fallback would likely fail for the same reason) */
+        text = "out of memory: error message unavailable";
+        msg = NULL; /* glibc leaves *ptr undefined on failure */
+    }
     const char* ps = path ? celix_jansson_path_str(path) : "";
     if (!ps)
         ps = ""; /* path_str can return NULL only if its empty-string fallback allocation failed */
-    ctx->sink->emit(ctx->sink, ps, NULL, buf);
+    ctx->sink->emit(ctx->sink, ps, NULL, text);
+    free(msg);
 }
 
 static void emit_error(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, ...) {
@@ -574,14 +584,11 @@ static int v_required(const celix_jansson_schema_node_t* n,
     for (size_t i = 0; i < n->u.required.len; i++) {
         json_t* v = json_object_get(inst, n->u.required.names[i]);
         if (!v) {
-            celix_jansson_path_t pp;
-            celix_jansson_path_init(&pp);
+            celix_auto(celix_jansson_path_t) pp = {0};
             if (!path_child_checked(&pp, p, n->u.required.names[i], ctx, &errs)) {
-                celix_jansson_path_free(&pp);
                 return errs;
             }
             emit_error(ctx, &pp, "required property '%s' not found in object", n->u.required.names[i]);
-            celix_jansson_path_free(&pp);
             errs++;
         }
     }
@@ -760,23 +767,18 @@ static int v_object(const celix_jansson_schema_node_t* n,
                 errs++;
                 return errs;
             }
-            celix_jansson_path_t kp;
-            celix_jansson_path_init(&kp);
+            celix_auto(celix_jansson_path_t) kp = {0};
             if (!path_child_checked(&kp, p, key, ctx, &errs)) {
-                celix_jansson_path_free(&kp);
                 json_decref(kname);
                 return errs;
             }
             errs += n->u.object.property_names->vtable->validate(n->u.object.property_names, kname, &kp, ctx);
-            celix_jansson_path_free(&kp);
             json_decref(kname);
             if (ctx->aborted) break;
         }
 
-        celix_jansson_path_t cp;
-        celix_jansson_path_init(&cp);
+        celix_auto(celix_jansson_path_t) cp = {0};
         if (!path_child_checked(&cp, p, key, ctx, &errs)) {
-            celix_jansson_path_free(&cp);
             return errs;
         }
 
@@ -807,7 +809,6 @@ static int v_object(const celix_jansson_schema_node_t* n,
                  * evaluated, so stop the validation pass */
                 emit_error(ctx, &cp, "out of memory while validating additional property '%s'", key);
                 errs++;
-                celix_jansson_path_free(&cp);
                 return errs;
             }
             celix_jansson_validation_context_t fctx = *ctx;
@@ -816,16 +817,14 @@ static int v_object(const celix_jansson_schema_node_t* n,
             if (fs->got) {
                 emit_error(ctx, &cp, "validation failed for additional property '%s': %s", key, fs->msg ? fs->msg : "");
                 errs++;
-                if (ctx->aborted) { fs->base.destroy(&fs->base); celix_jansson_path_free(&cp); break; }
+                if (ctx->aborted) { fs->base.destroy(&fs->base); break; }
             }
             fs->base.destroy(&fs->base);
         }
-        celix_jansson_path_free(&cp);
     }
 
     /* default values for missing properties */
     {
-        const char* base_path = celix_jansson_path_str(p);
         if (n->u.object.properties) {
             CELIX_STRING_HASH_MAP_ITERATE(n->u.object.properties, iter) {
                 const char* pk = iter.key;
@@ -833,23 +832,32 @@ static int v_object(const celix_jansson_schema_node_t* n,
                 if (!json_object_get(inst, pk)) {
                     const json_t* def = NULL;
                     if (ps->vtable && ps->vtable->default_value) {
-                        celix_jansson_path_t dp;
-                        celix_jansson_path_init(&dp);
+                        celix_auto(celix_jansson_path_t) dp = {0};
                         if (!path_child_checked(&dp, p, pk, ctx, &errs)) {
-                            celix_jansson_path_free(&dp);
                             return errs;
                         }
                         def = ps->vtable->default_value(ps, &dp, inst, ctx);
-                        celix_jansson_path_free(&dp);
                     }
                     if (!def)
                         def = ps->default_value;
                     if (def) {
-                        char pat[1024];
-                        snprintf(pat, sizeof(pat), "%s/%s", base_path ? base_path : "", pk);
-                        if (celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def)) != 0) {
+                        /* Patch path: the property's RFC 6901-escaped path,
+                         * built via the path API (a raw "%s/%s"
+                         * concatenation would corrupt keys with '~' or '/'). */
+                        celix_auto(celix_jansson_path_t) dp = {0};
+                        if (!path_child_checked(&dp, p, pk, ctx, &errs)) {
+                            return errs;
+                        }
+                        const char* dstr = celix_jansson_path_str(&dp); /* NULL on OOM */
+                        if (!dstr) {
+                            emit_error(ctx, p, "out of memory while applying default value");
+                            errs++;
+                            return errs;
+                        }
+                        if (celix_json_patch_add(ctx->patch, dstr, json_incref((json_t*)def)) != 0) {
                             /* Fail closed on OOM (the value ref is consumed by
-                             * patch_add on failure, so nothing to release) */
+                             * patch_add on failure, so nothing to release; dp
+                             * is released automatically on scope exit) */
                             emit_error(ctx, p, "out of memory while applying default value");
                             errs++;
                             return errs;
@@ -880,14 +888,11 @@ static void obj_validate_deps(const celix_jansson_schema_node_t* n,
         if (ctx->aborted) break;
         celix_jansson_schema_node_t* dep = obj_node_get(n->u.object.dependencies, key);
         if (dep) {
-            celix_jansson_path_t cp;
-            celix_jansson_path_init(&cp);
+            celix_auto(celix_jansson_path_t) cp = {0};
             if (!path_child_checked(&cp, p, key, ctx, errs)) {
-                celix_jansson_path_free(&cp);
                 return;
             }
             *errs += dep->vtable->validate(dep, inst, &cp, ctx);
-            celix_jansson_path_free(&cp);
         }
     }
 }
@@ -941,15 +946,12 @@ static int v_array(const celix_jansson_schema_node_t* n,
             if (ctx->aborted) break;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
-            celix_jansson_path_t cp;
-            celix_jansson_path_init(&cp);
+            celix_auto(celix_jansson_path_t) cp = {0};
             if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
-                celix_jansson_path_free(&cp);
                 return errs;
             }
             errs +=
                 n->u.array.items_schema->vtable->validate(n->u.array.items_schema, json_array_get(inst, i), &cp, ctx);
-            celix_jansson_path_free(&cp);
         }
     } else if (n->u.array.items_len > 0) {
         /* tuple form */
@@ -957,29 +959,23 @@ static int v_array(const celix_jansson_schema_node_t* n,
             if (ctx->aborted) break;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
-            celix_jansson_path_t cp;
-            celix_jansson_path_init(&cp);
+            celix_auto(celix_jansson_path_t) cp = {0};
             if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
-                celix_jansson_path_free(&cp);
                 return errs;
             }
             errs += n->u.array.items[i]->vtable->validate(n->u.array.items[i], json_array_get(inst, i), &cp, ctx);
-            celix_jansson_path_free(&cp);
         }
         if (n->u.array.additional_items && sz > n->u.array.items_len) {
             for (size_t i = n->u.array.items_len; i < sz; i++) {
                 if (ctx->aborted) break;
                 char idx[32];
                 snprintf(idx, sizeof(idx), "%zu", i);
-                celix_jansson_path_t cp;
-                celix_jansson_path_init(&cp);
+                celix_auto(celix_jansson_path_t) cp = {0};
                 if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
-                    celix_jansson_path_free(&cp);
                     return errs;
                 }
                 errs += n->u.array.additional_items->vtable->validate(
                     n->u.array.additional_items, json_array_get(inst, i), &cp, ctx);
-                celix_jansson_path_free(&cp);
             }
         }
     }
@@ -999,15 +995,12 @@ static int v_array(const celix_jansson_schema_node_t* n,
             fctx.sink = &fs->base;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
-            celix_jansson_path_t cp;
-            celix_jansson_path_init(&cp);
+            celix_auto(celix_jansson_path_t) cp = {0};
             if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
-                celix_jansson_path_free(&cp);
                 fs->base.destroy(&fs->base);
                 return errs;
             }
             int rc = n->u.array.contains->vtable->validate(n->u.array.contains, json_array_get(inst, i), &cp, &fctx);
-            celix_jansson_path_free(&cp);
             if (rc == 0)
                 found = true;
             fs->base.destroy(&fs->base);
@@ -1081,7 +1074,7 @@ static int v_comb(const celix_jansson_schema_node_t* n,
         else
             celix_json_patch_truncate(ctx->patch, branch_patch);
 
-        char prefix[128];
+        char prefix[64];
         const char* kname = (n->kind == CELIX_JANSSON_SCHEMA_KIND_ALL_OF)   ? "allOf"
                             : (n->kind == CELIX_JANSSON_SCHEMA_KIND_ANY_OF) ? "anyOf"
                                                                             : "oneOf";
@@ -1954,14 +1947,17 @@ static int schema_make_internal_depth(json_t* sch,
         const char* dk;
         json_t* dv;
         json_object_foreach(defs, dk, dv) {
-            celix_jansson_schema_node_t* ds;
+            celix_jansson_schema_node_t* ds = NULL;
             int rc = schema_make_internal(dv, root, effective_base, &ds, depth + 1);
             if (rc != CELIX_JANSSON_SCHEMA_OK) {
                 return rc;
             }
             if (ds) {
-                char frag[1024];
-                snprintf(frag, sizeof(frag), "/definitions/%s", dk);
+                celix_autofree char* frag = NULL;
+                if (asprintf(&frag, "/definitions/%s", dk) < 0) {
+                    celix_jansson_schema_unref(ds); /* the map never took the ref */
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                }
                 celix_jansson_schema_node_t* existing =
                     (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->schemas, frag);
                 if (existing) {
@@ -2301,15 +2297,12 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
         }
     }
     int ir = celix_jansson_schema_root_insert(root, &full_uri, sch);
-    //LCOV_EXCL_START: reachable only on OOM inside root_insert's location/fragment
-    //allocation (the file cache-hit reasoning no longer applies); no current test drives this
     if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
         /* The registry did not ref sch (NOMEM precedes the ref); unref it and
          * return NULL instead of a dangling pointer */
         celix_jansson_schema_unref(sch);
         return NULL;
     }
-    //LCOV_EXCL_STOP
     /* DUPLICATE_URI is benign: the fragment may already be registered */
     celix_jansson_schema_unref(sch); /* registry holds the owning ref now */
 
@@ -2352,8 +2345,6 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
 
     /* Register root at retrieval URI — auto-resolves waiting fragment="" placeholder */
     int ir = celix_jansson_schema_root_insert(root, &retr, sch);
-    //LCOV_EXCL_START: reachable only on OOM inside root_insert's location/fragment
-    //allocation (the file cache-hit reasoning no longer applies); no current test drives this
     if (ir == CELIX_JANSSON_SCHEMA_ERROR_NOMEM) {
         /* The registry did not ref sch; propagate the OOM instead of returning a
          * fake OK that would leave the placeholder unresolved forever */
@@ -2361,7 +2352,6 @@ static int compile_external_document(celix_jansson_schema_root_t* root, const ch
         celix_jansson_schema_unref(sch);
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     }
-    //LCOV_EXCL_STOP
     /* DUPLICATE_URI is benign: a document whose own $id equals the retrieval URI
      * was already registered during make */
 
@@ -2694,10 +2684,8 @@ int celix_jansson_schema_root_validate(celix_jansson_schema_root_t* root,
         return 1;
     }
 
-    celix_jansson_path_t path;
-    celix_jansson_path_init(&path);
+    celix_auto(celix_jansson_path_t) path = {0};
     int errs = sch->vtable->validate(sch, instance, &path, ctx);
-    celix_jansson_path_free(&path);
     return errs;
 }
 
@@ -2817,7 +2805,7 @@ int celix_jansson_schema_set_root_schema(celix_jansson_schema_validator_t* v, js
 
     celix_auto(celix_jansson_uri_t) root_base = {0};
 
-    celix_jansson_schema_node_t* sch;
+    celix_jansson_schema_node_t* sch = NULL;
     int err = schema_make_internal_depth(copy, root, NULL, &root_base, &sch, 0);
     json_decref(copy);
     if (err != CELIX_JANSSON_SCHEMA_OK) {

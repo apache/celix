@@ -62,6 +62,7 @@ if (EI_TESTS)
         Celix::malloc_ei
         Celix::string_ei
         Celix::stdio_ei
+        Celix::asprintf_ei
         Celix::jansson_ei
         Celix::string_hash_map_ei
         GTest::gtest GTest::gtest_main

@@ -68,6 +68,10 @@ void celix_jansson_path_pop(celix_jansson_path_t* p);
 const char* celix_jansson_path_str(celix_jansson_path_t* p);
 void celix_jansson_path_free(celix_jansson_path_t* p);
 
+/* Enables `celix_auto(celix_jansson_path_t) p;` for scope-based automatic
+ * cleanup. Safe on zeroed structs (free() frees NULLs and re-zeroes). */
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_jansson_path_t, celix_jansson_path_free)
+
 /* ── Vtable ────────────────────────────────────────────────────────────── */
 
 struct celix_jansson_schema_node_t;

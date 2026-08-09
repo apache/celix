@@ -571,3 +571,61 @@ TEST(DefaultsTest, ArrayOfObjectsDefault) {
     json_decref(sch);
     free_validator(v);
 }
+
+/* ── RFC 6901 escaping in default patch paths ─────────────────────────── */
+
+TEST(DefaultsTest, DefaultPatchPathEscaping) {
+    /* Keys containing '/' and '~' must be escaped (~1/~0) in the JSON Patch
+     * path per RFC 6901. The patch path is built via the path API, so the
+     * paths below are the escaped forms. */
+    static const char* schema = R"({
+		"type": "object",
+		"properties": {
+			"a/b": { "type": "string", "default": "x" },
+			"a~b": { "type": "string", "default": "y" }
+		}
+	})";
+
+    auto* v = make_validator();
+    ASSERT_NE(nullptr, v);
+
+    json_t* sch = json_loads(schema, 0, nullptr);
+    ASSERT_NE(nullptr, sch);
+
+    char* errmsg = nullptr;
+    int rc = celix_jansson_schema_set_root_schema(v, sch, &errmsg);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, rc) << (errmsg ? errmsg : "");
+    free(errmsg);
+
+    /* Validate with empty object — both defaults generate a patch op */
+    reset_errors();
+    json_t* patch = nullptr;
+    json_t* inst = json_loads("{}", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    int n = celix_jansson_schema_validate(v, inst, capture_error, nullptr, &patch);
+    EXPECT_EQ(0, n);
+
+    ASSERT_NE(nullptr, patch);
+    ASSERT_TRUE(json_is_array(patch));
+    ASSERT_EQ(2u, json_array_size(patch));
+
+    bool saw_slash_escaped = false;
+    bool saw_tilde_escaped = false;
+    json_t* op;
+    size_t i;
+    json_array_foreach(patch, i, op) {
+        const char* path = json_string_value(json_object_get(op, "path"));
+        ASSERT_NE(nullptr, path);
+        if (std::string(path) == "/a~1b")
+            saw_slash_escaped = true;
+        if (std::string(path) == "/a~0b")
+            saw_tilde_escaped = true;
+    }
+    EXPECT_TRUE(saw_slash_escaped);
+    EXPECT_TRUE(saw_tilde_escaped);
+
+    json_decref(inst);
+    json_decref(patch);
+    json_decref(sch);
+    free_validator(v);
+}
