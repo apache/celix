@@ -19,6 +19,9 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+#include <vector>
+
 #include "celix_cleanup.h"
 #include "celix_jansson_pointer.h"
 #include "celix_json_patch.h"
@@ -1558,4 +1561,120 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateRootDefaultPatchOo
     //silently dropping the root default patch
     EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
     EXPECT_EQ(1, errorCount);
+}
+
+/* ── strbuf append OOM: path_str, coll_propagate, fragment walk ───────── */
+
+/* Message-capturing error callback: the coll_propagate OOM test needs the
+ * message CONTENT (prefixed vs raw) to tell the fallback from the normal
+ * path, which an error count alone cannot distinguish. */
+static std::vector<std::string> g_collMsgs;
+static void captureErrorCb(const char*, json_t*, const char* msg, void* ud) {
+    g_collMsgs.emplace_back(msg ? msg : "");
+    int* count = static_cast<int*>(ud);
+    if (count)
+        (*count)++;
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePathStrOomFail) {
+    //Given realloc is injected to fail in strbuf_append, hit by the first
+    //append of path_str's path build (the '/' separator, ordinal 1 — no
+    //strbuf realloc precedes it in this flow) while reporting the type error
+    //at the nested "/a" path
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"a\":42}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr, 1);
+    //Then the type error is still reported with the empty-path fallback
+    //instead of a silently truncated path, no crash
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+
+    //And with a token long enough to realloc mid-build (the 64th char, ordinal
+    //2 — the first append grew the cap to 64), the failure is hit by a
+    //token-char append instead of the '/' separator (inner oom branch)
+    std::string key(64, 'a');
+    std::string longSchema =
+        "{\"type\":\"object\",\"properties\":{\"" + key + "\":{\"type\":\"string\"}}}";
+    std::string longInstance = "{\"" + key + "\":42}";
+    celix_autoptr(celix_jansson_schema_validator_t) v2 = makeValidator();
+    ASSERT_NE(nullptr, v2);
+    json_auto_t* schema2 = loadSchema(longSchema.c_str());
+    ASSERT_NE(nullptr, schema2);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v2, schema2, nullptr));
+    json_auto_t* instance2 = loadSchema(longInstance.c_str());
+    errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr, 2);
+    //Then the same empty-path fallback applies, no crash
+    EXPECT_EQ(1, celix_jansson_schema_validate(v2, instance2, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateRootDefaultPathStrOomFail) {
+    //Given realloc is injected to fail in strbuf_append, hit by path_str
+    //while applying a property-level default to a null instance (the "/a"
+    //path build, ordinal 1) — a root default would have an empty path and
+    //never append, so the property default is required here
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"properties\":{\"a\":{\"default\":5}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"a\":null}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr, 1);
+    //Then validating fails closed with an out-of-memory error instead of
+    //crashing on a NULL patch path (json_string(NULL)), no leak of the value
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateCollPropagateOomFail) {
+    //Given realloc is injected to fail in strbuf_append, hit by the first
+    //append of coll_propagate's prefixed-message build (ordinal 1 — the
+    //failing branch emits at the root path, whose empty path_str never
+    //appends, so no strbuf realloc precedes it)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"anyOf\":[{\"type\":\"string\"}]}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_integer(42);
+    int errorCount = 0;
+    g_collMsgs.clear();
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr, 1);
+    //Then both the anyOf failure and the branch error are still reported, the
+    //latter with the raw message instead of a truncated one (only the
+    //"[combination:" prefix is lost — two emissions either way, the message
+    //content is what distinguishes the fallback)
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, captureErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(2, errorCount);
+    ASSERT_EQ(2u, g_collMsgs.size());
+    EXPECT_NE(std::string::npos, g_collMsgs[0].find("no subschema has succeeded"));
+    EXPECT_NE(std::string::npos, g_collMsgs[1].find("unexpected instance type"));
+    EXPECT_EQ(std::string::npos, g_collMsgs[1].find("[combination:"));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentTokenDecodeOomFail) {
+    //Given realloc is injected to fail in strbuf_append, hit by the first
+    //append of the document-fragment walk's token decode (ordinal 2: 1 =
+    //percent_decode of the fragment inside uri_update, 2 = the walk's first
+    //token "definitions" — uri_location/uri_fragment allocate via strdup and
+    //malloc, not strbuf)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    //"a" compiles before "b" registers, so its $ref forces the fragment walk
+    //(which aborts on OOM); the placeholder then resolves from the registry
+    //once "b" is registered — self-healing to OK
+    json_auto_t* schema =
+        loadSchema("{\"definitions\":{\"a\":{\"$ref\":\"#/definitions/b\"},\"b\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_strbuf_append, 0, nullptr, 2);
+    //Then the walk aborts (a truncated token is never used for lookups) and
+    //the ref resolves from the registry on the next pass
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }

@@ -121,22 +121,31 @@ void celix_jansson_path_pop(celix_jansson_path_t* p) {
 
 const char* celix_jansson_path_str(celix_jansson_path_t* p) {
     if (!p->cached) {
-        celix_jansson_strbuf_t sb;
+        /* OOM: any append failure aborts the build and surfaces as a NULL
+         * return (the callers treat NULL as OOM and degrade gracefully).
+         * p->cached stays NULL, so a later call can retry; the strbuf is
+         * released automatically on every exit path. */
+        celix_auto(celix_jansson_strbuf_t) sb;
         celix_jansson_strbuf_init(&sb);
         for (size_t i = 0; i < p->len; i++) {
-            celix_jansson_strbuf_appendc(&sb, '/');
+            int rc;
+            rc = celix_jansson_strbuf_appendc(&sb, '/');
+            if (rc != 0)
+                return NULL;
             for (const char* c = p->tokens[i]; *c; c++) {
                 if (*c == '~')
-                    celix_jansson_strbuf_appends(&sb, "~0");
+                    rc = celix_jansson_strbuf_appends(&sb, "~0");
                 else if (*c == '/')
-                    celix_jansson_strbuf_appends(&sb, "~1");
+                    rc = celix_jansson_strbuf_appends(&sb, "~1");
                 else
-                    celix_jansson_strbuf_appendc(&sb, *c);
+                    rc = celix_jansson_strbuf_appendc(&sb, *c);
+                if (rc != 0)
+                    return NULL;
             }
         }
         p->cached = celix_jansson_strbuf_detach(&sb);
         if (!p->cached)
-            p->cached = strdup("");
+            p->cached = strdup(""); /* keep: an empty path is "" rather than NULL */
     }
     return p->cached;
 }
@@ -262,14 +271,18 @@ static void coll_destroy(celix_jansson_error_sink_t* s) {
 static void coll_propagate(collecting_sink_t* cs, celix_jansson_error_sink_t* parent, const char* prefix) {
     for (size_t i = 0; i < cs->list.len; i++) {
         celix_jansson_error_entry_t* e = &cs->list.entries[i];
-        celix_jansson_strbuf_t sb;
+        celix_auto(celix_jansson_strbuf_t) sb;
         celix_jansson_strbuf_init(&sb);
-        if (prefix)
-            celix_jansson_strbuf_appends(&sb, prefix);
         /* strdup inside error_list_add can fail, leaving NULL message/ptr:
          * fall back to an empty string so appends(NULL)/emit(NULL) never happen */
-        celix_jansson_strbuf_appends(&sb, e->message ? e->message : "");
-        char* full = celix_jansson_strbuf_detach(&sb);
+        /* OOM: an append failure leaves full == NULL and the raw message is
+         * emitted instead (only the prefix is lost, never a crash or a
+         * truncated message); sb is released automatically. */
+        char* full = NULL;
+        if ((!prefix || celix_jansson_strbuf_appends(&sb, prefix) == 0) &&
+            celix_jansson_strbuf_appends(&sb, e->message ? e->message : "") == 0) {
+            full = celix_jansson_strbuf_detach(&sb);
+        }
         parent->emit(parent, e->ptr ? e->ptr : "", e->instance, full ? full : (e->message ? e->message : ""));
         free(full);
     }
@@ -1201,7 +1214,15 @@ static int v_type(const celix_jansson_schema_node_t* n,
 
     /* Root default: null instance gets default_value */
     if (json_is_null(inst) && n->default_value) {
-        if (celix_json_patch_add(ctx->patch, celix_jansson_path_str(p), json_incref(n->default_value)) != 0) {
+        /* OOM: path_str returns NULL only on allocation failure; guard before
+         * json_incref (leak) and before patch_add (crash on NULL path) */
+        const char* ps = celix_jansson_path_str(p);
+        if (!ps) {
+            emit_error(ctx, p, "out of memory while applying default value");
+            errs++;
+            return errs;
+        }
+        if (celix_json_patch_add(ctx->patch, ps, json_incref(n->default_value)) != 0) {
             /* Fail closed on OOM (the value ref is consumed by patch_add on
              * failure, so nothing to release) */
             emit_error(ctx, p, "out of memory while applying default value");
@@ -1749,8 +1770,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 /* The vec did not take the ref: release the node and the
                  * already-collected logic entries, then propagate NOMEM */
                 celix_jansson_schema_unref(stolen);
+                //LCOV_EXCL_START: unreachable — the not node is always the first
+                //vec_push, so the logic vec is empty at this point (defensive loop)
                 for (size_t k = 0; k < logic.len; k++)
                     celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                //LCOV_EXCL_STOP
                 celix_jansson_vec_free(&logic);
                 return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
             }
@@ -1804,8 +1828,12 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     /* The vec did not take the ref: release the node and the
                      * already-collected logic entries, then propagate NOMEM */
                     celix_jansson_schema_unref(stolen);
+                    //LCOV_EXCL_START: unreachable — the vec grows 0→4 on the first
+                    //push and holds at most 4 entries (not + 3 combos), so a combo
+                    //push can only fail as the first push, with the vec still empty
                     for (size_t k = 0; k < logic.len; k++)
                         celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                    //LCOV_EXCL_STOP
                     celix_jansson_vec_free(&logic);
                     return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 }
@@ -2164,12 +2192,19 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
                 tok_end++;
 
             /* Decode token */
-            celix_jansson_strbuf_t tsb;
+            celix_auto(celix_jansson_strbuf_t) tsb;
             celix_jansson_strbuf_init(&tsb);
             for (const char* c = tok_start; c < tok_end; c++) {
-                if (*c == '~' && *(c+1) == '0') { celix_jansson_strbuf_appendc(&tsb, '~'); c++; }
-                else if (*c == '~' && *(c+1) == '1') { celix_jansson_strbuf_appendc(&tsb, '/'); c++; }
-                else celix_jansson_strbuf_appendc(&tsb, *c);
+                int rc;
+                if (*c == '~' && *(c+1) == '0') { rc = celix_jansson_strbuf_appendc(&tsb, '~'); c++; }
+                else if (*c == '~' && *(c+1) == '1') { rc = celix_jansson_strbuf_appendc(&tsb, '/'); c++; }
+                else rc = celix_jansson_strbuf_appendc(&tsb, *c);
+                if (rc != 0) {
+                    /* OOM: abort the walk (see the "internal OOMs surface as
+                     * NULL" note above) rather than continue with a truncated
+                     * token; tsb is released automatically. */
+                    return NULL;
+                }
             }
             char* token = celix_jansson_strbuf_detach(&tsb);
             if (!token) {
