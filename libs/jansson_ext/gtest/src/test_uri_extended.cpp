@@ -305,3 +305,94 @@ TEST(UriExtendedTest, AppendToIdentifierUriIsNoOp) {
     celix_jansson_uri_clear(&base);
     celix_jansson_uri_clear(&result);
 }
+
+/* ── reusing the out buffer (documented: out is cleared first) ───────────── */
+
+TEST(UriExtendedTest, DeriveReuseOutputBuffer) {
+    celix_jansson_uri_t base, out;
+    memset(&base, 0, sizeof(base));
+    memset(&out, 0, sizeof(out));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema"));
+    /* Pre-fill out with an unrelated URI — derive must not leak or keep
+     * these stale components (out is cleared first) */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&out, "http://stale.example/old#/definitions/old"));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, "child.json", &out));
+    char* loc = celix_jansson_uri_location(&out);
+    EXPECT_STREQ("http://example.com/child.json", loc);
+    free(loc);
+
+    /* Second derive into the same out without clearing in between */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, "other.json", &out));
+    loc = celix_jansson_uri_location(&out);
+    EXPECT_STREQ("http://example.com/other.json", loc);
+    free(loc);
+
+    celix_jansson_uri_clear(&base);
+    celix_jansson_uri_clear(&out);
+}
+
+TEST(UriExtendedTest, AppendReuseOutputBuffer) {
+    celix_jansson_uri_t base, out;
+    memset(&base, 0, sizeof(base));
+    memset(&out, 0, sizeof(out));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/schema#/definitions"));
+    /* Pre-fill out with an unrelated URI */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&out, "http://stale.example/old#/definitions/old"));
+
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_append(&base, "Foo", &out));
+    char* frag = celix_jansson_uri_fragment(&out);
+    EXPECT_STREQ("/definitions/Foo", frag);
+    free(frag);
+
+    /* Second append into the same out — stale tokens must not accumulate */
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_append(&base, "Bar", &out));
+    frag = celix_jansson_uri_fragment(&out);
+    EXPECT_STREQ("/definitions/Bar", frag);
+    free(frag);
+
+    celix_jansson_uri_clear(&base);
+    celix_jansson_uri_clear(&out);
+}
+
+/* ── celix_auto automatic cleanup ────────────────────────────────────────── */
+
+TEST(UriExtendedTest, AutoInit) {
+    /* celix_auto → celix_jansson_uri_clear() runs at scope exit. */
+    celix_auto(celix_jansson_uri_t) u;
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&u, "http://example.com/schema#/definitions/foo"));
+
+    char* loc = celix_jansson_uri_location(&u);
+    EXPECT_STREQ("http://example.com/schema", loc);
+    free(loc);
+    char* frag = celix_jansson_uri_fragment(&u);
+    EXPECT_STREQ("/definitions/foo", frag);
+    free(frag);
+}
+
+TEST(UriExtendedTest, AutoZeroedStructSafe) {
+    /* Zeroed struct is safe to auto-clean without any init. */
+    celix_auto(celix_jansson_uri_t) u{};
+}
+
+TEST(UriExtendedTest, AutoInitFailureIsSafe) {
+    /* init() zeroes first and clears on failure, so scope-exit cleanup is
+     * safe even when init fails (here: '~' not followed by 0/1). */
+    celix_auto(celix_jansson_uri_t) u;
+    ASSERT_NE(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&u, "http://example.com/schema#/bad~"));
+}
+
+TEST(UriExtendedTest, AutoDeriveInto) {
+    celix_auto(celix_jansson_uri_t) base;
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_init(&base, "http://example.com/root"));
+
+    /* Both URIs are cleared automatically at scope exit. */
+    celix_auto(celix_jansson_uri_t) out{};
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_uri_derive(&base, "child.json", &out));
+
+    char* loc = celix_jansson_uri_location(&out);
+    EXPECT_STREQ("http://example.com/child.json", loc);
+    free(loc);
+}

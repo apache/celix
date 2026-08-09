@@ -62,7 +62,7 @@ int celix_jansson_uri_init(celix_jansson_uri_t* u, const char* uri_str) {
 
 int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str) {
     if (!uri_str)
-        return 0;
+        return 0; /* NULL is a no-op (keep current contents); "" clears instead */
 
     /* Split at first '#' */
     const char* hash = strchr(uri_str, '#');
@@ -213,7 +213,8 @@ int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str) {
 }
 
 int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_str, celix_jansson_uri_t* out) {
-    /* Start with a copy of the base */
+    /* Reset out first (defensive: safe if caller reuses the buffer);
+     * base is copied by the strdup block below */
     celix_jansson_uri_clear(out);
 
     /* Copy base components; each strdup is checked individually so no OOM
@@ -262,8 +263,9 @@ int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_st
 }
 
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out) {
-    /* Start with a copy; each strdup is checked individually so no OOM goes
-     * unhandled (on failure out is left fully cleared) */
+    /* Reset out first (defensive: safe if caller reuses the buffer);
+     * u is copied by the strdup block below; each strdup is checked individually
+     * so no OOM goes unhandled (on failure out is left fully cleared) */
     celix_jansson_uri_clear(out);
     out->scheme = u->scheme ? strdup(u->scheme) : NULL;
     if (u->scheme && !out->scheme) {

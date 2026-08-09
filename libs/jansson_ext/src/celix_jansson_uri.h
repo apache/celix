@@ -21,6 +21,7 @@
 
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
 #include "celix_jansson_schema.h"
 #include "celix_jansson_pointer.h"
 
@@ -40,23 +41,30 @@ typedef struct celix_jansson_uri_t {
 } celix_jansson_uri_t;
 
 /** Initialize/parse a URI from a string. Returns JSS error code.
+ * NULL and "" both produce an empty URI (the struct is zeroed first).
  * On failure (NOMEM) @p u is left fully cleared. */
 int celix_jansson_uri_init(celix_jansson_uri_t* u, const char* uri_str);
 
 /** Update a URI in-place by resolving @p uri_str against it.
+ * NULL keeps the current contents unchanged; "" clears everything
+ * (empty URI) — the two are NOT equivalent here.
  * On failure (NOMEM) @p u may be left partially modified; callers must call
  * celix_jansson_uri_clear() (init and derive already clear on failure). */
 int celix_jansson_uri_update(celix_jansson_uri_t* u, const char* uri_str);
 
 /**
  * Derive a new URI by resolving @p uri_str relative to @p base.
- * @p out must be zero-initialized (or a fresh celix_jansson_uri_init result).
+ * A NULL @p uri_str copies @p base unchanged; "" resolves to an empty URI.
+ * @p out must be zero-initialized, or hold an existing URI to be reused
+ * (it is cleared first); never pass uninitialized stack memory.
  */
 int celix_jansson_uri_derive(const celix_jansson_uri_t* base, const char* uri_str, celix_jansson_uri_t* out);
 
 /**
  * Append a JSON Pointer token to the URI (no-op if the URI has an
  * identifier fragment).
+ * @p out must be zero-initialized, or hold an existing URI to be reused
+ * (it is cleared first); never pass uninitialized stack memory.
  */
 int celix_jansson_uri_append(const celix_jansson_uri_t* u, const char* token, celix_jansson_uri_t* out);
 
@@ -80,6 +88,10 @@ bool celix_jansson_uri_equals(const celix_jansson_uri_t* a, const celix_jansson_
 
 /** Free all memory held by a URI. */
 void celix_jansson_uri_clear(celix_jansson_uri_t* u);
+
+/* Enables `celix_auto(celix_jansson_uri_t) u;` for scope-based automatic
+ * cleanup. Safe on zeroed structs (clear() frees NULLs and re-zeroes). */
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_jansson_uri_t, celix_jansson_uri_clear)
 
 #ifdef __cplusplus
 }
