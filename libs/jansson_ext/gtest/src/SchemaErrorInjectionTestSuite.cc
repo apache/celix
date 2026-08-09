@@ -21,6 +21,7 @@
 
 #include "celix_cleanup.h"
 #include "celix_jansson_pointer.h"
+#include "celix_json_patch.h"
 #include "celix_jansson_schema.h"
 #include "celix_jansson_uri.h"
 #include "celix_string_hash_map_ei.h"
@@ -58,6 +59,7 @@ public:
         celix_ei_expect_strdup(nullptr, 0, nullptr);
         celix_ei_expect_json_deep_copy(nullptr, 0, nullptr);
         celix_ei_expect_json_array(nullptr, 0, nullptr);
+        celix_ei_expect_json_array_append_new(nullptr, 0, 0);
         celix_ei_expect_json_string(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_put(nullptr, 0, CELIX_ENOMEM);
@@ -1429,6 +1431,131 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePathStrFallbackOom
     int errorCount = 0;
     celix_ei_expect_strdup((void*)celix_jansson_path_str, 0, nullptr);
     //Then the type error is still reported with an empty path instead of NULL
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+/* ── Round 2: logic vec_push, invalid schema entries, default handling ── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaLogicNotVecPushOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //not-node push into the logic vec (the first vec_push of the compile)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"not\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr);
+    //Then compiling fails with NOMEM instead of leaking the not node and
+    //silently dropping the keyword
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaLogicComboVecPushOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //combo-node push into the logic vec (the first vec_push of the compile)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"allOf\":[{\"type\":\"string\"}]}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr);
+    //Then compiling fails with NOMEM instead of leaking the combo node and
+    //silently dropping the keyword
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRequiredNonStringElement) {
+    //Given a required array containing a non-string entry
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"required\":[1]}");
+    ASSERT_NE(nullptr, schema);
+    //Then compiling rejects the schema instead of crashing on strdup(NULL)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDependenciesNonStringElement) {
+    //Given a dependencies-array containing a non-string entry
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"dependencies\":{\"a\":[1]}}");
+    ASSERT_NE(nullptr, schema);
+    //Then compiling rejects the schema instead of crashing on strdup(NULL)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultBasePathOomFail) {
+    //Given strdup is injected to fail for path_str's empty-string fallback,
+    //making the default-fill base_path NULL (the snprintf guard must not UB)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{}");
+    int errorCount = 0;
+    celix_ei_expect_strdup((void*)celix_jansson_path_str, 0, nullptr);
+    //Then the default patch is still applied with an empty path, no crash
+    EXPECT_EQ(0, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(0, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefaultDeepCopyOomFail) {
+    //Given json_deep_copy is injected to fail for the type-schema default
+    //(1st level-2 deep_copy: set_root_schema's two copies are level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"default\":\"x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_json_deep_copy((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling fails with NOMEM instead of silently dropping the default
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRefDefaultDeepCopyOomFail) {
+    //Given json_deep_copy is injected to fail for the $ref default
+    //(1st level-1 deep_copy: deep_copy <- depth <- set_root_schema)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"#\",\"default\":\"x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_json_deep_copy((void*)celix_jansson_schema_set_root_schema, 1, nullptr);
+    //Then compiling fails with NOMEM instead of silently dropping the default
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultPatchOomFail) {
+    //Given a property default and json_array_append_new is injected to fail
+    //inside celix_json_patch_add (its only append point)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{}");
+    int errorCount = 0;
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_add, 0, -1);
+    //Then validating fails closed with an out-of-memory error instead of
+    //silently dropping the default patch
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateRootDefaultPatchOomFail) {
+    //Given a root default (no type, so a null instance passes the type check)
+    //and json_array_append_new is injected to fail inside celix_json_patch_add
+    //(its only append point)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"default\":\"x\"}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_null();
+    int errorCount = 0;
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_add, 0, -1);
+    //Then validating fails closed with an out-of-memory error instead of
+    //silently dropping the root default patch
     EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
     EXPECT_EQ(1, errorCount);
 }
