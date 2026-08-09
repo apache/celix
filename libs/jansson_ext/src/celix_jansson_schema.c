@@ -177,6 +177,8 @@ emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path
     char buf[1024];
     vsnprintf(buf, sizeof(buf), fmt, ap);
     const char* ps = path ? celix_jansson_path_str(path) : "";
+    if (!ps)
+        ps = ""; /* path_str can return NULL only if its empty-string fallback allocation failed */
     ctx->sink->emit(ctx->sink, ps, NULL, buf);
 }
 
@@ -233,6 +235,16 @@ static void first_destroy(celix_jansson_error_sink_t* s) {
     free(fs);
 }
 
+/* Allocate a first-error sink. Returns NULL on OOM. */
+static first_sink_t* first_sink_new(void) {
+    first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
+    if (!fs)
+        return NULL;
+    fs->base.emit = first_emit;
+    fs->base.destroy = first_destroy;
+    return fs;
+}
+
 /* -- collecting sink -- */
 typedef struct {
     celix_jansson_error_sink_t base;
@@ -254,9 +266,11 @@ static void coll_propagate(collecting_sink_t* cs, celix_jansson_error_sink_t* pa
         celix_jansson_strbuf_init(&sb);
         if (prefix)
             celix_jansson_strbuf_appends(&sb, prefix);
-        celix_jansson_strbuf_appends(&sb, e->message);
+        /* strdup inside error_list_add can fail, leaving NULL message/ptr:
+         * fall back to an empty string so appends(NULL)/emit(NULL) never happen */
+        celix_jansson_strbuf_appends(&sb, e->message ? e->message : "");
         char* full = celix_jansson_strbuf_detach(&sb);
-        parent->emit(parent, e->ptr, e->instance, full ? full : e->message);
+        parent->emit(parent, e->ptr ? e->ptr : "", e->instance, full ? full : (e->message ? e->message : ""));
         free(full);
     }
 }
@@ -310,6 +324,30 @@ int celix_jansson_type_index(json_t* value) {
         return -1;
     //LCOV_EXCL_STOP
     }
+}
+
+/* Build a child path by copying the parent's tokens and appending one more.
+ * Fail-closes on OOM: reports the failure through the sink and returns false
+ * so the caller aborts the current validation pass instead of descending with
+ * a truncated path. */
+static bool path_child_checked(celix_jansson_path_t* child,
+                               celix_jansson_path_t* parent,
+                               const char* token,
+                               celix_jansson_validation_context_t* ctx,
+                               int* errs) {
+    for (size_t i = 0; i < parent->len; i++) {
+        if (celix_jansson_path_push(child, parent->tokens[i]) != 0) {
+            emit_error(ctx, parent, "out of memory while building instance path");
+            (*errs)++;
+            return false;
+        }
+    }
+    if (celix_jansson_path_push(child, token) != 0) {
+        emit_error(ctx, parent, "out of memory while building instance path");
+        (*errs)++;
+        return false;
+    }
+    return true;
 }
 
 /* UTF-8 code point count (count non-continuation bytes) */
@@ -525,9 +563,10 @@ static int v_required(const celix_jansson_schema_node_t* n,
         if (!v) {
             celix_jansson_path_t pp;
             celix_jansson_path_init(&pp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&pp, p->tokens[pi]);
-            celix_jansson_path_push(&pp, n->u.required.names[i]);
+            if (!path_child_checked(&pp, p, n->u.required.names[i], ctx, &errs)) {
+                celix_jansson_path_free(&pp);
+                return errs;
+            }
             emit_error(ctx, &pp, "required property '%s' not found in object", n->u.required.names[i]);
             celix_jansson_path_free(&pp);
             errs++;
@@ -702,11 +741,19 @@ static int v_object(const celix_jansson_schema_node_t* n,
         /* propertyNames */
         if (n->u.object.property_names) {
             json_t* kname = json_string(key);
+            if (!kname) {
+                /* Fail closed on OOM: stop the validation pass */
+                emit_error(ctx, p, "out of memory while validating property name '%s'", key);
+                errs++;
+                return errs;
+            }
             celix_jansson_path_t kp;
             celix_jansson_path_init(&kp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&kp, p->tokens[pi]);
-            celix_jansson_path_push(&kp, key);
+            if (!path_child_checked(&kp, p, key, ctx, &errs)) {
+                celix_jansson_path_free(&kp);
+                json_decref(kname);
+                return errs;
+            }
             errs += n->u.object.property_names->vtable->validate(n->u.object.property_names, kname, &kp, ctx);
             celix_jansson_path_free(&kp);
             json_decref(kname);
@@ -715,9 +762,10 @@ static int v_object(const celix_jansson_schema_node_t* n,
 
         celix_jansson_path_t cp;
         celix_jansson_path_init(&cp);
-        for (size_t pi = 0; pi < p->len; pi++)
-            celix_jansson_path_push(&cp, p->tokens[pi]);
-        celix_jansson_path_push(&cp, key);
+        if (!path_child_checked(&cp, p, key, ctx, &errs)) {
+            celix_jansson_path_free(&cp);
+            return errs;
+        }
 
         bool matched = false;
 
@@ -740,9 +788,15 @@ static int v_object(const celix_jansson_schema_node_t* n,
 
         /* additionalProperties */
         if (!matched && n->u.object.additional_properties) {
-            first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
-            fs->base.emit = first_emit;
-            fs->base.destroy = first_destroy;
+            first_sink_t* fs = first_sink_new();
+            if (!fs) {
+                /* Fail closed: the additional-property check cannot be
+                 * evaluated, so stop the validation pass */
+                emit_error(ctx, &cp, "out of memory while validating additional property '%s'", key);
+                errs++;
+                celix_jansson_path_free(&cp);
+                return errs;
+            }
             celix_jansson_validation_context_t fctx = *ctx;
             fctx.sink = &fs->base;
             n->u.object.additional_properties->vtable->validate(n->u.object.additional_properties, val, &cp, &fctx);
@@ -768,9 +822,10 @@ static int v_object(const celix_jansson_schema_node_t* n,
                     if (ps->vtable && ps->vtable->default_value) {
                         celix_jansson_path_t dp;
                         celix_jansson_path_init(&dp);
-                        for (size_t pi = 0; pi < p->len; pi++)
-                            celix_jansson_path_push(&dp, p->tokens[pi]);
-                        celix_jansson_path_push(&dp, pk);
+                        if (!path_child_checked(&dp, p, pk, ctx, &errs)) {
+                            celix_jansson_path_free(&dp);
+                            return errs;
+                        }
                         def = ps->vtable->default_value(ps, &dp, inst, ctx);
                         celix_jansson_path_free(&dp);
                     }
@@ -808,9 +863,10 @@ static void obj_validate_deps(const celix_jansson_schema_node_t* n,
         if (dep) {
             celix_jansson_path_t cp;
             celix_jansson_path_init(&cp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&cp, p->tokens[pi]);
-            celix_jansson_path_push(&cp, key);
+            if (!path_child_checked(&cp, p, key, ctx, errs)) {
+                celix_jansson_path_free(&cp);
+                return;
+            }
             *errs += dep->vtable->validate(dep, inst, &cp, ctx);
             celix_jansson_path_free(&cp);
         }
@@ -868,9 +924,10 @@ static int v_array(const celix_jansson_schema_node_t* n,
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_jansson_path_t cp;
             celix_jansson_path_init(&cp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&cp, p->tokens[pi]);
-            celix_jansson_path_push(&cp, idx);
+            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+                celix_jansson_path_free(&cp);
+                return errs;
+            }
             errs +=
                 n->u.array.items_schema->vtable->validate(n->u.array.items_schema, json_array_get(inst, i), &cp, ctx);
             celix_jansson_path_free(&cp);
@@ -883,9 +940,10 @@ static int v_array(const celix_jansson_schema_node_t* n,
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_jansson_path_t cp;
             celix_jansson_path_init(&cp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&cp, p->tokens[pi]);
-            celix_jansson_path_push(&cp, idx);
+            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+                celix_jansson_path_free(&cp);
+                return errs;
+            }
             errs += n->u.array.items[i]->vtable->validate(n->u.array.items[i], json_array_get(inst, i), &cp, ctx);
             celix_jansson_path_free(&cp);
         }
@@ -896,9 +954,10 @@ static int v_array(const celix_jansson_schema_node_t* n,
                 snprintf(idx, sizeof(idx), "%zu", i);
                 celix_jansson_path_t cp;
                 celix_jansson_path_init(&cp);
-                for (size_t pi = 0; pi < p->len; pi++)
-                    celix_jansson_path_push(&cp, p->tokens[pi]);
-                celix_jansson_path_push(&cp, idx);
+                if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+                    celix_jansson_path_free(&cp);
+                    return errs;
+                }
                 errs += n->u.array.additional_items->vtable->validate(
                     n->u.array.additional_items, json_array_get(inst, i), &cp, ctx);
                 celix_jansson_path_free(&cp);
@@ -910,18 +969,24 @@ static int v_array(const celix_jansson_schema_node_t* n,
     if (n->u.array.contains) {
         bool found = false;
         for (size_t i = 0; i < sz && !found; i++) {
-            first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
-            fs->base.emit = first_emit;
-            fs->base.destroy = first_destroy;
+            first_sink_t* fs = first_sink_new();
+            if (!fs) {
+                /* Fail closed: 'contains' cannot be evaluated, so stop */
+                emit_error(ctx, p, "out of memory while validating 'contains'");
+                errs++;
+                return errs;
+            }
             celix_jansson_validation_context_t fctx = *ctx;
             fctx.sink = &fs->base;
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_jansson_path_t cp;
             celix_jansson_path_init(&cp);
-            for (size_t pi = 0; pi < p->len; pi++)
-                celix_jansson_path_push(&cp, p->tokens[pi]);
-            celix_jansson_path_push(&cp, idx);
+            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+                celix_jansson_path_free(&cp);
+                fs->base.destroy(&fs->base);
+                return errs;
+            }
             int rc = n->u.array.contains->vtable->validate(n->u.array.contains, json_array_get(inst, i), &cp, &fctx);
             celix_jansson_path_free(&cp);
             if (rc == 0)
@@ -943,9 +1008,12 @@ static int v_not(const celix_jansson_schema_node_t* n,
                  json_t* inst,
                  celix_jansson_path_t* p,
                  celix_jansson_validation_context_t* ctx) {
-    first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
-    fs->base.emit = first_emit;
-    fs->base.destroy = first_destroy;
+    first_sink_t* fs = first_sink_new();
+    if (!fs) {
+        /* Fail closed: cannot determine whether the subschema validates */
+        emit_error(ctx, p, "out of memory while validating 'not'");
+        return 1;
+    }
     celix_jansson_validation_context_t fctx = *ctx;
     fctx.sink = &fs->base;
     int sub_errs = n->u.not_schema.sub->vtable->validate(n->u.not_schema.sub, inst, p, &fctx);
@@ -1100,9 +1168,13 @@ static int v_type(const celix_jansson_schema_node_t* n,
 
     /* if/then/else */
     if (n->u.type_schema.if_schema) {
-        first_sink_t* fs = (first_sink_t*)calloc(1, sizeof(*fs));
-        fs->base.emit = first_emit;
-        fs->base.destroy = first_destroy;
+        first_sink_t* fs = first_sink_new();
+        if (!fs) {
+            /* Fail closed: the if-condition cannot be evaluated */
+            emit_error(ctx, p, "out of memory while evaluating 'if'");
+            errs++;
+            return errs;
+        }
         celix_jansson_validation_context_t fctx = *ctx;
         fctx.sink = &fs->base;
         int if_errs = n->u.type_schema.if_schema->vtable->validate(n->u.type_schema.if_schema, inst, p, &fctx);
@@ -1165,7 +1237,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                             const celix_jansson_uri_t* base,
                             celix_jansson_schema_node_t** out,
                             int depth) {
-    celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+    celix_autoptr(celix_jansson_schema_node_t) n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
     if (!n)
         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
     n->vtable = &vt_type;
@@ -1195,11 +1267,9 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 slot = 6;
             if (slot >= 0) {
                 /* Create per-type validator */
-                celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
-                if (!typed) {
-                    free(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                }
+                celix_autoptr(celix_jansson_schema_node_t) typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+                if (!typed)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd (d_type unrefs filled slots) */
                 typed->root = root;
                 typed->refcount = 1;
                 switch (slot) {
@@ -1232,7 +1302,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT;
                     break;
                 }
-                n->u.type_schema.type_slots[slot] = typed;
+                n->u.type_schema.type_slots[slot] = celix_steal_ptr(typed);
             }
         } else if (json_is_array(type_val)) {
             for (size_t i = 0; i < json_array_size(type_val); i++) {
@@ -1255,13 +1325,9 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 else if (strcmp(tname, "number") == 0)
                     slot = 6;
                 if (slot >= 0) {
-                    celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
-                    if (!typed) {
-                        /* Earlier iterations of the array form may already have filled
-                         * type_slots → unref(n) (d_type unrefs each slot) not free(n) */
-                        celix_jansson_schema_unref(n);
-                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                    }
+                    celix_autoptr(celix_jansson_schema_node_t) typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+                    if (!typed)
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd (d_type unrefs filled slots) */
                     typed->root = root;
                     typed->refcount = 1;
                     switch (slot) {
@@ -1294,19 +1360,16 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                         typed->kind = CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT;
                         break;
                     }
-                    n->u.type_schema.type_slots[slot] = typed;
+                    n->u.type_schema.type_slots[slot] = celix_steal_ptr(typed);
                 }
             }
         }
     } else {
         /* No type specified — all slots */
         for (int slot = 0; slot < 7; slot++) {
-            celix_jansson_schema_node_t* typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
-            if (!typed) {
-                /* Earlier iterations may already have filled type_slots */
-                celix_jansson_schema_unref(n);
-                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-            }
+            celix_autoptr(celix_jansson_schema_node_t) typed = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+            if (!typed)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd (d_type unrefs filled slots) */
             typed->root = root;
             typed->refcount = 1;
             static const schema_vtable* slots[] = {
@@ -1320,7 +1383,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                                                                      CELIX_JANSSON_SCHEMA_KIND_NUMERIC_INT,
                                                                      CELIX_JANSSON_SCHEMA_KIND_NUMERIC_FLOAT};
             typed->kind = kinds[slot];
-            n->u.type_schema.type_slots[slot] = typed;
+            n->u.type_schema.type_slots[slot] = celix_steal_ptr(typed);
         }
     }
 
@@ -1344,27 +1407,27 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             if ((v = json_object_get(sch, "pattern"))) {
                 const char* ps = json_string_value(v);
                 snode->u.string.pattern_str = strdup(ps);
+                if (!snode->u.string.pattern_str)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 snode->u.string.has_pattern = true;
-                if (regcomp(&snode->u.string.pattern, ps, REG_EXTENDED) != 0) {
-                    d_type(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN;
-                }
+                if (regcomp(&snode->u.string.pattern, ps, REG_EXTENDED) != 0)
+                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN; /* n auto-unref'd */
             }
             if ((v = json_object_get(sch, "format"))) {
-                snode->u.string.has_format = true;
                 snode->u.string.format = strdup(json_string_value(v));
-                if (!root->format) {
-                    d_type(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER;
-                }
+                if (!snode->u.string.format)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+                snode->u.string.has_format = true;
+                if (!root->format)
+                    return CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER; /* n auto-unref'd */
             }
             if ((v = json_object_get(sch, "contentEncoding"))) {
-                snode->u.string.has_content = true;
                 snode->u.string.content_encoding = strdup(json_string_value(v));
-                if (!root->content) {
-                    d_type(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER;
-                }
+                if (!snode->u.string.content_encoding)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+                snode->u.string.has_content = true;
+                if (!root->content)
+                    return CELIX_JANSSON_SCHEMA_ERROR_CONTENT_CHECKER; /* n auto-unref'd */
             }
             if ((v = json_object_get(sch, "contentMediaType"))) {
                 snode->u.string.has_content = true;
@@ -1434,32 +1497,30 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 size_t rlen = json_array_size(v);
                 onode->u.object.required = (char**)calloc(rlen, sizeof(char*));
                 /* Check before setting required_len (d_object loops over required_len) */
-                if (rlen > 0 && !onode->u.object.required) {
-                    celix_jansson_schema_unref(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                }
+                if (rlen > 0 && !onode->u.object.required)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 onode->u.object.required_len = rlen;
-                for (size_t i = 0; i < rlen; i++)
+                for (size_t i = 0; i < rlen; i++) {
                     onode->u.object.required[i] = strdup(json_string_value(json_array_get(v, i)));
+                    if (!onode->u.object.required[i])
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd (d_object frees NULL tails) */
+                }
             }
             if ((v = json_object_get(sch, "properties"))) {
                 onode->u.object.properties = obj_node_map_create();
-                if (!onode->u.object.properties) {
-                    celix_jansson_schema_unref(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                }
+                if (!onode->u.object.properties)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 const char* k;
                 json_t* pv;
                 json_object_foreach(v, k, pv) {
                     celix_jansson_schema_node_t* ps = NULL;
                     int rc = schema_make_internal(pv, root, base, &ps, depth + 1);
-                    if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                        /* Propagate the subschema compile error; d_object destroys the
-                         * properties map and unrefs the subschemas already inserted */
-                        celix_jansson_schema_unref(n);
-                        return rc;
+                    if (rc != CELIX_JANSSON_SCHEMA_OK)
+                        return rc; /* n auto-unref'd (d_object destroys the map and subschemas already inserted) */
+                    if (celix_stringHashMap_put(onode->u.object.properties, k, ps) != 0) {
+                        celix_jansson_schema_unref(ps); /* the map did not take the ref */
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                     }
-                    celix_stringHashMap_put(onode->u.object.properties, k, ps);
                 }
             }
             if ((v = json_object_get(sch, "patternProperties"))) {
@@ -1467,20 +1528,32 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 onode->u.object.pattern_properties = (typeof(onode->u.object.pattern_properties))calloc(
                     ppc, sizeof(*onode->u.object.pattern_properties));
                 /* Check before setting pp_len (d_object loops over pp_len) */
-                if (ppc > 0 && !onode->u.object.pattern_properties) {
-                    celix_jansson_schema_unref(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                }
+                if (ppc > 0 && !onode->u.object.pattern_properties)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 onode->u.object.pp_len = ppc;
                 const char* pk;
                 json_t* psch;
                 size_t idx = 0;
                 json_object_foreach(v, pk, psch) {
                     onode->u.object.pattern_properties[idx].sch = NULL;
-                    regcomp(&onode->u.object.pattern_properties[idx].re, pk, REG_EXTENDED);
+                    if (regcomp(&onode->u.object.pattern_properties[idx].re, pk, REG_EXTENDED) != 0) {
+                        /* The failed regcomp leaves the regex_t at idx undefined,
+                         * so only regfree the entries compiled so far (0..idx-1);
+                         * reset pp_len so d_object skips the never-compiled tail */
+                        for (size_t k = 0; k < idx; k++) {
+                            regfree(&onode->u.object.pattern_properties[k].re);
+                            celix_jansson_schema_unref(onode->u.object.pattern_properties[k].sch);
+                        }
+                        free(onode->u.object.pattern_properties);
+                        onode->u.object.pattern_properties = NULL;
+                        onode->u.object.pp_len = 0;
+                        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN;
+                    }
                     int rc = schema_make_internal(psch, root, base,
                                                   &onode->u.object.pattern_properties[idx].sch, depth + 1);
                     if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                        /* Manually release only the regcomp'd entries (0..idx) and reset
+                         * pp_len so d_object skips the never-compiled tail on n's auto-unref */
                         for (size_t k = 0; k <= idx; k++) {
                             regfree(&onode->u.object.pattern_properties[k].re);
                             celix_jansson_schema_unref(onode->u.object.pattern_properties[k].sch);
@@ -1488,7 +1561,6 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                         free(onode->u.object.pattern_properties);
                         onode->u.object.pattern_properties = NULL;
                         onode->u.object.pp_len = 0;
-                        celix_jansson_schema_unref(n);
                         return rc;
                     }
                     idx++;
@@ -1497,62 +1569,57 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             if ((v = json_object_get(sch, "additionalProperties"))) {
                 if (json_is_object(v) || json_is_boolean(v)) {
                     int rc = schema_make_internal(v, root, base, &onode->u.object.additional_properties, depth + 1);
-                    if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                        celix_jansson_schema_unref(n);
-                        return rc;
-                    }
+                    if (rc != CELIX_JANSSON_SCHEMA_OK)
+                        return rc; /* n auto-unref'd */
                 }
             }
             if ((v = json_object_get(sch, "dependencies"))) {
                 onode->u.object.dependencies = obj_node_map_create();
-                if (!onode->u.object.dependencies) {
-                    celix_jansson_schema_unref(n);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                }
+                if (!onode->u.object.dependencies)
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 const char* dk;
                 json_t* dv;
                 json_object_foreach(v, dk, dv) {
                     celix_jansson_schema_node_t* dep = NULL;
                     if (json_is_array(dv)) {
                         /* Array form → required list */
-                        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
-                        if (!rn) {
-                            celix_jansson_schema_unref(n);
-                            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                        }
+                        celix_autoptr(celix_jansson_schema_node_t) rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+                        if (!rn)
+                            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                         rn->vtable = &vt_required;
                         rn->kind = CELIX_JANSSON_SCHEMA_KIND_REQUIRED;
                         rn->root = root;
                         rn->refcount = 1;
                         size_t alen = json_array_size(dv);
                         rn->u.required.names = (char**)calloc(alen, sizeof(char*));
-                        /* Check before setting len (d_required loops over len) */
-                        if (alen > 0 && !rn->u.required.names) {
-                            free(rn); /* rn owns nothing yet */
-                            celix_jansson_schema_unref(n);
+                        /* Check before setting len; on failure rn auto-unrefs via d_required
+                         * (len=0, names=NULL → loop 0, free(NULL), free(rn)) */
+                        if (alen > 0 && !rn->u.required.names)
                             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                        }
                         rn->u.required.len = alen;
-                        for (size_t ai = 0; ai < alen; ai++)
+                        for (size_t ai = 0; ai < alen; ai++) {
                             rn->u.required.names[ai] = strdup(json_string_value(json_array_get(dv, ai)));
-                        dep = rn;
+                            if (!rn->u.required.names[ai])
+                                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n and rn auto-unref'd */
+                        }
+                        dep = celix_steal_ptr(rn);
                     } else {
                         int rc = schema_make_internal(dv, root, base, &dep, depth + 1);
-                        if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                            celix_jansson_schema_unref(n);
-                            return rc;
+                        if (rc != CELIX_JANSSON_SCHEMA_OK)
+                            return rc; /* n auto-unref'd */
+                    }
+                    if (dep) {
+                        if (celix_stringHashMap_put(onode->u.object.dependencies, dk, dep) != 0) {
+                            celix_jansson_schema_unref(dep); /* the map did not take the ref */
+                            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                         }
                     }
-                    if (dep)
-                        celix_stringHashMap_put(onode->u.object.dependencies, dk, dep);
                 }
             }
             if ((v = json_object_get(sch, "propertyNames"))) {
                 int rc = schema_make_internal(v, root, base, &onode->u.object.property_names, depth + 1);
-                if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                    celix_jansson_schema_unref(n);
-                    return rc;
-                }
+                if (rc != CELIX_JANSSON_SCHEMA_OK)
+                    return rc; /* n auto-unref'd */
             }
         }
     }
@@ -1575,30 +1642,28 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             if ((v = json_object_get(sch, "items"))) {
                 if (json_is_object(v) || json_is_boolean(v)) {
                     int rc = schema_make_internal(v, root, base, &anode->u.array.items_schema, depth + 1);
-                    if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                        celix_jansson_schema_unref(n);
-                        return rc;
-                    }
+                    if (rc != CELIX_JANSSON_SCHEMA_OK)
+                        return rc; /* n auto-unref'd */
                 } else if (json_is_array(v)) {
                     size_t ilen = json_array_size(v);
                     anode->u.array.items =
                         (celix_jansson_schema_node_t**)calloc(ilen, sizeof(celix_jansson_schema_node_t*));
                     /* Check before setting items_len (d_array loops over items_len) */
-                    if (ilen > 0 && !anode->u.array.items) {
-                        celix_jansson_schema_unref(n);
-                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
-                    }
+                    if (ilen > 0 && !anode->u.array.items)
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                     anode->u.array.items_len = ilen;
                     for (size_t i = 0; i < ilen; i++) {
                         int rc = schema_make_internal(json_array_get(v, i), root, base,
                                                       &anode->u.array.items[i], depth + 1);
                         if (rc != CELIX_JANSSON_SCHEMA_OK) {
+                            /* Manually release the compiled entries (0..i-1) and reset
+                             * items_len so d_array skips the never-compiled tail on
+                             * n's auto-unref */
                             for (size_t k = 0; k < i; k++)
                                 celix_jansson_schema_unref(anode->u.array.items[k]);
                             free(anode->u.array.items);
                             anode->u.array.items = NULL;
                             anode->u.array.items_len = 0;
-                            celix_jansson_schema_unref(n);
                             return rc;
                         }
                     }
@@ -1606,17 +1671,13 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             }
             if ((v = json_object_get(sch, "additionalItems"))) {
                 int rc = schema_make_internal(v, root, base, &anode->u.array.additional_items, depth + 1);
-                if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                    celix_jansson_schema_unref(n);
-                    return rc;
-                }
+                if (rc != CELIX_JANSSON_SCHEMA_OK)
+                    return rc; /* n auto-unref'd */
             }
             if ((v = json_object_get(sch, "contains"))) {
                 int rc = schema_make_internal(v, root, base, &anode->u.array.contains, depth + 1);
-                if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                    celix_jansson_schema_unref(n);
-                    return rc;
-                }
+                if (rc != CELIX_JANSSON_SCHEMA_OK)
+                    return rc; /* n auto-unref'd */
             }
         }
     }
@@ -1625,8 +1686,10 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
     {
         json_t* v = json_object_get(sch, "enum");
         if (v) {
-            n->u.type_schema.has_enum = true;
             n->u.type_schema.enum_values = json_deep_copy(v);
+            if (!n->u.type_schema.enum_values)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+            n->u.type_schema.has_enum = true;
         }
     }
 
@@ -1634,8 +1697,10 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
     {
         json_t* v = json_object_get(sch, "const");
         if (v) {
-            n->u.type_schema.has_const = true;
             n->u.type_schema.const_value = json_deep_copy(v);
+            if (!n->u.type_schema.const_value)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+            n->u.type_schema.has_const = true;
         }
     }
 
@@ -1645,26 +1710,23 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
         celix_jansson_vec_t logic;
         celix_jansson_vec_init(&logic);
         if ((v = json_object_get(sch, "not"))) {
-            celix_jansson_schema_node_t* sub;
+            celix_autoptr(celix_jansson_schema_node_t) sub = NULL;
             int rc = schema_make_internal(v, root, base, &sub, depth + 1);
             if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                celix_jansson_schema_unref(n);
                 celix_jansson_vec_free(&logic);
-                return rc;
+                return rc; /* n and sub auto-unref'd */
             }
-            celix_jansson_schema_node_t* nn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*nn));
+            celix_autoptr(celix_jansson_schema_node_t) nn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*nn));
             if (!nn) {
-                celix_jansson_schema_unref(sub); /* sub was compiled successfully above */
-                celix_jansson_schema_unref(n);
                 celix_jansson_vec_free(&logic);
-                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n and sub auto-unref'd */
             }
             nn->vtable = &vt_not;
             nn->kind = CELIX_JANSSON_SCHEMA_KIND_NOT;
             nn->root = root;
             nn->refcount = 1;
-            nn->u.not_schema.sub = sub;
-            celix_jansson_vec_push(&logic, nn);
+            nn->u.not_schema.sub = celix_steal_ptr(sub);
+            celix_jansson_vec_push(&logic, celix_steal_ptr(nn)); /* both disarmed before the vec takes them */
         }
         static const char* combos[] = {"allOf", "anyOf", "oneOf"};
         static const enum celix_jansson_schema_kind_e ckinds[] = {
@@ -1672,14 +1734,13 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
         for (int ci = 0; ci < 3; ci++) {
             if ((v = json_object_get(sch, combos[ci]))) {
                 size_t clen = json_array_size(v);
-                celix_jansson_schema_node_t* cn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*cn));
+                celix_autoptr(celix_jansson_schema_node_t) cn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*cn));
                 if (!cn) {
                     /* logic may already hold a not node or earlier combos */
                     for (size_t k = 0; k < logic.len; k++)
                         celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
-                    celix_jansson_schema_unref(n);
                     celix_jansson_vec_free(&logic);
-                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 }
                 cn->vtable = &vt_comb;
                 cn->kind = ckinds[ci];
@@ -1687,12 +1748,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 cn->refcount = 1;
                 cn->u.combination.items =
                     (celix_jansson_schema_node_t**)calloc(clen, sizeof(celix_jansson_schema_node_t*));
-                /* Check before setting len (d_comb loops over len) */
+                /* Check before setting len; on failure cn auto-unrefs via d_comb
+                 * (len=0, items=NULL → loop 0, free(NULL), free(cn)) */
                 if (clen > 0 && !cn->u.combination.items) {
-                    free(cn); /* cn is not registered in logic yet */
                     for (size_t k = 0; k < logic.len; k++)
                         celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
-                    celix_jansson_schema_unref(n);
                     celix_jansson_vec_free(&logic);
                     return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
                 }
@@ -1701,21 +1761,18 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     int rc = schema_make_internal(json_array_get(v, j), root, base,
                                                   &cn->u.combination.items[j], depth + 1);
                     if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                        /* Propagate schema compile errors */
-                        for (size_t k = 0; k < j; k++)
-                            celix_jansson_schema_unref(cn->u.combination.items[k]);
-                        free(cn->u.combination.items);
-                        free(cn);
+                        /* Propagate schema compile errors. cn auto-unrefs via d_comb:
+                         * len is already clen and items[j..clen-1] are NULL from calloc
+                         * (unref is NULL-safe), d_comb frees the array and cn. */
                         /* vec_free only frees the array, not the elements: unref the
                          * not/earlier-combo nodes pushed into logic so far */
                         for (size_t k = 0; k < logic.len; k++)
                             celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
-                        celix_jansson_schema_unref(n);
                         celix_jansson_vec_free(&logic);
-                        return rc;
+                        return rc; /* n and cn auto-unref'd */
                     }
                 }
-                celix_jansson_vec_push(&logic, cn);
+                celix_jansson_vec_push(&logic, celix_steal_ptr(cn));
             }
         }
         if (logic.len > 0) {
@@ -1729,25 +1786,19 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
         json_t* ifv = json_object_get(sch, "if");
         if (ifv) {
             int rc = schema_make_internal(ifv, root, base, &n->u.type_schema.if_schema, depth + 1);
-            if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                celix_jansson_schema_unref(n);
-                return rc;
-            }
+            if (rc != CELIX_JANSSON_SCHEMA_OK)
+                return rc; /* n auto-unref'd */
             json_t* thenv = json_object_get(sch, "then");
             if (thenv) {
                 rc = schema_make_internal(thenv, root, base, &n->u.type_schema.then_schema, depth + 1);
-                if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                    celix_jansson_schema_unref(n);
-                    return rc;
-                }
+                if (rc != CELIX_JANSSON_SCHEMA_OK)
+                    return rc; /* n auto-unref'd */
             }
             json_t* elsev = json_object_get(sch, "else");
             if (elsev) {
                 rc = schema_make_internal(elsev, root, base, &n->u.type_schema.else_schema, depth + 1);
-                if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                    celix_jansson_schema_unref(n);
-                    return rc;
-                }
+                if (rc != CELIX_JANSSON_SCHEMA_OK)
+                    return rc; /* n auto-unref'd */
             }
         }
     }
@@ -1759,7 +1810,7 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             n->default_value = json_deep_copy(dv);
     }
 
-    *out = n;
+    *out = celix_steal_ptr(n);
     return CELIX_JANSSON_SCHEMA_OK;
 }
 
@@ -1805,7 +1856,7 @@ static int schema_make_internal_depth(json_t* sch,
 
     if (json_is_boolean(sch))
     {
-        celix_jansson_schema_node_t* n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
+        celix_autoptr(celix_jansson_schema_node_t) n = (celix_jansson_schema_node_t*)calloc(1, sizeof(*n));
         if (!n)
             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
         n->vtable = &vt_boolean;
@@ -1813,7 +1864,7 @@ static int schema_make_internal_depth(json_t* sch,
         n->root = root;
         n->refcount = 1;
         n->u.boolean.value = json_boolean_value(sch);
-        *out = n;
+        *out = celix_steal_ptr(n);
         /* No $id registration: a boolean schema cannot carry $id (json_object_get
          * returns NULL for non-objects, so has_id is always false here) */
         return CELIX_JANSSON_SCHEMA_OK;
@@ -1849,7 +1900,10 @@ static int schema_make_internal_depth(json_t* sch,
                 if (existing) {
                     celix_jansson_schema_unref(ds);
                 } else {
-                    celix_stringHashMap_put(sf->schemas, frag, ds);
+                    if (celix_stringHashMap_put(sf->schemas, frag, ds) != 0) {
+                        celix_jansson_schema_unref(ds); /* the map did not take the ref */
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    }
                 }
             }
         }
@@ -1890,22 +1944,33 @@ static int schema_make_internal_depth(json_t* sch,
                 target = (celix_jansson_schema_node_t*)celix_stringHashMap_get(sf->unresolved, rfra);
             }
             if (!target) {
-                target = (celix_jansson_schema_node_t*)calloc(1, sizeof(*target));
-                if (target) {
-                    target->vtable = &vt_ref;
-                    target->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
-                    target->root = root;
-                    target->refcount = 1;
+                /* Inner-scope autoptr: `target` itself must stay a plain pointer
+                 * because it is also assigned borrowed pointers above (from
+                 * sf->schemas / resolve_document_fragment / sf->unresolved) */
+                celix_autoptr(celix_jansson_schema_node_t) t = (celix_jansson_schema_node_t*)calloc(1, sizeof(*t));
+                if (t) {
+                    t->vtable = &vt_ref;
+                    t->kind = CELIX_JANSSON_SCHEMA_KIND_REF;
+                    t->root = root;
+                    t->refcount = 1;
                     char* uristr = celix_jansson_uri_to_string(&ref_uri);
                     if (!uristr) {
-                        /* target is not yet in the unresolved map; unref releases it */
+                        /* t is not yet in the unresolved map; auto-unref releases it */
+                        free(rloc);
+                        free(rfra);
+                        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+                    }
+                    t->u.ref.id = uristr;
+                    /* Steal before the put: the map takes the caller's ref directly,
+                     * and target must stay visible for the target_weak assignment below */
+                    target = celix_steal_ptr(t);
+                    if (celix_stringHashMap_put(sf->unresolved, rfra, target) != 0) {
+                        /* The map did not take the owning ref; target holds the only one */
                         celix_jansson_schema_unref(target);
                         free(rloc);
                         free(rfra);
                         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
                     }
-                    target->u.ref.id = uristr;
-                    celix_stringHashMap_put(sf->unresolved, rfra, target);
                 }
             }
         }
@@ -1917,7 +1982,7 @@ static int schema_make_internal_depth(json_t* sch,
         }
 
         /* Create ref node — store derived URI as id */
-        celix_jansson_schema_node_t* rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
+        celix_autoptr(celix_jansson_schema_node_t) rn = (celix_jansson_schema_node_t*)calloc(1, sizeof(*rn));
         if (!rn) {
             free(rloc);
             free(rfra);
@@ -1929,14 +1994,14 @@ static int schema_make_internal_depth(json_t* sch,
         rn->refcount = 1;
         rn->u.ref.id = celix_jansson_uri_to_string(&ref_uri);
         if (!rn->u.ref.id) {
-            /* rn is not in any map and target_weak is still NULL here; unref releases it */
-            celix_jansson_schema_unref(rn);
+            /* rn is not in any map and target_weak is still NULL; auto-unref via
+             * d_ref handles it (free(NULL), json_decref(NULL), free) */
             free(rloc);
             free(rfra);
             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
         }
         if (target) {
-            rn->u.ref.target_weak = target;
+            rn->u.ref.target_weak = target; /* borrowed; the unresolved map holds the owning ref */
         }
 
         json_t* defv = json_object_get(sch, "default");
@@ -1949,7 +2014,7 @@ static int schema_make_internal_depth(json_t* sch,
         /* No $id registration: draft-7 treats $id alongside $ref as not a real
          * $id (JSON Reference: members other than $ref are ignored — see the
          * !refv guard above), so has_id is always false here */
-        *out = rn;
+        *out = celix_steal_ptr(rn);
         return CELIX_JANSSON_SCHEMA_OK;
     }
 
@@ -2009,7 +2074,12 @@ static bool token_is_schema_position(const char* token, json_t* child) {
 
 /* Walk a JSON document following a JSON Pointer fragment, tracking $id
  * base-URI changes along the path. Compile the target subtree and register
- * it in the registry. */
+ * it in the registry.
+ *
+ * Note: internal OOMs surface as NULL (indistinguishable from "fragment not
+ * found"), so callers report REF_UNRESOLVED/LOADER rather than NOMEM. That
+ * masking is accepted — the failure is still surfaced, and aborting the walk
+ * (instead of continuing with stale state) keeps the result trustworthy. */
 static celix_jansson_schema_node_t* resolve_document_fragment(
     celix_jansson_schema_root_t* root, const char* location, const char* fragment,
     int depth)
@@ -2086,16 +2156,20 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
                 child = json_object_get(cur, token);
             }
 
-            /* If entering a schema-position node with $id, update base */
+            /* If entering a schema-position node with $id, update base.
+             * derive fails only on OOM: abort the walk rather than continuing
+             * with a stale base (which would resolve $refs to wrong targets) */
             if (child && json_is_object(child) &&
                 (members_are_schemas || token_is_schema_position(token, child))) {
                 json_t* cid = json_object_get(child, "$id");
                 if (cid && json_is_string(cid)) {
                     celix_jansson_uri_t new_base = {0};
-                    if (celix_jansson_uri_derive(&cur_base, json_string_value(cid), &new_base) == 0) {
-                        celix_jansson_uri_clear(&cur_base);
-                        cur_base = new_base;
+                    if (celix_jansson_uri_derive(&cur_base, json_string_value(cid), &new_base) != 0) {
+                        free(token);
+                        return NULL;
                     }
+                    celix_jansson_uri_clear(&cur_base);
+                    cur_base = new_base;
                 }
             }
 
@@ -2250,8 +2324,13 @@ static bool resolve_placeholder(celix_jansson_schema_root_t* root,
         /* the map's removed callback unrefs the value, so ref first: the ref
          * that survives the remove is handed over to sf->retained below */
         celix_jansson_schema_ref(ref_node);
+        if (celix_jansson_vec_push(&sf->retained, ref_node) != 0) {
+            /* Drop only the extra ref: the placeholder must stay alive in the
+             * unresolved map because ref proxies borrow it via target_weak */
+            celix_jansson_schema_unref(ref_node);
+            return false;
+        }
         celix_stringHashMap_remove(sf->unresolved, fragment);
-        celix_jansson_vec_push(&sf->retained, ref_node);
         return true;
     }
 
@@ -2402,7 +2481,12 @@ celix_jansson_schema_file_t* celix_jansson_schema_root_get_or_create_file(celix_
         return NULL;
     }
     celix_jansson_vec_init(&sf->retained);
-    celix_stringHashMap_put(root->files, location, sf);
+    if (celix_stringHashMap_put(root->files, location, sf) != 0) {
+        /* The map did not take ownership; release the file directly so no
+         * half-registered entry is handed to the caller */
+        celix_jansson_schema_file_free(sf);
+        return NULL;
+    }
     return sf;
 }
 
@@ -2428,7 +2512,15 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
         return CELIX_JANSSON_SCHEMA_ERROR_DUPLICATE_URI;
     }
     celix_jansson_schema_ref(sch);
-    celix_stringHashMap_put(sf->schemas, frag, sch);
+    if (celix_stringHashMap_put(sf->schemas, frag, sch) != 0) {
+        /* Undo the ref: the map did not take it. Failing here (instead of
+         * reporting OK) prevents a silent half-registration that would later
+         * surface as a confusing REF_UNRESOLVED */
+        celix_jansson_schema_unref(sch);
+        free(loc);
+        free((char*)frag);
+        return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+    }
 
     /* Resolve waiting refs */
     celix_jansson_schema_node_t* waiting =
@@ -2438,8 +2530,15 @@ int celix_jansson_schema_root_insert(celix_jansson_schema_root_t* root,
         /* the map's removed callback unrefs the value, so ref first: the ref
          * that survives the remove is handed over to sf->retained below */
         celix_jansson_schema_ref(waiting);
+        if (celix_jansson_vec_push(&sf->retained, waiting) != 0) {
+            /* Drop only the extra ref: the placeholder must stay alive in the
+             * unresolved map because ref proxies borrow it via target_weak */
+            celix_jansson_schema_unref(waiting);
+            free(loc);
+            free((char*)frag);
+            return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+        }
         celix_stringHashMap_remove(sf->unresolved, frag);
-        celix_jansson_vec_push(&sf->retained, waiting);
     }
     free(loc);
     free((char*)frag);
@@ -2707,6 +2806,12 @@ int celix_jansson_schema_validate(celix_jansson_schema_validator_t* v,
     ctx.root = v->root;
     ctx.sink = &sink->base;
     ctx.patch = json_array();
+    if (!ctx.patch) {
+        /* OOM: fail the validation instead of running with a broken patch
+         * (default-value fill-ins would be silently dropped) */
+        sink->base.destroy(&sink->base);
+        return -1;
+    }
 
     sink->abort_on_error = v->abort_on_error;
     sink->ctx = &ctx;
@@ -2743,6 +2848,12 @@ int celix_jansson_schema_validate_uri(celix_jansson_schema_validator_t* v,
     ctx.root = v->root;
     ctx.sink = &sink->base;
     ctx.patch = json_array();
+    if (!ctx.patch) {
+        /* OOM: fail the validation instead of running with a broken patch
+         * (default-value fill-ins would be silently dropped) */
+        sink->base.destroy(&sink->base);
+        return -1;
+    }
 
     sink->abort_on_error = v->abort_on_error;
     sink->ctx = &ctx;

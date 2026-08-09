@@ -220,6 +220,12 @@ celix_jansson_schema_node_t* celix_jansson_schema_ref(celix_jansson_schema_node_
 /** Decrement refcount. Frees the node (and all children) when zero. */
 void celix_jansson_schema_unref(celix_jansson_schema_node_t* n);
 
+/* ── Auto cleanup ──────────────────────────────────────────────────────── */
+
+/** Enables `celix_autoptr(celix_jansson_schema_node_t)` for scope-based
+ *  ownership of schema nodes (NULL-safe; routes through the vtable destroy). */
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_jansson_schema_node_t, celix_jansson_schema_unref)
+
 /* ── Error sink (polymorphic error collector) ──────────────────────────── */
 
 struct celix_jansson_error_sink_t {
