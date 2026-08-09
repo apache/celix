@@ -833,8 +833,14 @@ static int v_object(const celix_jansson_schema_node_t* n,
                         def = ps->default_value;
                     if (def) {
                         char pat[1024];
-                        snprintf(pat, sizeof(pat), "%s/%s", base_path, pk);
-                        celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def));
+                        snprintf(pat, sizeof(pat), "%s/%s", base_path ? base_path : "", pk);
+                        if (celix_json_patch_add(ctx->patch, pat, json_incref((json_t*)def)) != 0) {
+                            /* Fail closed on OOM (the value ref is consumed by
+                             * patch_add on failure, so nothing to release) */
+                            emit_error(ctx, p, "out of memory while applying default value");
+                            errs++;
+                            return errs;
+                        }
                     }
                 }
             }
@@ -1195,7 +1201,13 @@ static int v_type(const celix_jansson_schema_node_t* n,
 
     /* Root default: null instance gets default_value */
     if (json_is_null(inst) && n->default_value) {
-        celix_json_patch_add(ctx->patch, celix_jansson_path_str(p), json_incref(n->default_value));
+        if (celix_json_patch_add(ctx->patch, celix_jansson_path_str(p), json_incref(n->default_value)) != 0) {
+            /* Fail closed on OOM (the value ref is consumed by patch_add on
+             * failure, so nothing to release) */
+            emit_error(ctx, p, "out of memory while applying default value");
+            errs++;
+            return errs;
+        }
     }
 
     return errs;
@@ -1409,9 +1421,9 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                 snode->u.string.pattern_str = strdup(ps);
                 if (!snode->u.string.pattern_str)
                     return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
-                snode->u.string.has_pattern = true;
                 if (regcomp(&snode->u.string.pattern, ps, REG_EXTENDED) != 0)
-                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN; /* n auto-unref'd */
+                    return CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN; /* has_pattern still false, so d_str skips regfree */
+                snode->u.string.has_pattern = true;
             }
             if ((v = json_object_get(sch, "format"))) {
                 snode->u.string.format = strdup(json_string_value(v));
@@ -1501,7 +1513,10 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                     return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
                 onode->u.object.required_len = rlen;
                 for (size_t i = 0; i < rlen; i++) {
-                    onode->u.object.required[i] = strdup(json_string_value(json_array_get(v, i)));
+                    const char* rname = json_string_value(json_array_get(v, i));
+                    if (!rname)
+                        return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA; /* non-string entry; n auto-unref'd */
+                    onode->u.object.required[i] = strdup(rname);
                     if (!onode->u.object.required[i])
                         return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd (d_object frees NULL tails) */
                 }
@@ -1598,7 +1613,10 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                             return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
                         rn->u.required.len = alen;
                         for (size_t ai = 0; ai < alen; ai++) {
-                            rn->u.required.names[ai] = strdup(json_string_value(json_array_get(dv, ai)));
+                            const char* dname = json_string_value(json_array_get(dv, ai));
+                            if (!dname)
+                                return CELIX_JANSSON_SCHEMA_ERROR_INVALID_SCHEMA; /* non-string entry; n and rn auto-unref'd */
+                            rn->u.required.names[ai] = strdup(dname);
                             if (!rn->u.required.names[ai])
                                 return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n and rn auto-unref'd */
                         }
@@ -1726,7 +1744,16 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
             nn->root = root;
             nn->refcount = 1;
             nn->u.not_schema.sub = celix_steal_ptr(sub);
-            celix_jansson_vec_push(&logic, celix_steal_ptr(nn)); /* both disarmed before the vec takes them */
+            celix_jansson_schema_node_t* stolen = celix_steal_ptr(nn);
+            if (celix_jansson_vec_push(&logic, stolen) != 0) {
+                /* The vec did not take the ref: release the node and the
+                 * already-collected logic entries, then propagate NOMEM */
+                celix_jansson_schema_unref(stolen);
+                for (size_t k = 0; k < logic.len; k++)
+                    celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                celix_jansson_vec_free(&logic);
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+            }
         }
         static const char* combos[] = {"allOf", "anyOf", "oneOf"};
         static const enum celix_jansson_schema_kind_e ckinds[] = {
@@ -1772,7 +1799,16 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
                         return rc; /* n and cn auto-unref'd */
                     }
                 }
-                celix_jansson_vec_push(&logic, celix_steal_ptr(cn));
+                celix_jansson_schema_node_t* stolen = celix_steal_ptr(cn);
+                if (celix_jansson_vec_push(&logic, stolen) != 0) {
+                    /* The vec did not take the ref: release the node and the
+                     * already-collected logic entries, then propagate NOMEM */
+                    celix_jansson_schema_unref(stolen);
+                    for (size_t k = 0; k < logic.len; k++)
+                        celix_jansson_schema_unref((celix_jansson_schema_node_t*)logic.items[k]);
+                    celix_jansson_vec_free(&logic);
+                    return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+                }
             }
         }
         if (logic.len > 0) {
@@ -1806,8 +1842,11 @@ static int make_type_schema(json_t* sch, celix_jansson_schema_root_t* root,
     /* default */
     {
         json_t* dv = json_object_get(sch, "default");
-        if (dv)
+        if (dv) {
             n->default_value = json_deep_copy(dv);
+            if (!n->default_value)
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM; /* n auto-unref'd */
+        }
     }
 
     *out = celix_steal_ptr(n);
@@ -2005,8 +2044,15 @@ static int schema_make_internal_depth(json_t* sch,
         }
 
         json_t* defv = json_object_get(sch, "default");
-        if (defv)
+        if (defv) {
             rn->default_value = json_deep_copy(defv);
+            if (!rn->default_value) {
+                /* rn auto-unref'd via d_ref (free(NULL), json_decref(NULL), free) */
+                free(rloc);
+                free(rfra);
+                return CELIX_JANSSON_SCHEMA_ERROR_NOMEM;
+            }
+        }
 
         free(rloc);
         free(rfra);
