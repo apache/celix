@@ -241,7 +241,10 @@ CELIX_JANSSON_EXT_EXPORT char* celix_json_pointer_unescape(const char* token);
  * Get the parent pointer by removing the last token.
  *
  * @param ptr   The source pointer
- * @param out   The parent pointer (must be zeroed first, or NULL to get a new one)
+ * @param out   The parent pointer, or NULL to get a new one.  It is cleared
+ *             before being filled, so a previously used pointer may be passed
+ *             directly for reuse; the struct must still be in a valid state
+ *             (zeroed, cleared, or initialized).
  * @return The parent pointer (out if provided, or a new allocation).
  *         Returns NULL if the pointer is already at the root.
  *         If allocated, free with celix_json_pointer_destroy().

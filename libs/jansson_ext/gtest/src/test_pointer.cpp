@@ -336,6 +336,30 @@ TEST(PointerTest, Parent) {
     celix_json_pointer_destroy(p);
 }
 
+TEST(PointerTest, ParentReusesLiveOut) {
+    /* A caller-provided out that already holds data is cleared before being
+     * filled — reusing it directly must not leak or mis-fill */
+    celix_json_pointer_t p;
+    memset(&p, 0, sizeof(p));
+    celix_json_pointer_t out;
+    memset(&out, 0, sizeof(out));
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/b/c"));
+    ASSERT_EQ(0, celix_json_pointer_init(&out, "/x/y/z")); /* live data */
+
+    celix_json_pointer_t* r = celix_json_pointer_parent(&p, &out);
+    ASSERT_NE(nullptr, r);
+    EXPECT_EQ(2u, celix_json_pointer_depth(r));
+    EXPECT_STREQ("a", celix_json_pointer_token(r, 0));
+    EXPECT_STREQ("b", celix_json_pointer_token(r, 1));
+
+    char* s = celix_json_pointer_to_string(r);
+    EXPECT_STREQ("/a/b", s);
+    free(s);
+
+    celix_json_pointer_clear(&out);
+    celix_json_pointer_clear(&p);
+}
+
 /* ── Concat ────────────────────────────────────────────────────────────── */
 
 TEST(PointerTest, Concat) {

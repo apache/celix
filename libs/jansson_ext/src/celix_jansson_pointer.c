@@ -560,8 +560,8 @@ celix_json_pointer_t* celix_json_pointer_parent(const celix_json_pointer_t* ptr,
     celix_json_pointer_t* r = out ? out : (celix_json_pointer_t*)calloc(1, sizeof(*r));
     if (!r)
         return NULL;
-    if (!out)
-        celix_json_pointer_clear(r);
+    if (out)
+        celix_json_pointer_clear(out); /* caller-provided buffer is cleared first */
     if (ensure_cap(r, ptr->len - 1) != 0) {
         if (!out)
             free(r);
