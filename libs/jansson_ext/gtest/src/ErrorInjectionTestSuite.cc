@@ -26,6 +26,7 @@
 #include "celix_util.h"
 #include "jansson_ei.h"
 #include "malloc_ei.h"
+#include "stdio_ei.h"
 #include "string_ei.h"
 
 /**
@@ -44,6 +45,7 @@ public:
         celix_ei_expect_realloc(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_vsnprintf(nullptr, 0, 0);
         celix_ei_expect_json_object(nullptr, 0, nullptr);
         celix_ei_expect_json_deep_copy(nullptr, 0, nullptr);
         celix_ei_expect_json_object_set_new(nullptr, 0, 0);
@@ -74,6 +76,18 @@ TEST_F(JanssonExtErrorInjectionTestSuite, UtilStrbufVappendfReallocFail) {
     celix_ei_expect_realloc((void*)celix_jansson_strbuf_vappendf, 0, nullptr);
     //Then printf-appending should fail
     EXPECT_EQ(-1, celix_jansson_strbuf_appendf(&sb, "%s", "hello"));
+    celix_jansson_strbuf_free(&sb);
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, UtilStrbufVappendfVsprintfFail) {
+    //Given a fresh string buffer and vsnprintf (with a plausible error code)
+    //is injected to fail on the length probe in vappendf
+    celix_jansson_strbuf_t sb;
+    celix_jansson_strbuf_init(&sb);
+    celix_ei_expect_vsnprintf((void*)celix_jansson_strbuf_vappendf, 0, -1);
+    //Then printf-appending should fail without touching the buffer
+    EXPECT_EQ(-1, celix_jansson_strbuf_appendf(&sb, "%s", "hello"));
+    EXPECT_EQ(0, sb.len);
     celix_jansson_strbuf_free(&sb);
 }
 

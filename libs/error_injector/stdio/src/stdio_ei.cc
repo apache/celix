@@ -18,6 +18,7 @@
  */
 
 #include <errno.h>
+#include <stdarg.h>
 #include "stdio_ei.h"
 
 extern "C" {
@@ -122,6 +123,15 @@ FILE* __wrap_fmemopen(void* __s, size_t __len, const char* __modes) {
     CELIX_EI_IMPL(fmemopen);
     errno = 0;
     return __real_fmemopen(__s, __len, __modes);
+}
+
+int __real_vsnprintf(char* __restrict __s, size_t __maxlen, const char* __restrict __format, va_list __arg);
+CELIX_EI_DEFINE(vsnprintf, int)
+int __wrap_vsnprintf(char* __restrict __s, size_t __maxlen, const char* __restrict __format, va_list __arg) {
+    errno = EOVERFLOW; //glibc sets this when the formatted output length exceeds INT_MAX
+    CELIX_EI_IMPL(vsnprintf);
+    errno = 0;
+    return __real_vsnprintf(__s, __maxlen, __format, __arg);
 }
 
 }

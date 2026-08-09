@@ -61,6 +61,7 @@ if (EI_TESTS)
         jansson_ext_cut
         Celix::malloc_ei
         Celix::string_ei
+        Celix::stdio_ei
         Celix::jansson_ei
         Celix::string_hash_map_ei
         GTest::gtest GTest::gtest_main
