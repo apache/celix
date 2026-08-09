@@ -390,7 +390,6 @@ TEST(PointerTest, Copy) {
 
 TEST(PointerTest, StackAllocated) {
     celix_json_pointer_t ptr;
-    memset(&ptr, 0, sizeof(ptr));
 
     EXPECT_EQ(0, celix_json_pointer_init(&ptr, "/a/b"));
     EXPECT_EQ(2u, celix_json_pointer_depth(&ptr));
@@ -447,7 +446,6 @@ TEST(PointerTest, Rfc6901Section5) {
     /* Test all keys from the RFC example */
     auto check = [&](const char* ptr_str, json_t* expected, bool owned) {
         celix_json_pointer_t p;
-        memset(&p, 0, sizeof(p));
         ASSERT_EQ(0, celix_json_pointer_init(&p, ptr_str)) << "Failed: " << ptr_str;
         json_t* v = celix_json_pointer_get(doc, &p);
         ASSERT_NE(nullptr, v) << "Missing: " << ptr_str;
@@ -476,7 +474,6 @@ TEST(PointerTest, Rfc6901Section5) {
 
 TEST(PointerTest, LeadingZeroInvalid) {
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     /* Leading zero in array index is invalid per RFC 6901 */
     EXPECT_NE(0, celix_json_pointer_init(&p, "/foo/01"));
 }
@@ -487,7 +484,6 @@ TEST(PointerTest, NonNumericArrayIndex) {
     json_t* doc = json_loads("[1,2,3]", JSON_DECODE_ANY, nullptr);
     ASSERT_NE(nullptr, doc);
 
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/one"));
     EXPECT_EQ(nullptr, celix_json_pointer_get(doc, &p));
 
@@ -500,7 +496,6 @@ TEST(PointerTest, ArithmeticInIndex) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/1+1"));
     EXPECT_EQ(nullptr, celix_json_pointer_get(doc, &p));
 
@@ -512,17 +507,14 @@ TEST(PointerTest, ArithmeticInIndex) {
 
 TEST(PointerTest, InvalidEscapeSequence) {
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     /* "~~" — stray tilde not followed by valid escape */
     EXPECT_NE(0, celix_json_pointer_init(&p, "/foo/~~"));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     /* "~" at end — tilde with nothing after */
     EXPECT_NE(0, celix_json_pointer_init(&p, "/foo/~"));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     /* "~2" — invalid escape character */
     EXPECT_NE(0, celix_json_pointer_init(&p, "/foo/~2"));
     celix_json_pointer_clear(&p);
@@ -535,27 +527,23 @@ TEST(PointerTest, ArrayAccessByIndex) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/0"));
     json_t* v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
     EXPECT_EQ(10, json_integer_value(v));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/1"));
     v = celix_json_pointer_get(doc, &p);
     EXPECT_EQ(20, json_integer_value(v));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/2"));
     v = celix_json_pointer_get(doc, &p);
     EXPECT_EQ(30, json_integer_value(v));
     celix_json_pointer_clear(&p);
 
     /* Out of bounds */
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/3"));
     EXPECT_EQ(nullptr, celix_json_pointer_get(doc, &p));
     celix_json_pointer_clear(&p);
@@ -570,14 +558,12 @@ TEST(PointerTest, NestedArrayAccess) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/0/1"));
     json_t* v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
     EXPECT_EQ(2, json_integer_value(v));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/1/0"));
     v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
@@ -594,7 +580,6 @@ TEST(PointerTest, SetOverwritesExisting) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/b"));
 
     EXPECT_EQ(0, celix_json_pointer_set(doc, &p, json_integer(99)));
@@ -606,7 +591,6 @@ TEST(PointerTest, SetOverwritesExisting) {
 
     /* 'a' should still be 1 */
     celix_json_pointer_t pa;
-    memset(&pa, 0, sizeof(pa));
     ASSERT_EQ(0, celix_json_pointer_init(&pa, "/a"));
     v = celix_json_pointer_get(doc, &pa);
     EXPECT_EQ(1, json_integer_value(v));
@@ -623,14 +607,12 @@ TEST(PointerTest, SetArrayWithGap) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr/4"));
 
     EXPECT_EQ(0, celix_json_pointer_set(doc, &p, json_integer(99)));
 
     /* Verify array was extended with nulls */
     celix_json_pointer_t pa;
-    memset(&pa, 0, sizeof(pa));
     ASSERT_EQ(0, celix_json_pointer_init(&pa, "/arr"));
     json_t* arr = celix_json_pointer_get(doc, &pa);
     ASSERT_NE(nullptr, arr);
@@ -652,7 +634,6 @@ TEST(PointerTest, DashIndexGetReturnsNull) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/-"));
     EXPECT_EQ(nullptr, celix_json_pointer_get(doc, &p));
 
@@ -667,7 +648,6 @@ TEST(PointerTest, ResolveIntoScalar) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
 
     /* "/a" is 42 (scalar) — can't descend further */
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/foo"));
@@ -689,7 +669,6 @@ TEST(PointerTest, RemoveNonExistent) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
     EXPECT_NE(0, celix_json_pointer_remove(doc, &p)); /* should fail */
 
@@ -717,7 +696,6 @@ TEST(PointerTest, RemoveRootReturnsError) {
 
 TEST(PointerTest, TokenFrontBack) {
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/b/c"));
 
     /* token(0) is front, token(depth-1) is back */
@@ -741,7 +719,6 @@ TEST(PointerTest, PointerOnScalarRoot) {
     celix_json_pointer_clear(&p);
 
     /* Non-root pointer on scalar returns NULL */
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/foo"));
     EXPECT_EQ(nullptr, celix_json_pointer_get(doc, &p));
     celix_json_pointer_clear(&p);
@@ -755,7 +732,6 @@ TEST(PointerTest, SetCreatesArrayIntermediate) {
     /* set handles multi-level paths with array creation better */
     json_t* doc = json_object();
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/list/0/item"));
 
     EXPECT_EQ(0, celix_json_pointer_set(doc, &p, json_string("hello")));
@@ -771,7 +747,6 @@ TEST(PointerTest, SetCreatesArrayIntermediate) {
 TEST(PointerTest, GetOrCreateSimpleArray) {
     json_t* doc = json_object();
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     /* "/arr" creates an object, then push "2" — but get_or_create uses token heuristic:
      * "arr" → object (non-numeric), "2" → object key in that object.
      * For true array creation, use set which has the "look ahead" heuristic. */
@@ -789,7 +764,6 @@ TEST(PointerTest, GetOrCreateSimpleArray) {
 
     /* "/arr/2" → extend and return new null */
     celix_json_pointer_clear(&p);
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/arr/3"));
     node = celix_json_pointer_get_or_create(doc, &p);
     ASSERT_NE(nullptr, node);
@@ -808,7 +782,6 @@ TEST(PointerTest, GetOrCreateExisting) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/b"));
 
     json_t* v = celix_json_pointer_get_or_create(doc, &p);
@@ -831,7 +804,6 @@ TEST(PointerTest, EscapeOrderMatters) {
     /* "~01" in a pointer string means: unescape ~0→~, then the '1' is just '1'
      * So "/m~01n" should resolve to the key "m~1n", NOT "m~0" + "1n" or anything else. */
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/m~01n"));
     EXPECT_EQ(1u, celix_json_pointer_depth(&p));
     /* ~0 → ~, then 1 remains as-is */
@@ -847,7 +819,6 @@ TEST(PointerTest, EscapedPathResolution) {
 
     /* "/a~1b" should resolve to key "a/b" */
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/a~1b"));
     json_t* v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
@@ -855,7 +826,6 @@ TEST(PointerTest, EscapedPathResolution) {
     celix_json_pointer_clear(&p);
 
     /* "/m~0n" should resolve to key "m~n" */
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/m~0n"));
     v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
@@ -873,7 +843,6 @@ TEST(PointerTest, EmptyToken) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/foo/"));
     EXPECT_EQ(2u, celix_json_pointer_depth(&p));
     EXPECT_STREQ("foo", celix_json_pointer_token(&p, 0));
@@ -895,7 +864,6 @@ TEST(PointerTest, PercentEncodingIsLiteral) {
     ASSERT_NE(nullptr, doc);
 
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/%25"));
     json_t* v = celix_json_pointer_get(doc, &p);
     ASSERT_NE(nullptr, v);
@@ -910,7 +878,6 @@ TEST(PointerTest, PercentEncodingIsLiteral) {
 TEST(PointerTest, SetCreatesIntermediateObjects) {
     json_t* doc = json_object();
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/config/database/host"));
 
     EXPECT_EQ(0, celix_json_pointer_set(doc, &p, json_string("localhost")));
@@ -927,8 +894,6 @@ TEST(PointerTest, SetCreatesIntermediateObjects) {
 
 TEST(PointerTest, CompareDifferentOrder) {
     celix_json_pointer_t a, b;
-    memset(&a, 0, sizeof(a));
-    memset(&b, 0, sizeof(b));
     celix_json_pointer_init(&a, "/a/b");
     celix_json_pointer_init(&b, "/b/a");
     EXPECT_FALSE(celix_json_pointer_equals(&a, &b));
@@ -938,8 +903,6 @@ TEST(PointerTest, CompareDifferentOrder) {
 
 TEST(PointerTest, CompareDifferentLength) {
     celix_json_pointer_t a, b;
-    memset(&a, 0, sizeof(a));
-    memset(&b, 0, sizeof(b));
     celix_json_pointer_init(&a, "/a/b");
     celix_json_pointer_init(&b, "/a/b/c");
     EXPECT_FALSE(celix_json_pointer_equals(&a, &b));
@@ -967,7 +930,6 @@ TEST(PointerTest, PushWithSlashReEncoded) {
 TEST(PointerTest, SetNewIncrementsRef) {
     json_t* doc = json_object();
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
 
     json_t* val = json_string("hello");
@@ -989,7 +951,6 @@ TEST(PointerTest, SetNewIncrementsRef) {
 
 TEST(PointerTest, StackReuse) {
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
 
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/b"));
     EXPECT_EQ(2u, celix_json_pointer_depth(&p));
@@ -1056,7 +1017,6 @@ TEST(PointerTest, Contains) {
 
 TEST(PointerTest, ContainsNullDoc) {
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
 
     /* NULL doc is safe — treated as not containing */
@@ -1096,13 +1056,11 @@ TEST(PointerTest, InitLeadingZeroNonNumeric) {
     /* Leading-zero token containing a non-digit is NOT an RFC 6901 array index —
      * it is a plain object key, so init must succeed. */
     celix_json_pointer_t p;
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/0a"));
     EXPECT_EQ(1u, celix_json_pointer_depth(&p));
     EXPECT_STREQ("0a", celix_json_pointer_token(&p, 0));
     celix_json_pointer_clear(&p);
 
-    memset(&p, 0, sizeof(p));
     ASSERT_EQ(0, celix_json_pointer_init(&p, "/01a"));
     EXPECT_EQ(1u, celix_json_pointer_depth(&p));
     EXPECT_STREQ("01a", celix_json_pointer_token(&p, 0));
@@ -1551,4 +1509,55 @@ TEST(PointerTest, CopyLongPointer) {
 
     celix_json_pointer_destroy(p);
     celix_json_pointer_destroy(copy);
+}
+
+/* ── Automatic cleanup (celix_auto / celix_autoptr) ──────────────────────── */
+
+TEST(PointerTest, AutoptrCreate) {
+    /* celix_autoptr → celix_json_pointer_destroy() runs at scope exit. */
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a/b");
+    ASSERT_NE(nullptr, p);
+    EXPECT_EQ(2u, celix_json_pointer_depth(p));
+    EXPECT_STREQ("a", celix_json_pointer_token(p, 0));
+    EXPECT_STREQ("b", celix_json_pointer_token(p, 1));
+
+    celix_autoptr(celix_json_pointer_t) root = celix_json_pointer_create("");
+    ASSERT_NE(nullptr, root);
+    EXPECT_EQ(0u, celix_json_pointer_depth(root));
+}
+
+TEST(PointerTest, AutoptrNullIsSafe) {
+    /* "/a~" is an invalid escape → create fails → NULL.
+     * The cleanup function must skip NULL values without crashing. */
+    celix_autoptr(celix_json_pointer_t) p = celix_json_pointer_create("/a~");
+    EXPECT_EQ(nullptr, p);
+}
+
+TEST(PointerTest, AutoInit) {
+    /* celix_auto → celix_json_pointer_clear() runs at scope exit. */
+    celix_auto(celix_json_pointer_t) p;
+    ASSERT_EQ(0, celix_json_pointer_init(&p, "/a/b"));
+    EXPECT_EQ(2u, celix_json_pointer_depth(&p));
+    EXPECT_STREQ("b", celix_json_pointer_token(&p, 1));
+
+    ASSERT_EQ(0, celix_json_pointer_push(&p, "c"));
+    EXPECT_EQ(3u, celix_json_pointer_depth(&p));
+    celix_json_pointer_pop(&p);
+    EXPECT_EQ(2u, celix_json_pointer_depth(&p));
+}
+
+TEST(PointerTest, AutoInitFailureIsSafe) {
+    /* Failed init leaves the struct cleared; scope exit calls clear()
+     * again on the zeroed struct — must be a no-op. */
+    celix_auto(celix_json_pointer_t) p;
+    EXPECT_EQ(-1, celix_json_pointer_init(&p, "/a~"));
+    EXPECT_EQ(0u, celix_json_pointer_depth(&p));
+}
+
+TEST(PointerTest, AutoZeroedStructSafe) {
+    /* clear() on a fully zeroed struct must be safe — the property
+     * celix_auto relies on for its scope-exit cleanup. */
+    celix_auto(celix_json_pointer_t) p{};
+    EXPECT_EQ(nullptr, p.tokens);
+    EXPECT_EQ(0u, p.len);
 }

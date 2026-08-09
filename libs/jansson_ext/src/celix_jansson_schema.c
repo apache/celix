@@ -2155,7 +2155,6 @@ static celix_jansson_schema_node_t* resolve_document_fragment(
     /* Re-attach fragment to the URI */
     if (fragment[0] == '/') {
         celix_json_pointer_t ptr;
-        memset(&ptr, 0, sizeof(ptr));
         if (celix_json_pointer_init(&ptr, fragment) == 0) {
             bool push_ok = true;
             for (size_t i = 0; i < ptr.len; i++) {

@@ -19,6 +19,7 @@
 #include "celix_json_patch.h"
 #include "celix_jansson_schema.h"
 #include "celix_jansson_pointer.h"
+#include "celix_cleanup.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,44 +27,83 @@ int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value) {
     if (!patch || !json_is_array(patch))
         return -1;
 
-    json_t* op = json_object();
+    /* val/op are auto-released on every early return */
+    json_auto_t* val = value;
+    json_auto_t* op = json_object();
     if (!op)
         return -1;
 
-    json_object_set_new(op, "op", json_string("add"));
-    json_object_set_new(op, "path", json_string(path_str));
-    json_object_set_new(op, "value", value);
+    json_auto_t* op_name = json_string("add");
+    if (!op_name)
+        return -1;
+    if (json_object_set_new(op, "op", celix_steal_ptr(op_name)) != 0)
+        return -1;
 
-    return json_array_append_new(patch, op);
+    json_auto_t* path = json_string(path_str);
+    if (!path)
+        return -1;
+    if (json_object_set_new(op, "path", celix_steal_ptr(path)) != 0)
+        return -1;
+
+    if (json_object_set_new(op, "value", celix_steal_ptr(val)) != 0)
+        return -1;
+
+    /* on failure the op (and with it the value) is consumed */
+    return json_array_append_new(patch, celix_steal_ptr(op));
 }
 
 int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value) {
     if (!patch || !json_is_array(patch))
         return -1;
 
-    json_t* op = json_object();
+    /* val/op are auto-released on every early return */
+    json_auto_t* val = value;
+    json_auto_t* op = json_object();
     if (!op)
         return -1;
 
-    json_object_set_new(op, "op", json_string("replace"));
-    json_object_set_new(op, "path", json_string(path_str));
-    json_object_set_new(op, "value", value);
+    json_auto_t* op_name = json_string("replace");
+    if (!op_name)
+        return -1;
+    if (json_object_set_new(op, "op", celix_steal_ptr(op_name)) != 0)
+        return -1;
 
-    return json_array_append_new(patch, op);
+    json_auto_t* path = json_string(path_str);
+    if (!path)
+        return -1;
+    if (json_object_set_new(op, "path", celix_steal_ptr(path)) != 0)
+        return -1;
+
+    if (json_object_set_new(op, "value", celix_steal_ptr(val)) != 0)
+        return -1;
+
+    /* on failure the op (and with it the value) is consumed */
+    return json_array_append_new(patch, celix_steal_ptr(op));
 }
 
 int celix_json_patch_remove(json_t* patch, const char* path_str) {
     if (!patch || !json_is_array(patch))
         return -1;
 
-    json_t* op = json_object();
+    /* op is auto-released on every early return */
+    json_auto_t* op = json_object();
     if (!op)
         return -1;
 
-    json_object_set_new(op, "op", json_string("remove"));
-    json_object_set_new(op, "path", json_string(path_str));
+    json_auto_t* op_name = json_string("remove");
+    if (!op_name)
+        return -1;
+    if (json_object_set_new(op, "op", celix_steal_ptr(op_name)) != 0)
+        return -1;
 
-    return json_array_append_new(patch, op);
+    json_auto_t* path = json_string(path_str);
+    if (!path)
+        return -1;
+    if (json_object_set_new(op, "path", celix_steal_ptr(path)) != 0)
+        return -1;
+
+    /* on failure the op is consumed */
+    return json_array_append_new(patch, celix_steal_ptr(op));
 }
 
 void celix_json_patch_truncate(json_t* patch, size_t old_size) {
@@ -80,7 +120,8 @@ json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
     if (!original || !patch || !json_is_array(patch))
         return NULL;
 
-    json_t* result = json_deep_copy(original);
+    /* result is auto-released on the error path */
+    json_auto_t* result = json_deep_copy(original);
     if (!result)
         return NULL;
 
@@ -94,22 +135,22 @@ json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
         if (!op_type || !path_str)
             continue;
 
-        /* Parse the path */
-        celix_json_pointer_t ptr;
-        memset(&ptr, 0, sizeof(ptr));
+        /* Parse the path; ptr is auto-cleared when the loop body exits,
+         * including on continue and on the error jump below */
+        celix_auto(celix_json_pointer_t) ptr;
         if (celix_json_pointer_init(&ptr, path_str) != 0)
             continue;
 
         if (strcmp(op_type, "add") == 0 || strcmp(op_type, "replace") == 0) {
-            if (!value) {
-                celix_json_pointer_clear(&ptr);
+            if (!value)
                 continue;
-            }
 
             if (ptr.len == 0) {
-                /* Root replacement */
+                /* Root replacement: copy first, then swap the ownership */
                 json_decref(result);
                 result = json_deep_copy(value);
+                if (!result)
+                    return NULL;
             } else {
                 /* Find parent */
                 const char* last = ptr.tokens[ptr.len - 1];
@@ -121,19 +162,32 @@ json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
                         child = json_object_get(parent, ptr.tokens[j]);
                         if (!child) {
                             child = json_object();
-                            json_object_set_new(parent, ptr.tokens[j], child);
+                            if (!child)
+                                return NULL;
+                            /* child is consumed by a failed set_new */
+                            if (json_object_set_new(parent, ptr.tokens[j], child) != 0)
+                                return NULL;
                         }
                     } else if (json_is_array(parent)) {
                         char* end;
                         long idx = strtol(ptr.tokens[j], &end, 10);
                         if (*end != '\0')
                             break;
-                        while ((size_t)idx > json_array_size(parent))
-                            json_array_append_new(parent, json_null());
+                        while ((size_t)idx > json_array_size(parent)) {
+                            json_t* pad = json_null();
+                            if (!pad)
+                                return NULL;
+                            /* pad is consumed by a failed append */
+                            if (json_array_append_new(parent, pad) != 0)
+                                return NULL;
+                        }
                         child = json_array_get(parent, (size_t)idx);
                         if (!child) {
                             child = json_object();
-                            json_array_append_new(parent, child);
+                            if (!child)
+                                return NULL;
+                            if (json_array_append_new(parent, child) != 0)
+                                return NULL;
                         }
                     }
                     parent = child;
@@ -142,31 +196,57 @@ json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
                 }
 
                 if (parent && json_is_object(parent)) {
-                    if (strcmp(op_type, "replace") == 0 && json_object_get(parent, last))
-                        json_object_set(parent, last, value);
-                    else if (strcmp(op_type, "add") == 0)
-                        json_object_set(parent, last, value);
+                    if (strcmp(op_type, "replace") == 0 && json_object_get(parent, last)) {
+                        /* the incref'd copy is consumed by a failed set_new */
+                        if (json_object_set_new(parent, last, json_incref(value)) != 0)
+                            return NULL;
+                    } else if (strcmp(op_type, "add") == 0) {
+                        /* the incref'd copy is consumed by a failed set_new */
+                        if (json_object_set_new(parent, last, json_incref(value)) != 0)
+                            return NULL;
+                    }
                 } else if (parent && json_is_array(parent)) {
                     char* end;
                     long idx = strtol(last, &end, 10);
                     if (*end == '\0' && idx >= 0) {
-                        if (strcmp(op_type, "replace") == 0 && (size_t)idx < json_array_size(parent))
-                            json_array_set_new(parent, (size_t)idx, json_deep_copy(value));
-                        else if (strcmp(op_type, "add") == 0) {
-                            while ((size_t)idx > json_array_size(parent))
-                                json_array_append_new(parent, json_null());
-                            if ((size_t)idx == json_array_size(parent))
-                                json_array_append(parent, value);
-                            else
-                                json_array_insert_new(parent, (size_t)idx, json_deep_copy(value));
+                        if (strcmp(op_type, "replace") == 0 && (size_t)idx < json_array_size(parent)) {
+                            json_t* copy = json_deep_copy(value);
+                            if (!copy)
+                                return NULL;
+                            /* copy is consumed by a failed set_new */
+                            if (json_array_set_new(parent, (size_t)idx, copy) != 0)
+                                return NULL;
+                        } else if (strcmp(op_type, "add") == 0) {
+                            while ((size_t)idx > json_array_size(parent)) {
+                                json_t* pad = json_null();
+                                if (!pad)
+                                    return NULL;
+                                if (json_array_append_new(parent, pad) != 0)
+                                    return NULL;
+                            }
+                            if ((size_t)idx == json_array_size(parent)) {
+                                /* the incref'd copy is consumed by a failed append */
+                                if (json_array_append_new(parent, json_incref(value)) != 0)
+                                    return NULL;
+                            } else {
+                                json_t* copy = json_deep_copy(value);
+                                if (!copy)
+                                    return NULL;
+                                /* copy is consumed by a failed insert_new */
+                                if (json_array_insert_new(parent, (size_t)idx, copy) != 0)
+                                    return NULL;
+                            }
                         }
                     }
                 }
             }
         } else if (strcmp(op_type, "remove") == 0) {
             if (ptr.len == 0) {
+                /* Root removal: create the null first, then swap the ownership */
                 json_decref(result);
                 result = json_null();
+                if (!result)
+                    return NULL;
             } else {
                 const char* last = ptr.tokens[ptr.len - 1];
                 json_t* parent = result;
@@ -190,9 +270,7 @@ json_t* celix_json_patch_apply(json_t* original, json_t* patch) {
                 }
             }
         }
-
-        celix_json_pointer_clear(&ptr);
     }
 
-    return result;
+    return celix_steal_ptr(result);
 }

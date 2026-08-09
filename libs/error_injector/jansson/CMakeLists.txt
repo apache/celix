@@ -32,6 +32,8 @@ target_link_options(jansson_ei INTERFACE
         LINKER:--wrap,json_object_set_new
         LINKER:--wrap,json_array
         LINKER:--wrap,json_array_append_new
+        LINKER:--wrap,json_array_set_new
+        LINKER:--wrap,json_array_insert_new
         LINKER:--wrap,json_integer
         LINKER:--wrap,json_string
         LINKER:--wrap,json_real

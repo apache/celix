@@ -17,10 +17,10 @@
  * under the License.
  */
 #ifndef CELIX_CELIX_JANSSON_POINTER_H
-
-#include "celix_jansson_ext_export.h"
 #define CELIX_CELIX_JANSSON_POINTER_H
 
+#include "celix_cleanup.h"
+#include "celix_jansson_ext_export.h"
 #include <jansson.h>
 #include <stddef.h>
 
@@ -65,16 +65,18 @@ CELIX_JANSSON_EXT_EXPORT celix_json_pointer_t* celix_json_pointer_create(const c
 /**
  * Initialize a stack-allocated pointer from a string.
  *
- * The pointer struct must be zeroed (e.g., with memset) before the first
- * call to this function.  Re-initialization is safe after calling
- * celix_json_pointer_clear() — the struct does not need to be re-zeroed.
+ * The struct is zeroed first, so the initial call is safe on uninitialized
+ * stack memory — no pre-zeroing (memset) is required.  However, to
+ * re-initialize a pointer that already holds data, call
+ * celix_json_pointer_clear() first; init only zeroes the struct and does not
+ * free previously allocated tokens, so re-init without clear leaks.
  *
  * On error (-1), all partially allocated resources are automatically
  * cleaned up and the pointer is left in a cleared (empty) state.
  * The caller does NOT need to call celix_json_pointer_clear() after a
  * failed init.
  *
- * @param ptr      Pointer to stack-allocated celix_json_pointer_t (must be zeroed first)
+ * @param ptr      Pointer to stack-allocated celix_json_pointer_t
  * @param ptr_str  RFC 6901 pointer string (must start with '/', or be "" for root)
  * @return 0 on success, -1 on parse failure or allocation error
  */
@@ -99,6 +101,12 @@ CELIX_JANSSON_EXT_EXPORT void celix_json_pointer_destroy(celix_json_pointer_t* p
  * Does not free the struct itself.
  */
 CELIX_JANSSON_EXT_EXPORT void celix_json_pointer_clear(celix_json_pointer_t* ptr);
+
+/**
+ * @brief Add support for `celix_autoptr` and `celix_auto`.
+ */
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_json_pointer_t, celix_json_pointer_destroy)
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_json_pointer_t, celix_json_pointer_clear)
 
 /* ── Inspection ────────────────────────────────────────────────────────── */
 

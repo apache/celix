@@ -17,9 +17,9 @@
  * under the License.
  */
 #ifndef CELIX_CELIX_JSON_PATCH_H
+#define CELIX_CELIX_JSON_PATCH_H
 
 #include "celix_jansson_ext_export.h"
-#define CELIX_CELIX_JSON_PATCH_H
 
 #include <jansson.h>
 #include <stddef.h>
@@ -32,14 +32,18 @@ extern "C" {
  * Append an "add" operation (RFC 6902) to the patch array.
  *
  * The patch array is modified in-place.  The @p value is consumed —
- * ownership is transferred to the patch (steal semantics).
+ * ownership is transferred to the patch (steal semantics).  On failure
+ * (invalid @p patch, or out-of-memory while building the operation) the
+ * @p value is released and ownership is not transferred.
  * The stored value will be deep-copied later when the patch is applied
  * via celix_json_patch_apply().
  *
  * @param patch     The JSON Patch array (json_t* array, modified in-place)
  * @param path_str  JSON Pointer path for the operation (e.g., "/a/b")
- * @param value     The value to set at the path (ownership is taken)
- * @return 0 on success, -1 if @p patch is NULL or not an array
+ * @param value     The value to set at the path (ownership is taken on
+ *                  success, released on failure)
+ * @return 0 on success, -1 if @p patch is NULL or not an array, or on
+ *         out-of-memory
  */
 CELIX_JANSSON_EXT_EXPORT int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value);
 
@@ -47,13 +51,17 @@ CELIX_JANSSON_EXT_EXPORT int celix_json_patch_add(json_t* patch, const char* pat
  * Append a "replace" operation (RFC 6902) to the patch array.
  *
  * Like celix_json_patch_add(), @p value is consumed — ownership is
- * transferred to the patch.  At application time the value is deep-copied
- * into the target document.
+ * transferred to the patch.  On failure (invalid @p patch, or
+ * out-of-memory while building the operation) the @p value is released
+ * and ownership is not transferred.
+ * At application time the value is deep-copied into the target document.
  *
  * @param patch     The JSON Patch array (json_t* array, modified in-place)
  * @param path_str  JSON Pointer path for the operation (e.g., "/a/b")
- * @param value     The new value (ownership is taken)
- * @return 0 on success, -1 if @p patch is NULL or not an array
+ * @param value     The new value (ownership is taken on success, released
+ *                  on failure)
+ * @return 0 on success, -1 if @p patch is NULL or not an array, or on
+ *         out-of-memory
  */
 CELIX_JANSSON_EXT_EXPORT int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value);
 
@@ -62,7 +70,8 @@ CELIX_JANSSON_EXT_EXPORT int celix_json_patch_replace(json_t* patch, const char*
  *
  * @param patch     The JSON Patch array (json_t* array, modified in-place)
  * @param path_str  JSON Pointer path of the value to remove
- * @return 0 on success, -1 if @p patch is NULL or not an array
+ * @return 0 on success, -1 if @p patch is NULL or not an array, or on
+ *         out-of-memory
  */
 CELIX_JANSSON_EXT_EXPORT int celix_json_patch_remove(json_t* patch, const char* path_str);
 
@@ -89,7 +98,8 @@ CELIX_JANSSON_EXT_EXPORT void celix_json_patch_truncate(json_t* patch, size_t ol
  * @param original  The original JSON document (not modified)
  * @param patch     JSON Patch array (e.g., from celix_jansson_schema_validate)
  * @return A new json_t* with the patch applied, or NULL on error.
- *         The caller must json_decref() the result.
+ *         On out-of-memory the partially built result is released and
+ *         NULL is returned.  The caller must json_decref() the result.
  */
 CELIX_JANSSON_EXT_EXPORT json_t* celix_json_patch_apply(json_t* original, json_t* patch);
 

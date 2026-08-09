@@ -53,7 +53,8 @@ celix_json_pointer_t* celix_json_pointer_create(const char* ptr_str) {
 int celix_json_pointer_init(celix_json_pointer_t* p, const char* ptr_str) {
     if (!p)
         return -1;
-    celix_json_pointer_clear(p);
+    memset(p, 0, sizeof(*p)); /* safe on uninitialized stack memory; callers
+                                 reusing a live pointer must clear() it first */
     if (!ptr_str || *ptr_str == '\0')
         return 0;
     if (*ptr_str != '/')

@@ -28,8 +28,6 @@
 #include "malloc_ei.h"
 #include "string_ei.h"
 
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_json_pointer_t, celix_json_pointer_destroy)
-
 /**
  * Error-injection tests for the OOM (out-of-memory) handling paths of
  * celix_util, celix_jansson_pointer, celix_jansson_uri and celix_json_patch.
@@ -50,6 +48,9 @@ public:
         celix_ei_expect_json_deep_copy(nullptr, 0, nullptr);
         celix_ei_expect_json_object_set_new(nullptr, 0, 0);
         celix_ei_expect_json_array_append_new(nullptr, 0, 0);
+        celix_ei_expect_json_array_set_new(nullptr, 0, 0);
+        celix_ei_expect_json_array_insert_new(nullptr, 0, 0);
+        celix_ei_expect_json_string(nullptr, 0, nullptr);
         celix_ei_expect_json_null(nullptr, 0, nullptr);
     }
 };
@@ -919,16 +920,19 @@ TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddJsonObjectFail) {
     //Given json_object is injected to fail in patch_add
     json_auto_t* patch = json_array();
     celix_ei_expect_json_object((void*)celix_json_patch_add, 0, nullptr);
-    //Then adding an operation should fail; the value is not consumed on failure
-    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_true()));
+    //Then adding an operation should fail; the value is consumed on failure
+    //(json_integer(42) is a fresh reference, so LSAN proves the consumption)
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
 }
 
 TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplaceJsonObjectFail) {
     //Given json_object is injected to fail in patch_replace
     json_auto_t* patch = json_array();
     celix_ei_expect_json_object((void*)celix_json_patch_replace, 0, nullptr);
-    //Then replacing should fail; the value is not consumed on failure
-    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_true()));
+    //Then replacing should fail; the value is consumed on failure
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
 }
 
 TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemoveJsonObjectFail) {
@@ -937,6 +941,7 @@ TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemoveJsonObjectFail) {
     celix_ei_expect_json_object((void*)celix_json_patch_remove, 0, nullptr);
     //Then removing should fail
     EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
 }
 
 TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyDeepCopyFail) {
@@ -945,5 +950,387 @@ TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyDeepCopyFail) {
     json_auto_t* patch = json_array();
     celix_ei_expect_json_deep_copy((void*)celix_json_patch_apply, 0, nullptr);
     //Then applying the patch should fail
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+/* ── builder failures beyond json_object ───────────────────────────────── */
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddOpStringFail) {
+    //Given the first json_string (the op name) is injected to fail in patch_add.
+    //json_string is called twice per add: ordinal 1 = op name, ordinal 2 = path.
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_add, 0, nullptr);
+    //Then adding fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddPathStringFail) {
+    //Given the second json_string (the path) is injected to fail in patch_add
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_add, 0, nullptr, 2);
+    //Then adding fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddOpSetNewFail) {
+    //Given the first json_object_set_new (the "op" key) is injected to fail
+    //in patch_add; the wrapper releases the op-name string
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_add, 0, -1);
+    //Then adding fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddPathSetNewFail) {
+    //Given the second json_object_set_new (the "path" key) is injected to
+    //fail in patch_add; the wrapper releases the path string
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_add, 0, -1, 2);
+    //Then adding fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddValueSetNewFail) {
+    //Given the third json_object_set_new (the "value" key) is injected to
+    //fail in patch_add; the failed set_new consumes the value, so only the
+    //op object is released here
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_add, 0, -1, 3);
+    //Then adding fails without appending the op
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchAddAppendFail) {
+    //Given json_array_append_new is injected to fail in patch_add; the
+    //failed append_new consumes the op, which owns the value
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_add, 0, -1);
+    //Then adding fails and the patch stays empty
+    EXPECT_EQ(-1, celix_json_patch_add(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplaceOpStringFail) {
+    //Given the first json_string (the op name) is injected to fail in patch_replace
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_replace, 0, nullptr);
+    //Then replacing fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplacePathStringFail) {
+    //Given the second json_string (the path) is injected to fail in patch_replace
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_replace, 0, nullptr, 2);
+    //Then replacing fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplaceOpSetNewFail) {
+    //Given the first json_object_set_new (the "op" key) is injected to fail
+    //in patch_replace
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_replace, 0, -1);
+    //Then replacing fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplacePathSetNewFail) {
+    //Given the second json_object_set_new (the "path" key) is injected to
+    //fail in patch_replace
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_replace, 0, -1, 2);
+    //Then replacing fails and releases both the op object and the value
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplaceValueSetNewFail) {
+    //Given the third json_object_set_new (the "value" key) is injected to
+    //fail in patch_replace; the failed set_new consumes the value
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_replace, 0, -1, 3);
+    //Then replacing fails without appending the op
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchReplaceAppendFail) {
+    //Given json_array_append_new is injected to fail in patch_replace; the
+    //failed append_new consumes the op, which owns the value
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_replace, 0, -1);
+    //Then replacing fails and the patch stays empty
+    EXPECT_EQ(-1, celix_json_patch_replace(patch, "/a", json_integer(42)));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemoveOpStringFail) {
+    //Given the first json_string (the op name) is injected to fail in patch_remove
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_remove, 0, nullptr);
+    //Then removing fails and releases the op object
+    EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemovePathStringFail) {
+    //Given the second json_string (the path) is injected to fail in patch_remove
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_string((void*)celix_json_patch_remove, 0, nullptr, 2);
+    //Then removing fails and releases the op object
+    EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemoveOpSetNewFail) {
+    //Given the first json_object_set_new (the "op" key) is injected to fail
+    //in patch_remove
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_remove, 0, -1);
+    //Then removing fails and releases the op object
+    EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemovePathSetNewFail) {
+    //Given the second json_object_set_new (the "path" key) is injected to
+    //fail in patch_remove
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_remove, 0, -1, 2);
+    //Then removing fails and releases the op object
+    EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchRemoveAppendFail) {
+    //Given json_array_append_new is injected to fail in patch_remove; the
+    //failed append_new consumes the op
+    json_auto_t* patch = json_array();
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_remove, 0, -1);
+    //Then removing fails and the patch stays empty
+    EXPECT_EQ(-1, celix_json_patch_remove(patch, "/a"));
+    EXPECT_EQ(0u, json_array_size(patch));
+}
+
+/* ── apply failures ────────────────────────────────────────────────────── */
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyRootReplaceDeepCopyFail) {
+    //Given deep-copy #1 (the initial copy of the original) succeeds and #2
+    //(the root-replacement copy) is injected to fail in patch_apply
+    json_auto_t* original = json_loads("{}", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_deep_copy((void*)celix_json_patch_apply, 0, nullptr, 2);
+    //Then applying fails; the error path decrefs the already-NULL result (no-op)
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyRemoveRootNullFail) {
+    //Given json_null is injected to fail for the root-removal null in patch_apply;
+    //the first json_null call of the apply
+    json_auto_t* original = json_loads("{}", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"remove","path":""}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_null((void*)celix_json_patch_apply, 0, nullptr);
+    //Then applying fails; the error path decrefs the already-NULL result (no-op)
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkObjectCreateFail) {
+    //Given json_object is injected to fail while creating the intermediate
+    //object "a" for path "/a/b" — the first json_object call of the apply
+    json_auto_t* original = json_loads("{}", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_object((void*)celix_json_patch_apply, 0, nullptr);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkObjectSetNewFail) {
+    //Given json_object_set_new is injected to fail while inserting the
+    //intermediate object "a"; this is the first set_new of the apply call
+    //(the walk insert precedes the final write)
+    json_auto_t* original = json_loads("{}", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkArrayChildCreateFail) {
+    //Given json_object is injected to fail while creating the child container
+    //at array index 0 (path "/a/0/b", original {"a":[]}) — the first
+    //json_object call of the apply
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/0/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_object((void*)celix_json_patch_apply, 0, nullptr);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkArrayChildAppendFail) {
+    //Given json_array_append_new is injected to fail while appending the
+    //child container at array index 0; no padding precedes it (idx == size),
+    //so this is the first append_new of the apply call
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/0/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkArrayPadNullFail) {
+    //Given json_null is injected to fail while padding index 2 of the walk
+    //array (path "/a/2/b") — the first json_null call of the apply
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/2/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_null((void*)celix_json_patch_apply, 0, nullptr);
+    //Then applying fails instead of looping forever on the failed padding
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyWalkArrayPadAppendFail) {
+    //Given json_array_append_new is injected to fail while appending the
+    //padding null at index 2 of the walk array — the first append_new call
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/2/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails instead of looping forever on the failed padding
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalObjectAddWriteFail) {
+    //Given json_object_set_new is injected to fail in the final "add" write.
+    //The walk finds "a" already present, so no intermediate allocation
+    //happens and the final write is the first set_new of the apply call
+    json_auto_t* original = json_loads(R"({"a":{}})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalObjectReplaceWriteFail) {
+    //Given json_object_set_new is injected to fail in the final "replace"
+    //write; key "b" exists, so the replace branch takes the set_new and it
+    //is the first set_new of the apply call
+    json_auto_t* original = json_loads(R"({"a":{"b":0}})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"replace","path":"/a/b","value":1}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_object_set_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayReplaceCopyFail) {
+    //Given deep-copy #1 (the initial copy of the original) succeeds and #2
+    //(the array-replace value copy for "/a/1" on [1,2]) is injected to fail
+    json_auto_t* original = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"replace","path":"/a/1","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_deep_copy((void*)celix_json_patch_apply, 0, nullptr, 2);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayReplaceSetNewFail) {
+    //Given json_array_set_new is injected to fail for the array-replace write
+    //("/a/1" on [1,2]); the first json_array_set_new of the apply call
+    json_auto_t* original = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"replace","path":"/a/1","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_set_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayInsertCopyFail) {
+    //Given deep-copy #1 (the initial copy of the original) succeeds and #2
+    //(the mid-array insert copy for "/a/1" on [1,2] — idx != size, so insert)
+    //is injected to fail
+    json_auto_t* original = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/1","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_deep_copy((void*)celix_json_patch_apply, 0, nullptr, 2);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayInsertNewFail) {
+    //Given json_array_insert_new is injected to fail for the mid-array "add"
+    //("/a/1" on [1,2] — idx != size, so insert); the first json_array_insert_new
+    //of the apply call
+    json_auto_t* original = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/1","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_insert_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayAppendFail) {
+    //Given json_array_append_new is injected to fail for the end-of-array
+    //"add" ("/a/2" on [1,2] — idx == size, so append); no padding precedes
+    //it, so this is the first append_new of the apply call
+    json_auto_t* original = json_loads(R"({"a":[1,2]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/2","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails and the partially built result is released
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayPadNullFail) {
+    //Given json_null is injected to fail while padding index 2 of the
+    //final "add" (path "/a/2", original {"a":[]}) — the first json_null call
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/2","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_null((void*)celix_json_patch_apply, 0, nullptr);
+    //Then applying fails instead of looping forever on the failed padding
+    EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
+}
+
+TEST_F(JanssonExtErrorInjectionTestSuite, PatchApplyFinalArrayPadAppendFail) {
+    //Given json_array_append_new is injected to fail while appending the
+    //padding null at index 2 of the final "add" — the first append_new call
+    json_auto_t* original = json_loads(R"({"a":[]})", 0, nullptr);
+    json_auto_t* patch = json_loads(R"([{"op":"add","path":"/a/2","value":3}])", 0, nullptr);
+    ASSERT_NE(nullptr, original);
+    ASSERT_NE(nullptr, patch);
+    celix_ei_expect_json_array_append_new((void*)celix_json_patch_apply, 0, -1);
+    //Then applying fails instead of looping forever on the failed padding
     EXPECT_EQ(nullptr, celix_json_patch_apply(original, patch));
 }
