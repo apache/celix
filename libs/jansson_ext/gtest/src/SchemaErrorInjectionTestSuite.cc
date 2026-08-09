@@ -1415,3 +1415,20 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentDeriveOomFail) 
     //Then the schema still compiles (the failed walk self-heals on retry)
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePathStrFallbackOomFail) {
+    //Given strdup is injected to fail for path_str's empty-string fallback
+    //(the only strdup inside path_str), making path_str return NULL — the
+    //only way emit_error_v's defensive empty-path fallback runs
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_integer(42);
+    int errorCount = 0;
+    celix_ei_expect_strdup((void*)celix_jansson_path_str, 0, nullptr);
+    //Then the type error is still reported with an empty path instead of NULL
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
