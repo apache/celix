@@ -82,8 +82,9 @@ TEST(SchemaCompileTest, ContentEncodingWithoutChecker) {
 }
 
 TEST(SchemaCompileTest, TupleItemsCompileError) {
-    /* Cover cleanup of already-compiled tuple items when a later item fails.
-     * Line 1561 in celix_jansson_schema.c: celix_jansson_schema_unref(anode->u.array.items[k]) */
+    /* Cover cleanup of already-compiled tuple items when a later item fails:
+     * the manual partial cleanup resets items_len and n's autoptr-unref then
+     * routes the remaining teardown through d_array */
     auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     ASSERT_NE(nullptr, v);
 
@@ -103,8 +104,9 @@ TEST(SchemaCompileTest, TupleItemsCompileError) {
 }
 
 TEST(SchemaCompileTest, AllOfCompileError) {
-    /* Cover cleanup of already-compiled allOf sub-schemas when a later one fails.
-     * Line 1647 in celix_jansson_schema.c: celix_jansson_schema_unref(cn->u.combination.items[k]) */
+    /* Cover cleanup of already-compiled allOf sub-schemas when a later one fails:
+     * cn's autoptr-unref routes the partial state (len set, NULL tail items)
+     * through d_comb */
     auto* v = celix_jansson_schema_validator_create(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     ASSERT_NE(nullptr, v);
 

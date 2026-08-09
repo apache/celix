@@ -57,7 +57,10 @@ public:
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_strdup(nullptr, 0, nullptr);
         celix_ei_expect_json_deep_copy(nullptr, 0, nullptr);
+        celix_ei_expect_json_array(nullptr, 0, nullptr);
+        celix_ei_expect_json_string(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_put(nullptr, 0, CELIX_ENOMEM);
     }
 
 protected:
@@ -840,4 +843,575 @@ TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolveExternalPhaseAKeySt
     celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 1, nullptr, 3);
     //Then compiling the schema should fail with NOMEM instead of crashing
     EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+/* ── Runtime validator OOM: first-sink callocs (P0) ───────────────────── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateAdditionalPropertiesSinkOomFail) {
+    //Given a validator with an object schema that rejects additional properties
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And calloc is injected to fail for the additionalProperties first-sink
+    //(calloc <- first_sink_new <- v_object <- v_type <- root_validate, so level 3)
+    json_auto_t* instance = loadSchema("{\"a\":\"x\"}");
+    int errorCount = 0;
+    celix_ei_expect_calloc((void*)celix_jansson_schema_root_validate, 3, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of crashing
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateContainsSinkOomFail) {
+    //Given a validator with a contains schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"array\",\"contains\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And calloc is injected to fail for the contains first-sink
+    //(calloc <- first_sink_new <- v_array <- v_type <- root_validate, so level 3)
+    json_auto_t* instance = json_pack("[s]", "x");
+    int errorCount = 0;
+    celix_ei_expect_calloc((void*)celix_jansson_schema_root_validate, 3, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of crashing
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateNotSinkOomFail) {
+    //Given a validator with a not schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"not\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And calloc is injected to fail for the not first-sink
+    //(calloc <- first_sink_new <- v_not <- v_type <- root_validate, so level 3)
+    json_auto_t* instance = json_integer(42);
+    int errorCount = 0;
+    celix_ei_expect_calloc((void*)celix_jansson_schema_root_validate, 3, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of crashing
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateIfSinkOomFail) {
+    //Given a validator with an if/then schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"if\":{\"type\":\"string\"},\"then\":{\"type\":\"integer\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And calloc is injected to fail for the if-condition first-sink
+    //(calloc <- first_sink_new <- v_type <- root_validate, so level 2)
+    json_auto_t* instance = json_integer(42);
+    int errorCount = 0;
+    celix_ei_expect_calloc((void*)celix_jansson_schema_root_validate, 2, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of crashing
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePropertyNamesJsonStringOomFail) {
+    //Given a validator with a propertyNames schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"propertyNames\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And json_string is injected to fail for the property-name wrapper
+    //(json_string <- v_object <- v_type <- root_validate, so level 2)
+    json_auto_t* instance = loadSchema("{\"a\":1}");
+    int errorCount = 0;
+    celix_ei_expect_json_string((void*)celix_jansson_schema_root_validate, 2, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of
+    //crashing on json_typeof(NULL)
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+/* ── Runtime validator OOM: patch array / error list / path building ──── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePatchArrayOomFail) {
+    //Given a validator with a compiled schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And json_array is injected to fail for the patch
+    json_auto_t* instance = json_string("x");
+    celix_ei_expect_json_array((void*)celix_jansson_schema_validate, 0, nullptr);
+    //Then validating should fail instead of running with a broken patch
+    EXPECT_EQ(-1, celix_jansson_schema_validate(v, instance, nullptr, nullptr, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateUriPatchArrayOomFail) {
+    //Given a validator with a compiled schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And json_array is injected to fail for the patch
+    json_auto_t* instance = json_string("x");
+    celix_ei_expect_json_array((void*)celix_jansson_schema_validate_uri, 0, nullptr);
+    //Then validating by URI should fail instead of running with a broken patch
+    EXPECT_EQ(-1, celix_jansson_schema_validate_uri(v, instance, "#", nullptr, nullptr, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateErrorListStrdupOomFail) {
+    //Given a validator with an anyOf schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"anyOf\":[{\"type\":\"string\"}]}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And strdup is injected to fail for the error entry's path (message survives)
+    int errorCount = 0;
+    celix_ei_expect_strdup((void*)celix_jansson_error_list_add, 0, nullptr);
+    //When validating an integer against the anyOf(string) schema
+    json_auto_t* instance = json_integer(42);
+    int errs = celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr);
+    //Then the branch error is still propagated with an empty path (no crash on
+    //appends(NULL)/emit(NULL)) and the anyOf error is reported as well
+    EXPECT_EQ(1, errs);
+    EXPECT_EQ(2, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePathChildOomFail) {
+    //Given a validator with an object schema
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    //And realloc is injected to fail inside path_child_checked
+    //(realloc <- path_push <- path_child_checked <- v_object <- v_type <- root_validate, so level 4)
+    json_auto_t* instance = loadSchema("{\"a\":\"x\"}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error instead of
+    //silently descending with a truncated path
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+/* ── Compile-time OOM: strdup / deep_copy propagation (P1) ────────────── */
+/* The root $id keeps root_insert's uri_location/fragment as strbuf reallocs
+ * (no strdup), so the level-2 strdup ordinals below count only
+ * make_type_schema's own strdups plus root_insert's fragment strdup(""). */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaPatternStrdupOomFail) {
+    //Given strdup is injected to fail for the pattern string
+    //(1st level-2 strdup of make_type_schema, before root_insert's fragment strdup)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"pattern\":\"a\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of compiling a
+    //schema whose pattern_str is NULL
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaFormatStrdupOomFail) {
+    //Given strdup is injected to fail for the format string
+    //(1st level-2 strdup; the missing format checker returns early, so this
+    //is the only strdup in the flow)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"format\":\"email\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of passing NULL
+    //to a format checker at validation time
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaContentEncodingStrdupOomFail) {
+    //Given strdup is injected to fail for the contentEncoding string
+    //(1st level-2 strdup; the missing content checker returns early, so this
+    //is the only strdup in the flow)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"contentEncoding\":\"base64\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of passing NULL
+    //to a content checker at validation time
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRequiredStrdupOomFail) {
+    //Given strdup is injected to fail for the second required property name
+    //(2nd level-2 strdup: 1st = "a", later ones = root_insert's fragment strdup(""))
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"object\",\"required\":[\"a\",\"b\"]}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr, 2);
+    //Then compiling the schema should fail with NOMEM instead of storing a
+    //NULL property name
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDependenciesRequiredStrdupOomFail) {
+    //Given strdup is injected to fail for the second dependency name
+    //(2nd level-2 strdup: 1st = "x", later ones = root_insert's fragment strdup(""))
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"object\",\"dependencies\":{\"a\":[\"x\",\"y\"]}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_schema_set_root_schema, 2, nullptr, 2);
+    //Then compiling the schema should fail with NOMEM instead of storing a
+    //NULL dependency name
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaEnumDeepCopyOomFail) {
+    //Given json_deep_copy is injected to fail for the enum values
+    //(1st level-2 deep_copy: set_root_schema's two copies are level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"enum\":[\"a\"]}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_json_deep_copy((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of validating
+    //every instance against a NULL enum
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaConstDeepCopyOomFail) {
+    //Given json_deep_copy is injected to fail for the const value
+    //(1st level-2 deep_copy: set_root_schema's two copies are level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\",\"const\":\"a\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_json_deep_copy((void*)celix_jansson_schema_set_root_schema, 2, nullptr);
+    //Then compiling the schema should fail with NOMEM instead of validating
+    //every instance against a NULL const
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+/* ── Registry OOM: stringHashMap_put failures (P2) ────────────────────── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaPropertiesPutOomFail) {
+    //Given stringHashMap_put is injected to fail for a properties entry
+    //(put <- make_type_schema <- depth <- set_root_schema, so level 2)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 2, CELIX_ENOMEM);
+    //Then compiling the schema should fail with NOMEM instead of leaking the
+    //compiled subschema
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDependenciesPutOomFail) {
+    //Given stringHashMap_put is injected to fail for a dependencies entry
+    //(put <- make_type_schema <- depth <- set_root_schema, so level 2)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"object\",\"dependencies\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 2, CELIX_ENOMEM);
+    //Then compiling the schema should fail with NOMEM instead of leaking the
+    //compiled dependency
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDefinitionsPutOomFail) {
+    //Given stringHashMap_put is injected to fail for a definitions entry
+    //(put <- depth <- set_root_schema, so level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"definitions\":{\"x\":{\"type\":\"string\"}},\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 1, CELIX_ENOMEM);
+    //Then compiling the schema should fail with NOMEM instead of leaking the
+    //compiled definition
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaUnresolvedPutOomFail) {
+    //Given stringHashMap_put is injected to fail for the unresolved-ref
+    //placeholder entry (put <- depth <- set_root_schema, so level 1)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 1, CELIX_ENOMEM);
+    //Then compiling the schema should fail with NOMEM instead of leaving the
+    //placeholder's owning ref stranded
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaGetOrCreateFilePutOomFail) {
+    //Given stringHashMap_put is injected to fail inside get_or_create_file
+    //(put <- get_or_create_file <- root_insert <- set_root_schema, so level 2)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 2, CELIX_ENOMEM);
+    //Then get_or_create_file returns NULL, root_insert reports NOMEM and
+    //set_root_schema propagates it instead of registering a file the map does
+    //not contain
+    char* errmsg = nullptr;
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, &errmsg));
+    EXPECT_NE(nullptr, errmsg);
+    free(errmsg);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRootInsertPutOomFail) {
+    //Given stringHashMap_put is injected to fail for the root node registration
+    //in root_insert (put <- root_insert <- depth <- set_root_schema, so level 2;
+    //the get_or_create_file put inside root_insert is level 3)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$id\":\"http://x/root\",\"type\":\"string\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_jansson_schema_set_root_schema, 2, CELIX_ENOMEM);
+    //Then compiling the schema should fail with NOMEM instead of reporting OK
+    //for a node the registry never stored (which would later surface as a
+    //confusing REF_UNRESOLVED)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_NOMEM, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaRootInsertRetainedVecPushOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //retained-placeholder push inside root_insert (1st = Phase A locs-vec push,
+    //2nd = Phase B pairs push, 3rd = retained push during the document-fragment
+    //walk's root_insert). The failed walk is retried on the next
+    //resolve_external_refs iteration.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/properties/b\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr, 3);
+    //Then the schema still compiles (the failed resolution self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaResolvePlaceholderVecPushOomFail) {
+    //Given realloc is injected to fail in celix_jansson_vec_push, hit by the
+    //retained-placeholder push inside resolve_placeholder (1st = Phase A
+    //locs-vec push, 2nd = Phase B pairs push, 3rd = retained push for the
+    //definitions entry registered by the document compile). The failed
+    //resolution is retried on the next resolve_external_refs iteration.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidatorWithLoader();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"$ref\":\"http://example.com/doc#/definitions/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_realloc((void*)celix_jansson_vec_push, 0, nullptr, 3);
+    //Then the schema still compiles (the failed resolution self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+/* ── Consistency: patternProperties regcomp (P3) ───────────────────────── */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaPatternPropertiesInvalidRegcomp) {
+    //Given a patternProperties key that is an invalid regex
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"object\",\"patternProperties\":{\"***invalid\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    //Then compiling the schema should fail with INVALID_PATTERN like the
+    //string "pattern" keyword does, instead of silently storing the pattern
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+/* ── Runtime path building OOM: path_child_checked call sites (P3) ────── */
+/* All inject realloc inside celix_jansson_path_push, reached through
+ * path_child_checked (realloc <- path_push <- path_child_checked <- validator
+ * <- v_type <- root_validate, so level 4). */
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePathChildCopyOomFail) {
+    //Given a nested object schema and realloc is injected to fail for the
+    //parent-token copy inside path_child_checked. The nested property adds two
+    //extra frames (v_object <- v_type), so the copy push is reached at level 6
+    //(realloc <- path_push <- path_child_checked <- v_object(b) <- v_type(b)
+    //<- v_object(root) <- v_type(root) <- root_validate)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema(
+        "{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"b\":{\"a\":\"x\"}}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 6, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateRequiredPathOomFail) {
+    //Given a dependencies-array schema and realloc is injected to fail for the
+    //required-error path build in v_required. The v_required node is dispatched
+    //directly from obj_validate_deps, so the push is reached at level 6
+    //(realloc <- path_push <- path_child_checked <- v_required <-
+    //obj_validate_deps <- v_object <- v_type <- root_validate)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"dependencies\":{\"a\":[\"b\"]}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"a\":1}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 6, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidatePropertyNamesPathOomFail) {
+    //Given a propertyNames schema and realloc is injected to fail for the
+    //property-name path build
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"propertyNames\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"a\":1}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDefaultPathOomFail) {
+    //Given a property with a default and realloc is injected to fail for the
+    //default-fill path build
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{}");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateDepsPathOomFail) {
+    //Given a dependencies schema and realloc is injected to fail for the
+    //dependency path build
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"object\",\"dependencies\":{\"a\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = loadSchema("{\"a\":\"x\"}");
+    int errorCount = 0;
+    //obj_validate_deps adds a frame: realloc <- path_push <- path_child_checked
+    //<- obj_validate_deps <- v_object <- v_type <- root_validate, so level 5
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 5, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateArrayItemsPathOomFail) {
+    //Given an items schema and realloc is injected to fail for the item path build
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"array\",\"items\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_pack("[s]", "x");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateTupleItemsPathOomFail) {
+    //Given a tuple items schema and realloc is injected to fail for the item path build
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"array\",\"items\":[{\"type\":\"string\"}]}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_pack("[s]", "x");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateAdditionalItemsPathOomFail) {
+    //Given a tuple+additionalItems schema and realloc is injected to fail for
+    //the additional-item path build (2nd realloc: 1st = the tuple item push)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"array\",\"items\":[{\"type\":\"string\"}],\"additionalItems\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_pack("[s,s]", "x", "y");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr, 2);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaValidateContainsPathOomFail) {
+    //Given a contains schema and realloc is injected to fail for the contains
+    //element path build (after the first-sink allocation succeeds)
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema = loadSchema("{\"type\":\"array\",\"contains\":{\"type\":\"string\"}}");
+    ASSERT_NE(nullptr, schema);
+    ASSERT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+    json_auto_t* instance = json_pack("[s]", "x");
+    int errorCount = 0;
+    celix_ei_expect_realloc((void*)celix_jansson_schema_root_validate, 4, nullptr);
+    //Then validating fails closed with an out-of-memory error
+    EXPECT_EQ(1, celix_jansson_schema_validate(v, instance, countingErrorCb, &errorCount, nullptr));
+    EXPECT_EQ(1, errorCount);
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaPatternPropertiesInvalidRegcompSecond) {
+    //Given patternProperties where the second pattern fails to compile, the
+    //first (compiled) entry must be released (regfree + unref) before the
+    //INVALID_PATTERN error propagates
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"type\":\"object\",\"patternProperties\":{\"a\":{\"type\":\"string\"},\"***invalid\":{\"type\":\"string\"}}}");
+    ASSERT_NE(nullptr, schema);
+    //Then compiling the schema should fail with INVALID_PATTERN
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_ERROR_INVALID_PATTERN, celix_jansson_schema_set_root_schema(v, schema, nullptr));
+}
+
+TEST_F(JanssonExtSchemaErrorInjectionTestSuite, SchemaDocFragmentDeriveOomFail) {
+    //Given strdup is injected to fail inside uri_update, hit by the
+    //document-fragment walk's $id base update for properties.x. Only the
+    //walk's derive has a scheme ("http://y/z" → path = strdup("/z")); the
+    //$ref URI derive ("#/properties/x") and the cur_base init ("") do not
+    //strdup, so ordinal 1 is the walk's derive. The failed walk returns NULL
+    //and the ref is resolved on the next resolve_external_refs iteration.
+    //properties.x is used (not definitions) so the walk is actually required.
+    celix_autoptr(celix_jansson_schema_validator_t) v = makeValidator();
+    ASSERT_NE(nullptr, v);
+    json_auto_t* schema =
+        loadSchema("{\"properties\":{\"x\":{\"$id\":\"http://y/z\",\"type\":\"string\"}},\"$ref\":\"#/properties/x\"}");
+    ASSERT_NE(nullptr, schema);
+    celix_ei_expect_strdup((void*)celix_jansson_uri_update, 0, nullptr);
+    //Then the schema still compiles (the failed walk self-heals on retry)
+    EXPECT_EQ(CELIX_JANSSON_SCHEMA_OK, celix_jansson_schema_set_root_schema(v, schema, nullptr));
 }
