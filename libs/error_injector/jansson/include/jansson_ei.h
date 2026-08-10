@@ -31,6 +31,8 @@ CELIX_EI_DECLARE(json_object, json_t*);
 CELIX_EI_DECLARE(json_object_set_new, int);
 CELIX_EI_DECLARE(json_array, json_t*);
 CELIX_EI_DECLARE(json_array_append_new, int);
+CELIX_EI_DECLARE(json_array_set_new, int);
+CELIX_EI_DECLARE(json_array_insert_new, int);
 CELIX_EI_DECLARE(json_integer, json_t*);
 CELIX_EI_DECLARE(json_string, json_t*);
 CELIX_EI_DECLARE(json_real, json_t*);
@@ -40,6 +42,7 @@ CELIX_EI_DECLARE(json_dumpf, int);
 CELIX_EI_DECLARE(json_pack_ex, json_t*);
 CELIX_EI_DECLARE(json_null, json_t*);
 CELIX_EI_DECLARE(json_loads, json_t*);
+CELIX_EI_DECLARE(json_deep_copy, json_t*);
 
 #ifdef __cplusplus
 }

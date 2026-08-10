@@ -60,6 +60,8 @@ scope.*\.json
 #MIT - C Thread Pool
 thpool.c
 thpool.h
+#Third-party JSON Schema Test Suite data files (no license headers)
+JSON-Schema-Test-Suite
 Design.md
 FAQ.md
 README.md

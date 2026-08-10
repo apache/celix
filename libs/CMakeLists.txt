@@ -19,6 +19,7 @@
 #(e.g. no dependency on celix framework
 add_subdirectory(utils)
 add_subdirectory(rcm)
+add_subdirectory(jansson_ext)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
 add_subdirectory(promises)

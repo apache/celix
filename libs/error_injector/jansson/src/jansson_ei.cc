@@ -67,6 +67,22 @@ int __wrap_json_array_append_new(json_t* array, json_t* value) {
     return __real_json_array_append_new(array, celix_steal_ptr(val));
 }
 
+int __real_json_array_set_new(json_t* array, size_t index, json_t* value);
+CELIX_EI_DEFINE(json_array_set_new, int)
+int __wrap_json_array_set_new(json_t* array, size_t index, json_t* value) {
+    json_auto_t* val = value;
+    CELIX_EI_IMPL(json_array_set_new);
+    return __real_json_array_set_new(array, index, celix_steal_ptr(val));
+}
+
+int __real_json_array_insert_new(json_t* array, size_t index, json_t* value);
+CELIX_EI_DEFINE(json_array_insert_new, int)
+int __wrap_json_array_insert_new(json_t* array, size_t index, json_t* value) {
+    json_auto_t* val = value;
+    CELIX_EI_IMPL(json_array_insert_new);
+    return __real_json_array_insert_new(array, index, celix_steal_ptr(val));
+}
+
 json_t* __real_json_integer(json_int_t value);
 CELIX_EI_DEFINE(json_integer, json_t*)
 json_t* __wrap_json_integer(json_int_t value) {
@@ -136,6 +152,13 @@ CELIX_EI_DEFINE(json_loads, json_t*)
 json_t* __wrap_json_loads(const char* input, size_t flags, json_error_t* error) {
     CELIX_EI_IMPL(json_loads);
     return __real_json_loads(input, flags, error);
+}
+
+json_t* __real_json_deep_copy(const json_t* value);
+CELIX_EI_DEFINE(json_deep_copy, json_t*)
+json_t* __wrap_json_deep_copy(const json_t* value) {
+    CELIX_EI_IMPL(json_deep_copy);
+    return __real_json_deep_copy(value);
 }
 
 }
