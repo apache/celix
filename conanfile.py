@@ -50,10 +50,6 @@ class CelixConan(ConanFile):
         "enable_fuzzing": False,
         "enable_benchmarking": False,
         "install_find_modules": False,
-        # Celix is always built as shared libraries by its CMake build system.
-        # Declared so that Conan treats the package as shared (e.g. adds the lib
-        # dir to the consumer run environment) and to allow for static builds later.
-        "shared": True,
         "build_all": False,
         "build_http_admin": False,
         "build_log_service": False,
@@ -132,9 +128,6 @@ class CelixConan(ConanFile):
     def validate(self):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
-
-        if not self.options.shared:
-            raise ConanInvalidConfiguration("Celix is only packaged with shared libraries")
 
         if self.options.build_rsa_remote_service_admin_shm_v2 and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_remote_service_admin_shm_v2 is only supported for Linux")
@@ -410,7 +403,7 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        self.requires("openssl/[>=3.2.0]", override=True)
+        self.requires("openssl/[>=3.2.0 <4.0.0]", override=True)
         # Fix zlib to 1.3.1, 'libzip/1.10.1' and 'libcurl/7.64.1' requires different zlib versions causing conflicts
         self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
@@ -422,7 +415,7 @@ class CelixConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        conan_internal_options = ["build_all", "shared"] #options are not used in CMake
+        conan_internal_options = ["build_all"] #options are not used in CMake
         for opt in self._celix_defaults.keys():
             if opt not in conan_internal_options:
                 tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
@@ -471,3 +464,8 @@ class CelixConan(ConanFile):
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
         self.cpp_info.builddirs.append(os.path.join("lib", "cmake", "Celix"))
         self.cpp_info.set_property("cmake_find_mode", "none")
+        # Celix is always built as shared libraries by its CMake build system, so consumers
+        # need the lib dir in the run environment to find the libraries at runtime.
+        self.runenv_info.prepend_path("LD_LIBRARY_PATH", os.path.join(self.package_folder, "lib"))
+        if self.settings.os == "Macos":
+            self.runenv_info.prepend_path("DYLD_LIBRARY_PATH", os.path.join(self.package_folder, "lib"))

@@ -32,11 +32,6 @@ class TestPackageConan(ConanFile):
 
     def requirements(self):
         self.requires(self.tested_reference_str)
-        # The public API of Celix::jansson_ext is built on jansson types (json_t), so the
-        # tests call jansson functions directly. Celix is a shared package, and Conan does
-        # not propagate the link dependencies of shared packages to consumers, so jansson
-        # must be required directly to be linkable here.
-        self.requires("jansson/[>=2.12 <3.0.0]")
 
     def generate(self):
         tc = CMakeToolchain(self)
