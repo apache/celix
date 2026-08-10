@@ -182,13 +182,13 @@ TEST(PathTest, StrCacheStable) {
 TEST(PathTest, StrCacheInvalidatedOnPush) {
     celix_jansson_path_t p;
     celix_jansson_path_init(&p);
-
     celix_jansson_path_push(&p, "x");
     const char* s1 = celix_jansson_path_str(&p);
-    celix_jansson_path_push(&p, "y");
+    std::string before = s1;                        // 失效前拷贝内容
+    celix_jansson_path_push(&p, "y");                // 此后 s1 悬垂，但 before 仍有效
     const char* s2 = celix_jansson_path_str(&p);
-    EXPECT_NE(s1, s2); /* cache was invalidated, new string allocated */
-
+    EXPECT_STREQ(before.c_str(), "/x");
+    EXPECT_STREQ(s2, "/x/y");
     celix_jansson_path_free(&p);
 }
 
@@ -198,10 +198,10 @@ TEST(PathTest, StrCacheInvalidatedOnPop) {
 
     celix_jansson_path_push(&p, "x");
     celix_jansson_path_push(&p, "y");
-    const char* s1 = celix_jansson_path_str(&p);
+    EXPECT_STREQ("/x/y", celix_jansson_path_str(&p));
     celix_jansson_path_pop(&p);
-    const char* s2 = celix_jansson_path_str(&p);
-    EXPECT_NE(s1, s2); /* cache was invalidated, new string allocated */
+    /* Cache was invalidated: a stale cache would still return "/x/y". */
+    EXPECT_STREQ("/x", celix_jansson_path_str(&p));
 
     celix_jansson_path_free(&p);
 }
