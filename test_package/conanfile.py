@@ -32,6 +32,11 @@ class TestPackageConan(ConanFile):
 
     def requirements(self):
         self.requires(self.tested_reference_str)
+        # The public API of Celix::jansson_ext is built on jansson types (json_t), so the
+        # tests call jansson functions directly. Celix is a shared package, and Conan does
+        # not propagate the link dependencies of shared packages to consumers, so jansson
+        # must be required directly to be linkable here.
+        self.requires("jansson/[>=2.12 <3.0.0]")
 
     def generate(self):
         tc = CMakeToolchain(self)
@@ -63,6 +68,7 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_CXX_REMOTE_SERVICE_ADMIN"] = celix_options.build_cxx_remote_service_admin
         tc.cache_variables["TEST_SHELL_API"] = celix_options.build_shell_api
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
+        tc.cache_variables["TEST_JANSSON_EXT"] = celix_options.build_jansson_ext
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_EVENT_ADMIN"] = celix_options.build_event_admin
         tc.cache_variables["TEST_EVENT_ADMIN_REMOTE_PROVIDER_MQTT"] = celix_options.build_event_admin_remote_provider_mqtt
@@ -138,6 +144,8 @@ class TestPackageConan(ConanFile):
                     self.run("./use_shell_api", env="conanrun")
                 if celix_options.build_celix_dfi:
                     self.run("./use_celix_dfi", env="conanrun")
+                if celix_options.build_jansson_ext:
+                    self.run("./use_jansson_ext", env="conanrun")
                 if celix_options.build_utils:
                     self.run("./use_utils", env="conanrun")
                 if celix_options.build_event_admin:

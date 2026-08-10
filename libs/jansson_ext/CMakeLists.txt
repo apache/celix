@@ -42,10 +42,10 @@ if (JANSSON_EXT)
         PRIVATE src
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/jansson_ext>)
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/celix/gen/includes/jansson_ext>)
     generate_export_header(jansson_ext 
         BASE_NAME CELIX_JANSSON_EXT
-        EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/jansson_ext/celix_jansson_ext_export.h")
+        EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/celix/gen/includes/jansson_ext/celix_jansson_ext_export.h")
     add_library(Celix::jansson_ext ALIAS jansson_ext)
 
     # Install (always, no option gate)
@@ -70,7 +70,7 @@ if (JANSSON_EXT)
             PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${CMAKE_CURRENT_LIST_DIR}/src
-                ${CMAKE_BINARY_DIR}/celix/gen/includes/jansson_ext)
+                ${CMAKE_CURRENT_BINARY_DIR}/celix/gen/includes/jansson_ext)
         target_compile_definitions(jansson_ext_cut PUBLIC CELIX_JANSSON_EXT_STATIC_DEFINE)
         add_subdirectory(gtest)
     endif ()

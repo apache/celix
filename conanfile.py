@@ -50,6 +50,10 @@ class CelixConan(ConanFile):
         "enable_fuzzing": False,
         "enable_benchmarking": False,
         "install_find_modules": False,
+        # Celix is always built as shared libraries by its CMake build system.
+        # Declared so that Conan treats the package as shared (e.g. adds the lib
+        # dir to the consumer run environment) and to allow for static builds later.
+        "shared": True,
         "build_all": False,
         "build_http_admin": False,
         "build_log_service": False,
@@ -128,6 +132,9 @@ class CelixConan(ConanFile):
     def validate(self):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
+
+        if not self.options.shared:
+            raise ConanInvalidConfiguration("Celix is only packaged with shared libraries")
 
         if self.options.build_rsa_remote_service_admin_shm_v2 and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_remote_service_admin_shm_v2 is only supported for Linux")
@@ -415,7 +422,7 @@ class CelixConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        conan_internal_options = ["build_all"] #options are not used in CMake
+        conan_internal_options = ["build_all", "shared"] #options are not used in CMake
         for opt in self._celix_defaults.keys():
             if opt not in conan_internal_options:
                 tc.cache_variables[opt.upper()] = self.options.get_safe(opt)

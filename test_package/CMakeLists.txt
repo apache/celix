@@ -298,6 +298,12 @@ if (TEST_CELIX_DFI)
     target_link_libraries(use_celix_dfi PRIVATE Celix::dfi)
 endif ()
 
+option(TEST_JANSSON_EXT "Test jansson_ext" OFF)
+if (TEST_JANSSON_EXT)
+    add_executable(use_jansson_ext test_jansson_ext.c)
+    target_link_libraries(use_jansson_ext PRIVATE Celix::jansson_ext)
+endif ()
+
 option(TEST_UTILS "Test utils" OFF)
 if (TEST_UTILS)
     add_executable(use_utils test_utils.c)
