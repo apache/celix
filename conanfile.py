@@ -394,7 +394,9 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        self.requires("openssl/[>=3.2.0]", override=True)
+        # OpenSSL 4.x is a breaking API change (like 3.0 was); civetweb/1.16 does not support it yet.
+        # Keep the range below 4 until civetweb and other consumers support the OpenSSL 4 API.
+        self.requires("openssl/[>=3.2.0 <4]", override=True)
         # Fix zlib to 1.3.1, 'libzip/1.10.1' and 'libcurl/7.64.1' requires different zlib versions causing conflicts
         self.requires("zlib/1.3.1", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
