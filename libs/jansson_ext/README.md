@@ -1,7 +1,7 @@
 # Jansson Extension Library
 
 The Jansson Extension (`jansson_ext`) library provides JSON Schema validation,
-JSON Pointer, and JSON Patch functionality built on top of the
+JSON Pointer, JSON Patch, and JSON Merge Patch functionality built on top of the
 [Jansson](https://github.com/akheron/jansson) C library.
 
 ## Features
@@ -15,6 +15,9 @@ JSON Pointer, and JSON Patch functionality built on top of the
   path manipulation.
 - **JSON Patch (RFC 6902)** — Build and apply JSON Patch documents for
   programmatic JSON transformations.
+- **JSON Merge Patch (RFC 7396)** — Apply merge patch documents, where a null
+  member removes the corresponding member and a non-object patch replaces the
+  whole document.
 
 ## API
 
@@ -23,6 +26,7 @@ Public headers are in the `include/` directory:
 - [celix_jansson_schema.h](include/celix_jansson_schema.h) — JSON Schema validation
 - [celix_jansson_pointer.h](include/celix_jansson_pointer.h) — JSON Pointer operations
 - [celix_json_patch.h](include/celix_json_patch.h) — JSON Patch builder
+- [celix_json_merge_patch.h](include/celix_json_merge_patch.h) — JSON Merge Patch application
 
 ## Dependencies
 

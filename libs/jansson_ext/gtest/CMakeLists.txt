@@ -30,6 +30,7 @@ set(TEST_SOURCES
     src/test_pointer.cpp
     src/test_patch.cpp
     src/test_json_patch.cpp
+    src/test_merge_patch.cpp
     src/test_validate_uri.cpp
     src/test_abort.cpp
     src/test_format_check_extended.cpp
@@ -56,6 +57,7 @@ if (EI_TESTS)
     add_executable(test_jansson_ext_with_ei
         src/ErrorInjectionTestSuite.cc
         src/SchemaErrorInjectionTestSuite.cc
+        src/MergePatchErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_jansson_ext_with_ei PRIVATE
         jansson_ext_cut

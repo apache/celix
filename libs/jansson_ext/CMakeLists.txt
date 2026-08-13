@@ -23,6 +23,7 @@ if (JANSSON_EXT)
         src/celix_jansson_schema.c
         src/celix_jansson_pointer.c
         src/celix_json_patch.c
+        src/celix_json_merge_patch.c
         src/celix_jansson_uri.c
         src/celix_string_format_check.c
         src/celix_smtp_address_validator.c
