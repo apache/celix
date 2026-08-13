@@ -18,11 +18,42 @@
 
 #include <celix_jansson_pointer.h>
 #include <celix_jansson_schema.h>
+#include <celix_json_merge_patch.h>
 #include <celix_json_patch.h>
 #include <jansson.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Applies a merge patch and checks the result against the expected JSON. */
+static int applyAndExpectEqual(const char* targetText, const char* patchText, const char* expectedText) {
+    json_error_t jerr;
+    json_t* target = json_loads(targetText, JSON_DECODE_ANY, &jerr);
+    json_t* patch = json_loads(patchText, JSON_DECODE_ANY, &jerr);
+    json_t* expected = json_loads(expectedText, JSON_DECODE_ANY, &jerr);
+    if (!target || !patch || !expected) {
+        fprintf(stderr, "Error parsing merge patch test input: %s\n", jerr.text);
+        json_decref(target);
+        json_decref(patch);
+        json_decref(expected);
+        return 1;
+    }
+
+    json_t* result = celix_json_merge_patch(target, patch);
+    int rc = result && json_equal(result, expected) ? 0 : 1;
+    if (rc != 0) {
+        char* resultStr = json_dumps(result, JSON_ENCODE_ANY);
+        fprintf(stderr,
+                "Merge patch mismatch:\n  target   = %s\n  patch    = %s\n  expected = %s\n  got      = %s\n",
+                targetText, patchText, expectedText, resultStr ? resultStr : "?");
+        free(resultStr);
+    }
+    json_decref(result);
+    json_decref(target);
+    json_decref(patch);
+    json_decref(expected);
+    return rc;
+}
 
 int main() {
     /* ── JSON Schema draft-7 validation ─────────────────────────────────── */
@@ -132,6 +163,74 @@ int main() {
     printf("patched = %s\n", patched_str ? patched_str : "?");
     free(patched_str);
     json_decref(patched);
+    json_decref(patch);
+    json_decref(doc);
+
+    /* ── JSON Merge Patch (RFC 7396) ────────────────────────────────────── */
+    /* Section 1 example and Appendix A examples, as in the gtest suite */
+    int mergePatchFailures = 0;
+    mergePatchFailures += applyAndExpectEqual("{\"a\":\"b\",\"c\":{\"d\":\"e\",\"f\":\"g\"}}",
+                                              "{\"a\":\"z\",\"c\":{\"f\":null}}",
+                                              "{\"a\":\"z\",\"c\":{\"d\":\"e\"}}");
+    mergePatchFailures += applyAndExpectEqual("{\"a\":\"b\"}", "{\"b\":\"c\"}", "{\"a\":\"b\",\"b\":\"c\"}");      /* add member */
+    mergePatchFailures += applyAndExpectEqual("{\"a\":\"b\"}", "{\"a\":null}", "{}");                             /* remove member */
+    mergePatchFailures += applyAndExpectEqual("[\"a\",\"b\"]", "[\"c\",\"d\"]", "[\"c\",\"d\"]");                 /* non-object patch */
+    mergePatchFailures += applyAndExpectEqual("{\"a\":\"foo\"}", "null", "null");                                 /* null patch */
+    mergePatchFailures += applyAndExpectEqual("{\"a\":\"foo\"}", "\"bar\"", "\"bar\"");                           /* scalar patch */
+    mergePatchFailures += applyAndExpectEqual("[1,2]", "{\"a\":\"b\",\"c\":null}", "{\"a\":\"b\"}");              /* object patch on array */
+    mergePatchFailures += applyAndExpectEqual("{\"a\":1}", "{}", "{\"a\":1}");                                    /* empty patch on object */
+    mergePatchFailures += applyAndExpectEqual("[1,2]", "{}", "{}");                                               /* empty patch on non-object */
+    mergePatchFailures += applyAndExpectEqual("{}", "{\"a\":{\"bb\":{\"ccc\":null}}}", "{\"a\":{\"bb\":{}}}");    /* nested absent member */
+    if (mergePatchFailures != 0) {
+        fprintf(stderr, "JSON merge patch tests failed\n");
+        return 1;
+    }
+    printf("merge patch RFC 7396 examples ok\n");
+
+    /* NULL arguments are rejected */
+    doc = json_loads("{\"a\":1}", 0, &jerr);
+    if (!doc) {
+        fprintf(stderr, "Error parsing merge patch document: %s\n", jerr.text);
+        return 1;
+    }
+    if (celix_json_merge_patch(NULL, doc) != NULL || celix_json_merge_patch(doc, NULL) != NULL ||
+        celix_json_merge_patch(NULL, NULL) != NULL) {
+        fprintf(stderr, "Merge patch with NULL argument(s) should return NULL\n");
+        json_decref(doc);
+        return 1;
+    }
+    json_decref(doc);
+
+    /* inputs are never modified and a new document is returned */
+    doc = json_loads("{\"a\":{\"b\":1},\"c\":[1,2]}", 0, &jerr);
+    patch = json_loads("{\"a\":{\"b\":2}}", 0, &jerr);
+    if (!doc || !patch) {
+        fprintf(stderr, "Error parsing merge patch inputs: %s\n", jerr.text);
+        json_decref(doc);
+        json_decref(patch);
+        return 1;
+    }
+    json_t* docCopy = json_deep_copy(doc);
+    json_t* patchCopy = json_deep_copy(patch);
+    json_t* merged = celix_json_merge_patch(doc, patch);
+    if (!docCopy || !patchCopy || !merged || merged == doc || merged == patch ||
+        !json_equal(doc, docCopy) || !json_equal(patch, patchCopy) ||
+        json_integer_value(json_object_get(json_object_get(merged, "a"), "b")) != 2 ||
+        !json_object_get(merged, "c")) {
+        fprintf(stderr, "Merge patch should return a new document without modifying its inputs\n");
+        json_decref(merged);
+        json_decref(patchCopy);
+        json_decref(docCopy);
+        json_decref(patch);
+        json_decref(doc);
+        return 1;
+    }
+    char* merged_str = json_dumps(merged, 0);
+    printf("merged = %s\n", merged_str ? merged_str : "?");
+    free(merged_str);
+    json_decref(merged);
+    json_decref(patchCopy);
+    json_decref(docCopy);
     json_decref(patch);
     json_decref(doc);
 
