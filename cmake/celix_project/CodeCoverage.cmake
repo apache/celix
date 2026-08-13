@@ -42,6 +42,7 @@
 # 4. Added "mock" to exclude list for coverage results
 # 5. Removed HTML generation from the coverage setup function
 # 6. Removed unneeded Cobertura function
+# 7. Version-gated --ignore-errors flags for lcov 2.x
 #
 
 # Option to enable/disable coverage
@@ -59,6 +60,27 @@ IF(ENABLE_CODE_COVERAGE)
     IF(NOT GCOV_PATH)
     	MESSAGE(FATAL_ERROR "gcov not found! Aborting...")
     ENDIF() # NOT GCOV_PATH
+
+    # lcov 2.x errors on gcov end-line inconsistencies for functions sharing a
+    # start line (e.g. gtest TEST_F bodies and their synthesized ctor/dtors) and
+    # on unused exclude patterns; 1.x neither has these checks nor accepts the
+    # corresponding --ignore-errors categories (unknown categories are fatal in
+    # all versions), so the flags are version-gated.
+    execute_process(COMMAND ${LCOV_PATH} --version
+        OUTPUT_VARIABLE LCOV_VERSION_OUTPUT
+        ERROR_QUIET)
+    set(LCOV_MAJOR_VERSION 0)
+    if (LCOV_VERSION_OUTPUT MATCHES "LCOV version ([0-9]+)\\.([0-9]+)")
+        set(LCOV_MAJOR_VERSION ${CMAKE_MATCH_1})
+    endif ()
+    if (LCOV_MAJOR_VERSION GREATER_EQUAL 2)
+        # mismatch = lcov 2.0, inconsistent = 2.1+ (renamed); both accepted on all 2.x
+        set(LCOV_CAPTURE_IGNORE_ERRORS --ignore-errors mismatch,inconsistent)
+        set(LCOV_REMOVE_IGNORE_ERRORS --ignore-errors unused)
+    else ()
+        set(LCOV_CAPTURE_IGNORE_ERRORS "")
+        set(LCOV_REMOVE_IGNORE_ERRORS "")
+    endif ()
 
     #IF(NOT CMAKE_COMPILER_IS_GNUCXX)
     #	MESSAGE(FATAL_ERROR "Compiler is not GNU gcc! Aborting...")
@@ -134,8 +156,8 @@ function (setup_target_for_coverage)
 
     		# Capturing lcov counters and generating report
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
-    		COMMAND ${LCOV_PATH} --directory ${COVERAGE_SCAN_DIR} --capture --output-file ${OUTPUT_FILE}
-    		COMMAND ${LCOV_PATH} --remove ${OUTPUT_FILE} '**/error_injector/*' '**/mock/*' '**/.conan/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${OUTPUT_FILE}.cleaned
+    		COMMAND ${LCOV_PATH} --directory ${COVERAGE_SCAN_DIR} --capture ${LCOV_CAPTURE_IGNORE_ERRORS} --output-file ${OUTPUT_FILE}
+    		COMMAND ${LCOV_PATH} --remove ${OUTPUT_FILE} '**/error_injector/*' '**/mock/*' '**/.conan/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' ${LCOV_REMOVE_IGNORE_ERRORS} --output-file ${OUTPUT_FILE}.cleaned
 
             #test dependencies, so that test is runned
             DEPENDENCIES ${TEST_TARGET_NAME}
