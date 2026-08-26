@@ -195,6 +195,10 @@ CELIX_JANSSON_EXT_EXPORT json_t* celix_json_pointer_get_or_create(json_t* doc, c
  * Creates intermediate objects/arrays as needed.
  * If the path already exists, the old value is replaced.
  *
+ * A root pointer (depth 0) is rejected with -1: the document is passed by
+ * value (json_t*), so the whole document cannot be replaced through this API.
+ * The value is still consumed on that error path.
+ *
  * @param doc    The JSON document (modified in-place)
  * @param ptr    The pointer path
  * @param value  The value to set (ownership is taken — "steal" semantics).
@@ -207,9 +211,13 @@ CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_set(json_t* doc, const celix_jso
 /**
  * Remove the value at this pointer from the document.
  *
+ * A root pointer (depth 0) is rejected with -1: the whole document cannot
+ * be removed through this API.
+ *
  * @param doc  The JSON document (modified in-place)
  * @param ptr  The pointer to remove
- * @return 0 on success, -1 if the path does not exist
+ * @return 0 on success, -1 if the path does not exist or the pointer is the
+ *         root pointer
  */
 CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_remove(json_t* doc, const celix_json_pointer_t* ptr);
 
