@@ -21,6 +21,7 @@
 
 #include "celix_jansson_schema.h"
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include <string>
 #include <vector>
 

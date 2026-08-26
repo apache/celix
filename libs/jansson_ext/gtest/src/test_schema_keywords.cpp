@@ -1026,3 +1026,74 @@ TEST_F(SchemaKeywordsTest, ValidateUriPatchOut) {
     json_decref(inst);
     json_decref(patch);
 }
+
+/* ── Error callback receives the failing instance ─────────────────────── */
+
+namespace {
+static json_t* exp_name = nullptr;
+static json_t* exp_tags1 = nullptr;
+static bool cb_name_ok = false;
+static bool cb_tags1_ok = false;
+static bool cb_null_seen = false;
+static void instance_cb(const char* ptr, json_t* instance, const char* /*msg*/, void* /*ud*/) {
+    if (!instance) {
+        cb_null_seen = true;
+        return;
+    }
+    if (ptr && strcmp(ptr, "/name") == 0 && json_equal(instance, exp_name))
+        cb_name_ok = true;
+    if (ptr && strcmp(ptr, "/tags/1") == 0 && json_equal(instance, exp_tags1))
+        cb_tags1_ok = true;
+}
+} // namespace
+
+TEST_F(SchemaKeywordsTest, ErrorCallbackInstance) {
+    load_schema(R"({"type":"object",
+                    "properties":{"name":{"type":"integer"},
+                                  "tags":{"type":"array","items":{"type":"string"}}}})");
+
+    exp_name = json_loads(R"("not_int")", JSON_DECODE_ANY, nullptr);
+    exp_tags1 = json_loads("42", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, exp_name);
+    ASSERT_NE(nullptr, exp_tags1);
+    cb_name_ok = cb_tags1_ok = cb_null_seen = false;
+
+    json_t* inst = json_loads(R"({"name":"not_int","tags":["ok",42]})", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    int n = celix_jansson_schema_validate(v_, inst, instance_cb, nullptr, nullptr);
+    EXPECT_EQ(2, n);
+
+    /* The instance parameter is the value at the reported pointer, not NULL */
+    EXPECT_TRUE(cb_name_ok) << "instance for /name was not the failing value";
+    EXPECT_TRUE(cb_tags1_ok) << "instance for /tags/1 was not the failing value";
+    EXPECT_FALSE(cb_null_seen) << "error callback received a NULL instance";
+
+    json_decref(exp_name);
+    json_decref(exp_tags1);
+    json_decref(inst);
+}
+
+/* ── Error callback instance for a parent-level failure (required) ────── */
+
+namespace {
+static bool cb_obj_ok = false;
+static void instance_req_cb(const char* ptr, json_t* instance, const char* /*msg*/, void* ud) {
+    if (ptr && strcmp(ptr, "") == 0 && instance && json_equal(instance, (json_t*)ud))
+        cb_obj_ok = true;
+}
+} // namespace
+
+TEST_F(SchemaKeywordsTest, ErrorCallbackInstanceRequired) {
+    load_schema(R"({"type":"object","required":["a"]})");
+
+    json_t* inst = json_loads("{}", JSON_DECODE_ANY, nullptr);
+    ASSERT_NE(nullptr, inst);
+    cb_obj_ok = false;
+    int n = celix_jansson_schema_validate(v_, inst, instance_req_cb, inst, nullptr);
+    EXPECT_EQ(1, n);
+
+    /* The failing instance is the object itself, reported at the root pointer */
+    EXPECT_TRUE(cb_obj_ok);
+
+    json_decref(inst);
+}

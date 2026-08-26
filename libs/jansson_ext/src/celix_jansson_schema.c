@@ -183,7 +183,7 @@ void celix_jansson_schema_unref(celix_jansson_schema_node_t* n) {
  * ════════════════════════════════════════════════════════════════════════ */
 
 static void
-emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, va_list ap) {
+emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, json_t* inst, const char* fmt, va_list ap) {
     char* msg = NULL;
     const char* text;
     if (vasprintf(&msg, fmt, ap) >= 0)
@@ -197,14 +197,14 @@ emit_error_v(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path
     const char* ps = path ? celix_jansson_path_str(path) : "";
     if (!ps)
         ps = ""; /* path_str can return NULL only if its empty-string fallback allocation failed */
-    ctx->sink->emit(ctx->sink, ps, NULL, text);
+    ctx->sink->emit(ctx->sink, ps, inst, text);
     free(msg);
 }
 
-static void emit_error(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, const char* fmt, ...) {
+static void emit_error(celix_jansson_validation_context_t* ctx, celix_jansson_path_t* path, json_t* inst, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    emit_error_v(ctx, path, fmt, ap);
+    emit_error_v(ctx, path, inst, fmt, ap);
     va_end(ap);
 }
 
@@ -357,16 +357,17 @@ static bool path_child_checked(celix_jansson_path_t* child,
                                celix_jansson_path_t* parent,
                                const char* token,
                                celix_jansson_validation_context_t* ctx,
+                               json_t* inst,
                                int* errs) {
     for (size_t i = 0; i < parent->len; i++) {
         if (celix_jansson_path_push(child, parent->tokens[i]) != 0) {
-            emit_error(ctx, parent, "out of memory while building instance path");
+            emit_error(ctx, parent, inst, "out of memory while building instance path");
             (*errs)++;
             return false;
         }
     }
     if (celix_jansson_path_push(child, token) != 0) {
-        emit_error(ctx, parent, "out of memory while building instance path");
+        emit_error(ctx, parent, inst, "out of memory while building instance path");
         (*errs)++;
         return false;
     }
@@ -496,7 +497,7 @@ static int v_boolean(const celix_jansson_schema_node_t* n,
                      celix_jansson_path_t* p,
                      celix_jansson_validation_context_t* ctx) {
     if (!n->u.boolean.value)
-        emit_error(ctx, p, "instance invalid as per false-schema");
+        emit_error(ctx, p, inst, "instance invalid as per false-schema");
     return n->u.boolean.value ? 0 : 1;
 }
 static const json_t* dv_boolean(const celix_jansson_schema_node_t* n,
@@ -548,12 +549,12 @@ static int v_ref(const celix_jansson_schema_node_t* n,
      * phase 2), so a root self-ref ("$ref": "#") never needs a runtime fallback. */
     celix_jansson_schema_node_t* t = n->u.ref.target_weak;
     if (!t) {
-        emit_error(ctx, p, "unresolved or freed schema-reference");
+        emit_error(ctx, p, inst, "unresolved or freed schema-reference");
         return 1;
     }
     /* Guard against infinite recursion through circular $ref */
     if (ctx->ref_depth > 20) {
-        emit_error(ctx, p, "exceeded maximum $ref recursion depth");
+        emit_error(ctx, p, inst, "exceeded maximum $ref recursion depth");
         return 1;
     }
     ctx->ref_depth++;
@@ -585,10 +586,10 @@ static int v_required(const celix_jansson_schema_node_t* n,
         json_t* v = json_object_get(inst, n->u.required.names[i]);
         if (!v) {
             celix_auto(celix_jansson_path_t) pp = {0};
-            if (!path_child_checked(&pp, p, n->u.required.names[i], ctx, &errs)) {
+            if (!path_child_checked(&pp, p, n->u.required.names[i], ctx, inst, &errs)) {
                 return errs;
             }
-            emit_error(ctx, &pp, "required property '%s' not found in object", n->u.required.names[i]);
+            emit_error(ctx, &pp, inst, "required property '%s' not found in object", n->u.required.names[i]);
             errs++;
         }
     }
@@ -609,14 +610,14 @@ static int v_string(const celix_jansson_schema_node_t* n,
     if (n->u.string.has_min_len) {
         size_t cplen = utf8_length(s, len);
         if (cplen < n->u.string.min_len) {
-            emit_error(ctx, p, "instance string is too short (min=%zu, got=%zu)", n->u.string.min_len, cplen);
+            emit_error(ctx, p, inst, "instance string is too short (min=%zu, got=%zu)", n->u.string.min_len, cplen);
             errs++;
         }
     }
     if (n->u.string.has_max_len) {
         size_t cplen = utf8_length(s, len);
         if (cplen > n->u.string.max_len) {
-            emit_error(ctx, p, "instance string is too long (max=%zu, got=%zu)", n->u.string.max_len, cplen);
+            emit_error(ctx, p, inst, "instance string is too long (max=%zu, got=%zu)", n->u.string.max_len, cplen);
             errs++;
         }
     }
@@ -627,7 +628,7 @@ static int v_string(const celix_jansson_schema_node_t* n,
          * runtime check (covered by ContentMediaTypeWithoutCheckerAtValidate). */
         if (!root->content) {
             emit_error(
-                ctx, p, "a content checker was not provided but a contentEncoding/contentMediaType keyword is present");
+                ctx, p, inst, "a content checker was not provided but a contentEncoding/contentMediaType keyword is present");
             errs++;
         } else {
             int rc = root->content(n->u.string.content_encoding,
@@ -635,14 +636,14 @@ static int v_string(const celix_jansson_schema_node_t* n,
                                    inst,
                                    root->content_ud);
             if (rc != CELIX_JANSSON_SCHEMA_OK) {
-                emit_error(ctx, p, "content validation failed");
+                emit_error(ctx, p, inst, "content validation failed");
                 errs++;
             }
         }
     }
     if (n->u.string.has_pattern) {
         if (regexec(&n->u.string.pattern, s, 0, NULL, 0) != 0) {
-            emit_error(ctx, p, "instance string does not match pattern '%s'", n->u.string.pattern_str);
+            emit_error(ctx, p, inst, "instance string does not match pattern '%s'", n->u.string.pattern_str);
             errs++;
         }
     }
@@ -651,7 +652,7 @@ static int v_string(const celix_jansson_schema_node_t* n,
         assert(root->format != NULL); /* compile-time guard: no checker → CELIX_JANSSON_SCHEMA_ERROR_FORMAT_CHECKER */
         int rc = root->format(n->u.string.format, s, root->format_ud);
         if (rc != CELIX_JANSSON_SCHEMA_OK) {
-            emit_error(ctx, p, "format-checking failed: %s", n->u.string.format);
+            emit_error(ctx, p, inst, "format-checking failed: %s", n->u.string.format);
             errs++;
         }
     }
@@ -669,19 +670,19 @@ static int v_numeric_int(const celix_jansson_schema_node_t* n,
     int errs = 0;
     if (n->u.numeric.has_min) {
         if (n->u.numeric.exclusive_min ? (v <= n->u.numeric.bounds.i.min) : (v < n->u.numeric.bounds.i.min)) {
-            emit_error(ctx, p, "instance is below minimum of %lld", (long long)n->u.numeric.bounds.i.min);
+            emit_error(ctx, p, inst, "instance is below minimum of %lld", (long long)n->u.numeric.bounds.i.min);
             errs++;
         }
     }
     if (n->u.numeric.has_max) {
         if (n->u.numeric.exclusive_max ? (v >= n->u.numeric.bounds.i.max) : (v > n->u.numeric.bounds.i.max)) {
-            emit_error(ctx, p, "instance exceeds maximum of %lld", (long long)n->u.numeric.bounds.i.max);
+            emit_error(ctx, p, inst, "instance exceeds maximum of %lld", (long long)n->u.numeric.bounds.i.max);
             errs++;
         }
     }
     if (n->u.numeric.has_mult) {
         if (violates_multiple((double)v, n->u.numeric.multiple_of)) {
-            emit_error(ctx, p, "instance is not a multiple of %g", n->u.numeric.multiple_of);
+            emit_error(ctx, p, inst, "instance is not a multiple of %g", n->u.numeric.multiple_of);
             errs++;
         }
     }
@@ -698,19 +699,19 @@ static int v_numeric_float(const celix_jansson_schema_node_t* n,
     int errs = 0;
     if (n->u.numeric.has_min) {
         if (n->u.numeric.exclusive_min ? (v <= n->u.numeric.bounds.f.min) : (v < n->u.numeric.bounds.f.min)) {
-            emit_error(ctx, p, "instance is below minimum of %.16g", n->u.numeric.bounds.f.min);
+            emit_error(ctx, p, inst, "instance is below minimum of %.16g", n->u.numeric.bounds.f.min);
             errs++;
         }
     }
     if (n->u.numeric.has_max) {
         if (n->u.numeric.exclusive_max ? (v >= n->u.numeric.bounds.f.max) : (v > n->u.numeric.bounds.f.max)) {
-            emit_error(ctx, p, "instance exceeds maximum of %.16g", n->u.numeric.bounds.f.max);
+            emit_error(ctx, p, inst, "instance exceeds maximum of %.16g", n->u.numeric.bounds.f.max);
             errs++;
         }
     }
     if (n->u.numeric.has_mult) {
         if (violates_multiple(v, n->u.numeric.multiple_of)) {
-            emit_error(ctx, p, "instance is not a multiple of %g", n->u.numeric.multiple_of);
+            emit_error(ctx, p, inst, "instance is not a multiple of %g", n->u.numeric.multiple_of);
             errs++;
         }
     }
@@ -735,18 +736,18 @@ static int v_object(const celix_jansson_schema_node_t* n,
     size_t sz = json_object_size(inst);
 
     if (n->u.object.has_min_p && sz < n->u.object.min_p) {
-        emit_error(ctx, p, "instance has too few properties (%zu < %zu)", sz, n->u.object.min_p);
+        emit_error(ctx, p, inst, "instance has too few properties (%zu < %zu)", sz, n->u.object.min_p);
         errs++;
     }
     if (n->u.object.has_max_p && sz > n->u.object.max_p) {
-        emit_error(ctx, p, "instance has too many properties (%zu > %zu)", sz, n->u.object.max_p);
+        emit_error(ctx, p, inst, "instance has too many properties (%zu > %zu)", sz, n->u.object.max_p);
         errs++;
     }
 
     /* required check */
     for (size_t i = 0; i < n->u.object.required_len; i++) {
         if (!json_object_get(inst, n->u.object.required[i])) {
-            emit_error(ctx, p, "required property '%s' not found in object", n->u.object.required[i]);
+            emit_error(ctx, p, inst, "required property '%s' not found in object", n->u.object.required[i]);
             errs++;
             if (ctx->aborted) return errs;
         }
@@ -763,12 +764,12 @@ static int v_object(const celix_jansson_schema_node_t* n,
             json_t* kname = json_string(key);
             if (!kname) {
                 /* Fail closed on OOM: stop the validation pass */
-                emit_error(ctx, p, "out of memory while validating property name '%s'", key);
+                emit_error(ctx, p, kname, "out of memory while validating property name '%s'", key);
                 errs++;
                 return errs;
             }
             celix_auto(celix_jansson_path_t) kp = {0};
-            if (!path_child_checked(&kp, p, key, ctx, &errs)) {
+            if (!path_child_checked(&kp, p, key, ctx, kname, &errs)) {
                 json_decref(kname);
                 return errs;
             }
@@ -778,7 +779,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
         }
 
         celix_auto(celix_jansson_path_t) cp = {0};
-        if (!path_child_checked(&cp, p, key, ctx, &errs)) {
+        if (!path_child_checked(&cp, p, key, ctx, val, &errs)) {
             return errs;
         }
 
@@ -807,7 +808,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
             if (!fs) {
                 /* Fail closed: the additional-property check cannot be
                  * evaluated, so stop the validation pass */
-                emit_error(ctx, &cp, "out of memory while validating additional property '%s'", key);
+                emit_error(ctx, &cp, val, "out of memory while validating additional property '%s'", key);
                 errs++;
                 return errs;
             }
@@ -815,7 +816,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
             fctx.sink = &fs->base;
             n->u.object.additional_properties->vtable->validate(n->u.object.additional_properties, val, &cp, &fctx);
             if (fs->got) {
-                emit_error(ctx, &cp, "validation failed for additional property '%s': %s", key, fs->msg ? fs->msg : "");
+                emit_error(ctx, &cp, val, "validation failed for additional property '%s': %s", key, fs->msg ? fs->msg : "");
                 errs++;
                 if (ctx->aborted) { fs->base.destroy(&fs->base); break; }
             }
@@ -833,7 +834,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
                     const json_t* def = NULL;
                     if (ps->vtable && ps->vtable->default_value) {
                         celix_auto(celix_jansson_path_t) dp = {0};
-                        if (!path_child_checked(&dp, p, pk, ctx, &errs)) {
+                        if (!path_child_checked(&dp, p, pk, ctx, inst, &errs)) {
                             return errs;
                         }
                         def = ps->vtable->default_value(ps, &dp, inst, ctx);
@@ -845,12 +846,12 @@ static int v_object(const celix_jansson_schema_node_t* n,
                          * built via the path API (a raw "%s/%s"
                          * concatenation would corrupt keys with '~' or '/'). */
                         celix_auto(celix_jansson_path_t) dp = {0};
-                        if (!path_child_checked(&dp, p, pk, ctx, &errs)) {
+                        if (!path_child_checked(&dp, p, pk, ctx, inst, &errs)) {
                             return errs;
                         }
                         const char* dstr = celix_jansson_path_str(&dp); /* NULL on OOM */
                         if (!dstr) {
-                            emit_error(ctx, p, "out of memory while applying default value");
+                            emit_error(ctx, p, inst, "out of memory while applying default value");
                             errs++;
                             return errs;
                         }
@@ -858,7 +859,7 @@ static int v_object(const celix_jansson_schema_node_t* n,
                             /* Fail closed on OOM (the value ref is consumed by
                              * patch_add on failure, so nothing to release; dp
                              * is released automatically on scope exit) */
-                            emit_error(ctx, p, "out of memory while applying default value");
+                            emit_error(ctx, p, inst, "out of memory while applying default value");
                             errs++;
                             return errs;
                         }
@@ -889,7 +890,7 @@ static void obj_validate_deps(const celix_jansson_schema_node_t* n,
         celix_jansson_schema_node_t* dep = obj_node_get(n->u.object.dependencies, key);
         if (dep) {
             celix_auto(celix_jansson_path_t) cp = {0};
-            if (!path_child_checked(&cp, p, key, ctx, errs)) {
+            if (!path_child_checked(&cp, p, key, ctx, inst, errs)) {
                 return;
             }
             *errs += dep->vtable->validate(dep, inst, &cp, ctx);
@@ -920,18 +921,18 @@ static int v_array(const celix_jansson_schema_node_t* n,
     int errs = 0;
 
     if (n->u.array.has_min_i && sz < n->u.array.min_items) {
-        emit_error(ctx, p, "instance has too few items (%zu < %zu)", sz, n->u.array.min_items);
+        emit_error(ctx, p, inst, "instance has too few items (%zu < %zu)", sz, n->u.array.min_items);
         errs++;
     }
     if (n->u.array.has_max_i && sz > n->u.array.max_items) {
-        emit_error(ctx, p, "instance has too many items (%zu > %zu)", sz, n->u.array.max_items);
+        emit_error(ctx, p, inst, "instance has too many items (%zu > %zu)", sz, n->u.array.max_items);
         errs++;
     }
     if (n->u.array.unique_items) {
         for (size_t i = 0; i < sz; i++) {
             for (size_t j = i + 1; j < sz; j++) {
                 if (jss_json_equal(json_array_get(inst, i), json_array_get(inst, j))) {
-                    emit_error(ctx, p, "items have to be unique for this array");
+                    emit_error(ctx, p, inst, "items have to be unique for this array");
                     errs++;
                     goto unique_done;
                 }
@@ -947,7 +948,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_auto(celix_jansson_path_t) cp = {0};
-            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+            if (!path_child_checked(&cp, p, idx, ctx, inst, &errs)) {
                 return errs;
             }
             errs +=
@@ -960,7 +961,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_auto(celix_jansson_path_t) cp = {0};
-            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+            if (!path_child_checked(&cp, p, idx, ctx, inst, &errs)) {
                 return errs;
             }
             errs += n->u.array.items[i]->vtable->validate(n->u.array.items[i], json_array_get(inst, i), &cp, ctx);
@@ -971,7 +972,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
                 char idx[32];
                 snprintf(idx, sizeof(idx), "%zu", i);
                 celix_auto(celix_jansson_path_t) cp = {0};
-                if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+                if (!path_child_checked(&cp, p, idx, ctx, inst, &errs)) {
                     return errs;
                 }
                 errs += n->u.array.additional_items->vtable->validate(
@@ -987,7 +988,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
             first_sink_t* fs = first_sink_new();
             if (!fs) {
                 /* Fail closed: 'contains' cannot be evaluated, so stop */
-                emit_error(ctx, p, "out of memory while validating 'contains'");
+                emit_error(ctx, p, inst, "out of memory while validating 'contains'");
                 errs++;
                 return errs;
             }
@@ -996,7 +997,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
             char idx[32];
             snprintf(idx, sizeof(idx), "%zu", i);
             celix_auto(celix_jansson_path_t) cp = {0};
-            if (!path_child_checked(&cp, p, idx, ctx, &errs)) {
+            if (!path_child_checked(&cp, p, idx, ctx, inst, &errs)) {
                 fs->base.destroy(&fs->base);
                 return errs;
             }
@@ -1006,7 +1007,7 @@ static int v_array(const celix_jansson_schema_node_t* n,
             fs->base.destroy(&fs->base);
         }
         if (!found) {
-            emit_error(ctx, p, "no element satisfies the 'contains' schema");
+            emit_error(ctx, p, inst, "no element satisfies the 'contains' schema");
             errs++;
         }
     }
@@ -1023,7 +1024,7 @@ static int v_not(const celix_jansson_schema_node_t* n,
     first_sink_t* fs = first_sink_new();
     if (!fs) {
         /* Fail closed: cannot determine whether the subschema validates */
-        emit_error(ctx, p, "out of memory while validating 'not'");
+        emit_error(ctx, p, inst, "out of memory while validating 'not'");
         return 1;
     }
     celix_jansson_validation_context_t fctx = *ctx;
@@ -1031,7 +1032,7 @@ static int v_not(const celix_jansson_schema_node_t* n,
     int sub_errs = n->u.not_schema.sub->vtable->validate(n->u.not_schema.sub, inst, p, &fctx);
     fs->base.destroy(&fs->base);
     if (sub_errs == 0) {
-        emit_error(ctx, p, "the subschema has succeeded, but it is required to not validate");
+        emit_error(ctx, p, inst, "the subschema has succeeded, but it is required to not validate");
         return 1;
     }
     return 0;
@@ -1049,14 +1050,14 @@ static int v_comb(const celix_jansson_schema_node_t* n,
     if (!master) {
         /* Fail closed: return the same "combination failed, error emitted"
          * convention as the other failing paths below (0 = passed) */
-        emit_error(ctx, p, "out of memory while validating combination");
+        emit_error(ctx, p, inst, "out of memory while validating combination");
         return 1;
     }
 
     for (size_t i = 0; i < n->u.combination.len; i++) {
         collecting_sink_t* cs = coll_new();
         if (!cs) {
-            emit_error(ctx, p, "out of memory while validating combination");
+            emit_error(ctx, p, inst, "out of memory while validating combination");
             /* Flush the errors collected by the earlier branches, then clean up */
             coll_propagate(master, ctx->sink, NULL);
             master->base.destroy(&master->base);
@@ -1087,6 +1088,7 @@ static int v_comb(const celix_jansson_schema_node_t* n,
         if (count < (int)n->u.combination.len) {
             emit_error(ctx,
                        p,
+                       inst,
                        "at least one subschema has failed, but all of them are required to validate - %zu failed",
                        n->u.combination.len - (size_t)count);
             coll_propagate(master, ctx->sink, NULL);
@@ -1098,6 +1100,7 @@ static int v_comb(const celix_jansson_schema_node_t* n,
         if (count == 0) {
             emit_error(ctx,
                        p,
+                       inst,
                        "no subschema has succeeded, but one of them is required to validate. Type: anyOf, number of "
                        "failed subschemas: %zu",
                        n->u.combination.len);
@@ -1110,6 +1113,7 @@ static int v_comb(const celix_jansson_schema_node_t* n,
         if (count == 0) {
             emit_error(ctx,
                        p,
+                       inst,
                        "no subschema has succeeded, but one of them is required to validate. Type: oneOf, number of "
                        "failed subschemas: %zu",
                        n->u.combination.len);
@@ -1120,7 +1124,7 @@ static int v_comb(const celix_jansson_schema_node_t* n,
         }
         if (count > 1) {
             emit_error(
-                ctx, p, "more than one subschema has succeeded, but exactly one of them is required to validate");
+                ctx, p, inst, "more than one subschema has succeeded, but exactly one of them is required to validate");
             master->base.destroy(&master->base);
             celix_json_patch_truncate(ctx->patch, old_patch);
             return 1;
@@ -1142,7 +1146,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
     /* Type check */
     celix_jansson_schema_node_t* typed = n->u.type_schema.type_slots[slot];
     if (!typed) {
-        emit_error(ctx, p, "unexpected instance type");
+        emit_error(ctx, p, inst, "unexpected instance type");
         return 1;
     }
     errs += typed->vtable->validate(typed, inst, p, ctx);
@@ -1159,7 +1163,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
             }
         }
         if (!found) {
-            emit_error(ctx, p, "instance not found in required enum");
+            emit_error(ctx, p, inst, "instance not found in required enum");
             errs++;
         }
     }
@@ -1167,7 +1171,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
     /* const */
     if (n->u.type_schema.has_const) {
         if (!jss_json_equal(inst, n->u.type_schema.const_value)) {
-            emit_error(ctx, p, "instance not const");
+            emit_error(ctx, p, inst, "instance not const");
             errs++;
         }
     }
@@ -1183,7 +1187,7 @@ static int v_type(const celix_jansson_schema_node_t* n,
         first_sink_t* fs = first_sink_new();
         if (!fs) {
             /* Fail closed: the if-condition cannot be evaluated */
-            emit_error(ctx, p, "out of memory while evaluating 'if'");
+            emit_error(ctx, p, inst, "out of memory while evaluating 'if'");
             errs++;
             return errs;
         }
@@ -1211,14 +1215,14 @@ static int v_type(const celix_jansson_schema_node_t* n,
          * json_incref (leak) and before patch_add (crash on NULL path) */
         const char* ps = celix_jansson_path_str(p);
         if (!ps) {
-            emit_error(ctx, p, "out of memory while applying default value");
+            emit_error(ctx, p, inst, "out of memory while applying default value");
             errs++;
             return errs;
         }
         if (celix_json_patch_add(ctx->patch, ps, json_incref(n->default_value)) != 0) {
             /* Fail closed on OOM (the value ref is consumed by patch_add on
              * failure, so nothing to release) */
-            emit_error(ctx, p, "out of memory while applying default value");
+            emit_error(ctx, p, inst, "out of memory while applying default value");
             errs++;
             return errs;
         }
