@@ -344,8 +344,10 @@ json_t* celix_json_pointer_get_or_create(json_t* doc, const celix_json_pointer_t
 /* ── set ────────────────────────────────────────────────────────────── */
 
 int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t* value) {
-    if (!doc || !ptr || ptr->len == 0)
+    if (!doc || !ptr || ptr->len == 0) {
+        json_decref(value); /* steal semantics: consume the value even on error */
         return -1;
+    }
 
     json_t* cur = doc;
     for (size_t i = 0; i < ptr->len - 1; i++) {
@@ -452,12 +454,6 @@ int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t*
     }
     json_decref(value);
     return -1;
-}
-
-int celix_json_pointer_set_new(json_t* doc, const celix_json_pointer_t* ptr, json_t* value) {
-    if (value)
-        json_incref(value);
-    return celix_json_pointer_set(doc, ptr, value);
 }
 
 /* ── remove ─────────────────────────────────────────────────────────── */

@@ -949,28 +949,6 @@ TEST(PointerTest, PushWithSlashReEncoded) {
     celix_json_pointer_clear(&p);
 }
 
-/* ── Set new via new API ─────────────────────────────────────────────── */
-
-TEST(PointerTest, SetNewIncrementsRef) {
-    json_t* doc = json_object();
-    celix_json_pointer_t p;
-    ASSERT_EQ(0, celix_json_pointer_init(&p, "/x"));
-
-    json_t* val = json_string("hello");
-    EXPECT_EQ(0, celix_json_pointer_set_new(doc, &p, val));
-
-    /* val should still be valid (set_new incref'd it) */
-    EXPECT_STREQ("hello", json_string_value(val));
-
-    json_t* v = celix_json_pointer_get(doc, &p);
-    ASSERT_NE(nullptr, v);
-    EXPECT_TRUE(json_equal(val, v));
-
-    json_decref(val);
-    celix_json_pointer_clear(&p);
-    json_decref(doc);
-}
-
 /* ── Stack-allocated init/clear repeated ─────────────────────────────── */
 
 TEST(PointerTest, StackReuse) {
@@ -1275,18 +1253,12 @@ TEST(PointerTest, SetNullArgs) {
     celix_json_pointer_t* empty = celix_json_pointer_create("");
     ASSERT_NE(nullptr, empty);
 
-    /* NULL guards return before consuming value — caller keeps ownership */
-    json_t* v1 = json_integer(1);
-    EXPECT_EQ(-1, celix_json_pointer_set(nullptr, p, v1));
-    json_decref(v1);
-
-    json_t* v2 = json_integer(2);
-    EXPECT_EQ(-1, celix_json_pointer_set(doc, nullptr, v2));
-    json_decref(v2);
-
-    json_t* v3 = json_integer(3);
-    EXPECT_EQ(-1, celix_json_pointer_set(doc, empty, v3));
-    json_decref(v3);
+    /* Steal semantics: the value is consumed even when the call fails on the
+     * NULL/empty guard — the caller must not touch it afterwards.
+     * Leak-freedom is checked by LSan in the ASan CI build. */
+    EXPECT_EQ(-1, celix_json_pointer_set(nullptr, p, json_integer(1)));
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, nullptr, json_integer(2)));
+    EXPECT_EQ(-1, celix_json_pointer_set(doc, empty, json_integer(3)));
 
     celix_json_pointer_destroy(p);
     celix_json_pointer_destroy(empty);

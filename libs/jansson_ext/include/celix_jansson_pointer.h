@@ -197,16 +197,12 @@ CELIX_JANSSON_EXT_EXPORT json_t* celix_json_pointer_get_or_create(json_t* doc, c
  *
  * @param doc    The JSON document (modified in-place)
  * @param ptr    The pointer path
- * @param value  The value to set (ownership is taken — "steal" semantics)
+ * @param value  The value to set (ownership is taken — "steal" semantics).
+ *               Consumed (json_decref()'d) on error as well; the caller must
+ *               not touch it after the call.
  * @return 0 on success, -1 on error
  */
 CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_set(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
-
-/**
- * Set a value at the given pointer, incrementing the reference.
- * Like celix_json_pointer_set() but json_incref()s @p value instead of stealing it.
- */
-CELIX_JANSSON_EXT_EXPORT int celix_json_pointer_set_new(json_t* doc, const celix_json_pointer_t* ptr, json_t* value);
 
 /**
  * Remove the value at this pointer from the document.

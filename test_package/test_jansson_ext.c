@@ -134,7 +134,7 @@ int main() {
     printf("pointer = %s, value = %lld\n", ptr_str, json_integer_value(value));
     free(ptr_str);
 
-    if (celix_json_pointer_set_new(doc, ptr, json_integer(42)) != 0) {
+    if (celix_json_pointer_set(doc, ptr, json_integer(42)) != 0) {
         fprintf(stderr, "JSON pointer set failed\n");
         celix_json_pointer_destroy(ptr);
         json_decref(doc);
