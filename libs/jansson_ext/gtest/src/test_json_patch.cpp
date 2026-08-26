@@ -92,21 +92,16 @@ TEST(JsonPatchTest, Truncate) {
 /* ── Edge cases: NULL / non-array inputs ──────────────────────────────── */
 
 TEST(JsonPatchTest, NullInputs) {
-    json_t* v1 = json_integer(1);
-    EXPECT_NE(0, celix_json_patch_add(nullptr, "/x", v1));
-    json_decref(v1);
-    json_t* v2 = json_integer(1);
-    EXPECT_NE(0, celix_json_patch_replace(nullptr, "/x", v2));
-    json_decref(v2);
+    /* Steal semantics: the value is consumed even when the call fails on the
+     * NULL/non-array guard — the caller must not touch it afterwards.
+     * Leak-freedom is checked by LSan in the ASan CI build. */
+    EXPECT_NE(0, celix_json_patch_add(nullptr, "/x", json_integer(1)));
+    EXPECT_NE(0, celix_json_patch_replace(nullptr, "/x", json_integer(1)));
     EXPECT_NE(0, celix_json_patch_remove(nullptr, "/x"));
 
     json_t* non_array = json_string("not_an_array");
-    json_t* v3 = json_integer(1);
-    EXPECT_NE(0, celix_json_patch_add(non_array, "/x", v3));
-    json_decref(v3);
-    json_t* v4 = json_integer(1);
-    EXPECT_NE(0, celix_json_patch_replace(non_array, "/x", v4));
-    json_decref(v4);
+    EXPECT_NE(0, celix_json_patch_add(non_array, "/x", json_integer(1)));
+    EXPECT_NE(0, celix_json_patch_replace(non_array, "/x", json_integer(1)));
     EXPECT_NE(0, celix_json_patch_remove(non_array, "/x"));
     json_decref(non_array);
 

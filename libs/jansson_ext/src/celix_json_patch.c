@@ -24,11 +24,12 @@
 #include <string.h>
 
 int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value) {
-    if (!patch || !json_is_array(patch))
-        return -1;
-
-    /* val/op are auto-released on every early return */
+    /* val/op are auto-released on every early return, including the guard below */
     json_auto_t* val = value;
+    if (!patch || !json_is_array(patch)) {
+        return -1;
+    }
+
     json_auto_t* op = json_object();
     if (!op)
         return -1;
@@ -53,11 +54,12 @@ int celix_json_patch_add(json_t* patch, const char* path_str, json_t* value) {
 }
 
 int celix_json_patch_replace(json_t* patch, const char* path_str, json_t* value) {
-    if (!patch || !json_is_array(patch))
-        return -1;
-
-    /* val/op are auto-released on every early return */
+    /* val/op are auto-released on every early return, including the guard below */
     json_auto_t* val = value;
+    if (!patch || !json_is_array(patch)) {
+        return -1;
+    }
+
     json_auto_t* op = json_object();
     if (!op)
         return -1;
