@@ -1,0 +1,60 @@
+name: SBOM
+
+on:
+  push:
+  pull_request:
+
+env:
+  CONAN_USER_HOME: "${{ github.workspace }}/release/"
+  CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+  CONAN_HOME: "${{ github.workspace }}/release/"
+
+jobs:
+  conan-cyclonedx:
+    name: Generate Conan lockfile and CycloneDX SBOM
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
+
+      - name: Install Conan
+        run: sudo pip install -U conan
+
+      - name: Confirm native CycloneDX 1.6 support
+        run: |
+          python3 - <<'PY'
+          from conan import conan_version
+          from conan.tools.sbom import cyclonedx_1_6
+          print(f"conan {conan_version}")
+          print(f"cyclonedx_1_6 {cyclonedx_1_6}")
+          PY
+
+      - name: Setup Conan Profile
+        run: |
+          # Same Linux profile shape as .github/workflows/conan_create.yml
+          conan profile detect -f
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
+
+      - name: Conan Cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
+        env:
+          cache-name: cache-conan2-sbom
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ runner.os }}-sbom-${{ env.cache-name }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-sbom-${{ env.cache-name }}-
+
+      - name: Generate lockfile and CycloneDX 1.6 SBOM
+        run: python3 misc/generate_conan_sbom.py --output-dir sbom-out
+
+      - name: Upload SBOM and lockfile
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: celix-conan-sbom
+          path: |
+            sbom-out/conan.lock
+            sbom-out/sbom-cyclonedx-1.6.json
+          if-no-files-found: error

@@ -81,6 +81,7 @@ bundles contains binaries depending on the stdlibc++ library.
 
 * Building
   * [Building and Installing Apache Celix](building/README.md)
+  * [Software Bill of Materials (SBOM)](building/sbom.md)
 * C Patterns
   * [Apache Celix C Patterns](c_patterns.md)
 * Utils

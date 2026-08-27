@@ -35,3 +35,8 @@ target
 html
 CMakeUserPresets.json
 
+# Generated Conan lockfile and CycloneDX SBOM (produced in CI, not committed)
+conan.lock
+sbom-cyclonedx-*.json
+sbom-out/
+

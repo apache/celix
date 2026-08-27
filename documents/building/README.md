@@ -272,3 +272,4 @@ sudo cmake --install build
 - [Building and Running Tests](testing.md)
 - [Fuzz Testing](fuzz_testing.md)
 - [Building and Running Benchmarks](benchmarks.md)
+- [Software Bill of Materials (SBOM)](sbom.md)
