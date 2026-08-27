@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# https://cwiki.apache.org/confluence/display/INFRA/git+-+.asf.yaml+features
+# https://github.com/apache/infrastructure-asfyaml/blob/main/README.md
 ---
 github:
   description: "Apache Celix is a framework for C and C++14 to develop dynamic modular software applications using component and in-process service-oriented programming."
