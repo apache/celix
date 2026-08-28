@@ -21,12 +21,35 @@ limitations under the License.
 
 # Software Bill of Materials
 
-The Linux Conan CI build generates a CycloneDX 1.6 Software Bill of Materials
-using Conan's built-in `cyclone_1.6` deployer:
+The Linux Conan CI build first creates the `celix/3.0.0` Conan binary package.
+For the GCC Release configuration, CI then consumes that package with the same
+settings and options and runs Conan's `full_deploy` and `cyclone_1.6` deployers
+in the same dependency-graph resolution:
 
 ```bash
-conan install . -o celix/*:build_all=True --deployer=cyclone_1.6 --deployer-folder=sbom -b missing -o *:shared=True
+conan install --requires=celix/3.0.0 \
+  --deployer=full_deploy \
+  --deployer=cyclone_1.6 \
+  --deployer-folder=release-artifact \
+  -b never \
+  -pr:b default \
+  -pr:h default \
+  -s:h build_type=Release \
+  -o celix/*:build_all=True \
+  -o celix/*:enable_ccache=True \
+  -o celix/*:celix_cxx17=True \
+  -o celix/*:celix_install_deprecated_api=True \
+  -o mosquitto/*:broker=True \
+  -o *:shared=True
 ```
 
-The generated `sbom/sbom-cyclonedx-1.6.json` file is published by CI as the
-`celix-conan-sbom` artifact.
+`full_deploy` copies the resolved binary packages into `release-artifact`, while
+`cyclone_1.6` writes `release-artifact/sbom-cyclonedx-1.6.json` from that same
+resolved graph. The `-b never` option ensures this publication step uses the
+binary packages already created or resolved by the build instead of silently
+building a different package configuration.
+
+CI publishes the complete `release-artifact/` directory as the
+`celix-conan-package-and-sbom` artifact, keeping the deployed Celix package,
+its resolved binary dependencies, and the matching CycloneDX 1.6 SBOM
+together.
