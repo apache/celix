@@ -138,7 +138,7 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
-            ${{ runner.os }}-ccache-Release-${{ matrix.type }}-
+            ${{ runner.os }}-ccache-Release-
       - name: Create Celix
         run: |
           conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True -o celix/*:enable_address_sanitizer=True -o mosquitto/*:broker=True -o *:shared=True
