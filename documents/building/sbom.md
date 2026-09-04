@@ -21,10 +21,16 @@ limitations under the License.
 
 # Software Bill of Materials
 
-Apache Celix provides a committed `conan.lock` and a matching CycloneDX 1.6
-SBOM for one documented Conan configuration. Together they provide a
-reproducible **safe-default dependency baseline** for development and
+Apache Celix provides a committed `conan/safe-defaults.lock` and a matching
+CycloneDX 1.6 SBOM for one documented Conan configuration. Together they
+provide a reproducible **safe-default dependency baseline** for development and
 vulnerability review.
+
+The lockfile is intentionally not named `conan.lock` at the repository root.
+Conan automatically discovers a root `conan.lock` for ordinary commands, which
+would make the baseline an implicit constraint on unrelated builds. Keeping the
+safe-default lockfile at an explicit path means users opt in to it with
+`--lockfile=conan/safe-defaults.lock`.
 
 The lockfile is not a repository-wide dependency mandate. Celix users remain
 free to build without the lockfile, override dependency versions, or maintain a
@@ -50,13 +56,14 @@ produce different graphs.
 
 ## CI generation
 
-The Linux Conan CI job first performs its normal Celix package build. For the
-GCC Release configuration it then validates the committed safe-default graph by
-running Conan's built-in CycloneDX deployer with `conan.lock`:
+The Linux Conan CI job first performs its normal Celix package build without an
+implicit lockfile. For the GCC Release configuration it then explicitly
+validates the committed safe-default graph by running Conan's built-in
+CycloneDX deployer with `conan/safe-defaults.lock`:
 
 ```bash
 conan install . \
-  --lockfile=conan.lock \
+  --lockfile=conan/safe-defaults.lock \
   --deployer=cyclone_1.6 \
   --deployer-folder=sbom \
   -b missing \
@@ -75,17 +82,18 @@ happen to be newest when CI runs. If the lockfile no longer satisfies the Celix
 recipe, the CI step fails instead of silently generating evidence for a
 different graph.
 
-CI publishes `conan.lock` and `sbom/sbom-cyclonedx-1.6.json` together as the
+CI publishes `conan/safe-defaults.lock` and
+`sbom/sbom-cyclonedx-1.6.json` together as the
 `celix-conan-safe-defaults` workflow artifact.
 
 ## Using the baseline locally
 
-After creating a Conan profile compatible with the configuration above, use the
-committed lockfile to reproduce the safe-default graph:
+After creating a Conan profile compatible with the configuration above, opt in
+to the committed lockfile to reproduce the safe-default graph:
 
 ```bash
 conan install . \
-  --lockfile=conan.lock \
+  --lockfile=conan/safe-defaults.lock \
   -b missing \
   -pr:b default \
   -pr:h default \
