@@ -72,7 +72,7 @@ jobs:
         run: |
           rm -rf sbom
           conan install . \
-            --lockfile=conan.lock \
+            --lockfile=conan/safe-defaults.lock \
             --deployer=cyclone_1.6 \
             --deployer-folder=sbom \
             -b missing \
@@ -89,7 +89,7 @@ jobs:
         with:
           name: celix-conan-safe-defaults
           path: |
-            conan.lock
+            conan/safe-defaults.lock
             sbom/sbom-cyclonedx-1.6.json
           if-no-files-found: error
       - name: Dependency Deduction Test
