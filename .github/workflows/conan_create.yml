@@ -67,6 +67,31 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
         run: |
           conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:h build_type=${{ matrix.type }} -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True -o mosquitto/*:broker=True -o *:shared=True
+      - name: Generate CycloneDX SBOM from canonical Conan lockfile
+        if: matrix.compiler[0] == 'gcc'
+        run: |
+          rm -rf sbom
+          conan install . \
+            --lockfile=conan/safe-defaults.lock \
+            --deployer=cyclone_1.6 \
+            --deployer-folder=sbom \
+            -b missing \
+            -pr:b default \
+            -pr:h default \
+            -s:h build_type=${{ matrix.type }} \
+            -o celix/*:build_all=True \
+            -o celix/*:celix_cxx17=True \
+            -o mosquitto/*:broker=True \
+            -o *:shared=True
+      - name: Upload canonical Conan lockfile and CycloneDX SBOM
+        if: matrix.compiler[0] == 'gcc'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: celix-conan-safe-defaults
+          path: |
+            conan/safe-defaults.lock
+            sbom/sbom-cyclonedx-1.6.json
+          if-no-files-found: error
       - name: Dependency Deduction Test
         env:
           CC: ${{ matrix.compiler[0] }}
