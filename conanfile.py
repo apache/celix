@@ -222,7 +222,7 @@ class CelixConan(ConanFile):
         if self.options.enable_testing:
             self.test_requires("gtest/1.17.0")
         if self.options.enable_ccache:
-            self.build_requires("ccache/4.7.4")
+            self.build_requires("ccache/[>=4.8 <=4.10.2]")
         if self.options.enable_benchmarking:
             self.test_requires("benchmark/[>=1.6.2]")
 
