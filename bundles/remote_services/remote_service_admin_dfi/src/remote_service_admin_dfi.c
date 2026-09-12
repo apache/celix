@@ -474,7 +474,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             // rest = myservice/call
 
             const char *rest = uri+9;
-            char *interfaceStart = strchr(rest, '/');
+            const char *interfaceStart = strchr(rest, '/');
             int pos = interfaceStart - rest;
             char service[pos+1];
             strncpy(service, rest, pos);

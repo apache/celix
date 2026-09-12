@@ -252,7 +252,7 @@ etcd_get_recursive_values(json_t *js_root, etcdlib_key_value_callback callback, 
 
 static long long etcd_get_current_index(const char *headerData) {
     long long index = -1;
-    char *indexStr = strstr(headerData, ETCD_HEADER_INDEX);
+    const char *indexStr = strstr(headerData, ETCD_HEADER_INDEX);
     indexStr += strlen(ETCD_HEADER_INDEX);
 
     if (sscanf(indexStr, "%lld\n", &index) == 1) {
