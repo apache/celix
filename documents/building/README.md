@@ -123,6 +123,19 @@ To see a complete overview of the available build options in the recipe you can 
 conan inspect . | grep build_
 ```
 
+#### CMake 4 and Jansson
+
+When building on a system with CMake 4 or higher, the following entry is needed in your Conan host
+profile (for example, `debug`):
+
+```ini
+[buildenv]
+jansson/2.14:CMAKE_POLICY_VERSION_MINIMUM=3.5
+```
+
+This is needed because Jansson 2.14 is based on an older version of CMake, and this entry sets the
+minimum CMake policy version only in Jansson's build environment.
+
 #### CMake Private Linking Workaround (Conan)
 
 When using Celix via Conan, you may encounter an [issue](https://github.com/apache/celix/issues/642) where `libzip.so` is not found by the linker. This is due to a [bug in Conan](https://github.com/conan-io/conan/issues/7192).
