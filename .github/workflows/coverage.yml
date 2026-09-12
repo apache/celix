@@ -72,7 +72,7 @@ jobs:
           source generators/conanrun.sh
           make coverage
           source generators/deactivate_conanrun.sh
-          lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
+          lcx="lcov --output-file=coverage.info --ignore-errors inconsistent,inconsistent" && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
         uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c #v4.4.1
         if: github.repository_owner == 'apache'
