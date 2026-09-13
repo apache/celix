@@ -86,7 +86,7 @@ void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, c
 static pthread_mutex_t globalMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
-    if (level == CELIX_LOG_LEVEL_DISABLED) {
+    if (format == NULL || level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore
         return;
     }

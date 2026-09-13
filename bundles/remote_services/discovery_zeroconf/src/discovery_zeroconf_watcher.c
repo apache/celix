@@ -680,7 +680,7 @@ static void discoveryZeroconfWatcher_refreshWatchedServices(discovery_zeroconf_w
                 celix_steal_ptr(svcEntry);
                 continue;
             }
-            char *instanceNameEnd = strrchr(key, '/');
+            const char *instanceNameEnd = strrchr(key, '/');
             if (instanceNameEnd == NULL || instanceNameEnd-key >= DZC_MAX_SERVICE_INSTANCE_NAME_LEN) {
                 celix_logHelper_error(watcher->logHelper, "Watcher: Invalid service instance key, %s.", key);
                 continue;

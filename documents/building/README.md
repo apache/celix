@@ -25,7 +25,7 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently, the [continuous integration build server] builds and tests Apache Celix for:
 
-* Ubuntu Jammy Jellyfish (22.04)
+* Ubuntu Resolute Raccoon (26.04)
   * GCC 
   * CLang 
 * OSX
@@ -54,7 +54,7 @@ The following packages (libraries + headers) should be installed on your system:
     * cmake (3.19 or higher)
     * Conan (2 or higher)
 
-For Ubuntu 22.04, use the following commands:
+For Ubuntu 26.04, use the following commands:
 ```bash
 sudo apt-get install -yq --no-install-recommends \
     build-essential \
@@ -123,6 +123,19 @@ To see a complete overview of the available build options in the recipe you can 
 conan inspect . | grep build_
 ```
 
+#### CMake 4 and Jansson
+
+When building on a system with CMake 4 or higher, the following entry is needed in your Conan host
+profile (for example, `debug`):
+
+```ini
+[buildenv]
+jansson/2.14:CMAKE_POLICY_VERSION_MINIMUM=3.5
+```
+
+This is needed because Jansson 2.14 is based on an older version of CMake, and this entry sets the
+minimum CMake policy version only in Jansson's build environment.
+
 #### CMake Private Linking Workaround (Conan)
 
 When using Celix via Conan, you may encounter an [issue](https://github.com/apache/celix/issues/642) where `libzip.so` is not found by the linker. This is due to a [bug in Conan](https://github.com/conan-io/conan/issues/7192).
@@ -164,7 +177,7 @@ The following packages (libraries + headers) should be installed on your system:
     * libcurl (used in framwork for setup and (among others) in remote services
 	
 
-For Ubuntu 22.04, use the following commands:
+For Ubuntu 26.04, use the following commands:
 
 ```bash
 sudo apt-get update
