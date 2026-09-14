@@ -65,7 +65,7 @@ jobs:
             -o mosquitto/*:broker=True 
             -o *:shared=True
         run: |
-          conan build .  -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
+          conan build . --lockfile=conan/safe-defaults.lock -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test with coverage
         run: |
           cd build/Debug
