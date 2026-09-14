@@ -21,10 +21,11 @@ limitations under the License.
 
 # Software Bill of Materials
 
-Apache Celix provides a committed `conan/safe-defaults.lock` and a matching
-CycloneDX 1.6 SBOM for one documented Conan configuration. Together they
-provide a reproducible **safe-default dependency baseline** for development and
-vulnerability review.
+Apache Celix provides a committed `conan/safe-defaults.lock` that pins the
+recipe revisions used across the Conan CI builds. CI also publishes a
+CycloneDX 1.6 SBOM for one documented Linux / GCC / Release configuration.
+Together they provide a reproducible **safe-default dependency baseline** for
+development and vulnerability review.
 
 The lockfile is intentionally not named `conan.lock` at the repository root.
 Conan automatically discovers a root `conan.lock` for ordinary commands, which
@@ -39,12 +40,18 @@ the resulting dependency graph and SBOM can change as well.
 
 ## Canonical safe-default configuration
 
-The committed lockfile represents the Linux / GCC / Release Conan graph with:
+The canonical SBOM baseline is the Linux / GCC / Release Conan graph with:
 
 * `celix/*:build_all=True`
 * `celix/*:celix_cxx17=True`
 * `mosquitto/*:broker=True`
 * `*:shared=True`
+
+The lockfile also contains recipe revisions required by the other supported
+Conan CI graphs, including platform-specific macOS dependencies. Those extra
+entries make the CI dependency resolution reproducible without changing the
+contents of the Linux / GCC / Release SBOM; Conan uses only the entries needed
+by the selected graph.
 
 The CI-only `enable_ccache` option is intentionally not part of this baseline;
 ccache accelerates compilation but should not define the dependency policy
@@ -56,10 +63,10 @@ produce different graphs.
 
 ## CI generation
 
-The Linux Conan CI job first performs its normal Celix package build without an
-implicit lockfile. For the GCC Release configuration it then explicitly
-validates the committed safe-default graph by running Conan's built-in
-CycloneDX deployer with `conan/safe-defaults.lock`:
+The Conan CI builds explicitly use `conan/safe-defaults.lock` so their
+upstream recipe revisions remain reproducible. For the Linux GCC Release
+configuration, CI additionally generates the CycloneDX SBOM with Conan's
+built-in deployer using the same lockfile:
 
 ```bash
 conan install . \

@@ -84,7 +84,7 @@ jobs:
             -o mosquitto/*:broker=True 
             -o *:shared=True
         run: |
-          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
+          conan build . --lockfile=conan/safe-defaults.lock -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
         env:
           CONAN_PRESET: ${{ matrix.type == 'Debug' && 'conan-debug' || 'conan-relwithdebinfo' }}
