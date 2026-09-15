@@ -39,7 +39,7 @@ jobs:
           -v ~/.ccache-container:/bome/celixdev/.ccache \
           -v $(pwd):/home/celixdev/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /home/celixdev/workspace && \
-          conan build . -pr:b release -pr:h debug --build=missing \
+          conan build . --lockfile=conan/safe-defaults.lock -pr:b release -pr:h debug --build=missing \
           --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
           --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
           -o mosquitto/*:broker=True -o *:shared=True \
