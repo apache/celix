@@ -129,40 +129,100 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
 
     switch (c) {
         case 'Z' :
-            *(bool*)loc = (bool) json_is_true(val);
+            if (json_is_boolean(val)) {
+                *(bool*)loc = (bool) json_is_true(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json boolean type but got %i", json_typeof(val));
+            }
             break;
         case 'F' :
-            *(float*)loc = (float) json_real_value(val);
+            if (json_is_real(val)) {
+                *(float*)loc = (float) json_real_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json real type but got %i", json_typeof(val));
+            }
             break;
         case 'D' :
-            *(double*)loc = json_real_value(val);
+            if (json_is_real(val)) {
+                *(double*)loc = json_real_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json real type but got %i", json_typeof(val));
+            }
             break;
         case 'N' :
-            *(int*)loc = (int) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(int*)loc = (int) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'B' :
-            *(char*)loc = (char) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(char*)loc = (char) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'S' :
-            *(int16_t*)loc = (int16_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(int16_t*)loc = (int16_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'I' :
-            *(int32_t*)loc = (int32_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(int32_t*)loc = (int32_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'J' :
-            *(int64_t*)loc = (int64_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(int64_t*)loc = (int64_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'b' :
-            *(uint8_t*)loc = (uint8_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(uint8_t*)loc = (uint8_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 's' :
-            *(uint16_t*)loc = (uint16_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(uint16_t*)loc = (uint16_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'i' :
-            *(uint32_t*)loc = (uint32_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(uint32_t*)loc = (uint32_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'j' :
-            *(uint64_t*)loc = (uint64_t) json_integer_value(val);
+            if (json_is_integer(val)) {
+                *(uint64_t*)loc = (uint64_t) json_integer_value(val);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json integer type but got %i", json_typeof(val));
+            }
             break;
         case 'E' :
             if (json_is_string(val)){

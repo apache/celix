@@ -270,7 +270,12 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
     rsError = json_object_get(replyJson, "e");
     if (rsError != NULL) {
         //get the invocation error of remote service function
-        *rsErrno = (int) json_integer_value(rsError);
+        if (json_is_integer(rsError)) {
+            *rsErrno = (int) json_integer_value(rsError);
+        } else {
+            celix_err_pushf("Expected json integer for error code but got %i", json_typeof(rsError));
+            return ERROR;
+        }
         return OK;
     }
     if (meta != DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT && meta != DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
