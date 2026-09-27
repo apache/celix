@@ -83,7 +83,7 @@ celix_status_t connectionListener_create(remote_shell_pt remoteShell, int port, 
 celix_status_t connectionListener_start(connection_listener_pt instance) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadMutex_lock(&instance->mutex);
-    celixThread_create(&instance->thread, NULL, connection_listener_thread, instance);
+    status = celixThread_create(&instance->thread, NULL, connection_listener_thread, instance);
     celixThreadMutex_unlock(&instance->mutex);
     return status;
 }
@@ -138,7 +138,11 @@ static void* connection_listener_thread(void *data) {
     char portStr[10];
     snprintf(&portStr[0], 10, "%d", instance->port);
 
-    getaddrinfo(NULL, portStr, &hints, &result);
+    int gaiResult = getaddrinfo(NULL, portStr, &hints, &result);
+    if (gaiResult != 0) {
+        celix_logHelper_log(*instance->loghelper, CELIX_LOG_LEVEL_ERROR, "getaddrinfo failed: %s", gai_strerror(gaiResult));
+        return NULL;
+    }
 
     for (rp = result; rp != NULL && status == CELIX_BUNDLE_EXCEPTION; rp = rp->ai_next) {
 

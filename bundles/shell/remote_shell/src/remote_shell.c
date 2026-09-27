@@ -175,24 +175,32 @@ void *remoteShell_connection_run(void *data) {
 			char buff[COMMAND_BUFF_SIZE];
 
 			len = recv(fd, buff, COMMAND_BUFF_SIZE - 1, 0);
-			if (len < COMMAND_BUFF_SIZE) {
-				celix_status_t commandStatus = CELIX_SUCCESS;
-				buff[len] = '\0';
+			if (len > 0) {
+				if (len < COMMAND_BUFF_SIZE) {
+					celix_status_t commandStatus = CELIX_SUCCESS;
+					buff[len] = '\0';
 
-				commandStatus = remoteShell_connection_execute(connection, buff);
+					commandStatus = remoteShell_connection_execute(connection, buff);
 
-				if (commandStatus == CELIX_SUCCESS) {
-					remoteShell_connection_print(connection, RS_PROMPT);
-				} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
-					//exit command
-					break;
-				} else { //error
-					remoteShell_connection_print(connection, RS_ERROR);
-					remoteShell_connection_print(connection, RS_PROMPT);
+					if (commandStatus == CELIX_SUCCESS) {
+						remoteShell_connection_print(connection, RS_PROMPT);
+					} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
+						//exit command
+						break;
+					} else { //error
+						remoteShell_connection_print(connection, RS_ERROR);
+						remoteShell_connection_print(connection, RS_PROMPT);
+					}
+
+				} else {
+					celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Error while retrieving data");
 				}
-
+			} else if (len == 0) {
+				celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Connection closed by peer");
+				break;
 			} else {
-                celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Error while retrieving data");
+				celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: recv() failed: %s", strerror(errno));
+				break;
 			}
 		}
 	}
