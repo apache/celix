@@ -556,6 +556,43 @@ static void parseTests() {
     celix_err_printErrors(stderr, nullptr, nullptr);
     dynType_destroy(type);
 
+    // integer type mismatch - string instead of integer
+    rc = dynType_parseWithStr("{I a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"not_an_integer"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    // double type mismatch - string instead of double
+    rc = dynType_parseWithStr("{D a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"not_a_double"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    // boolean type mismatch - integer instead of boolean
+    rc = dynType_parseWithStr("{Z a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    // float type mismatch - string instead of float
+    rc = dynType_parseWithStr("{F a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"not_a_float"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+
     // extra member ("b") is allowed
     rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
     ASSERT_EQ(0, rc);
