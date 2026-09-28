@@ -592,6 +592,22 @@ static void parseTests() {
     celix_err_printErrors(stderr, nullptr, nullptr);
     dynType_destroy(type);
 
+    // integer type mismatches - string instead of integer for all remaining integer descriptors
+    const char *integerDescriptors[] = {"N", "B", "S", "J", "b", "s", "i", "j"};
+    for (const char *descriptor : integerDescriptors) {
+        char descriptorStr[8];
+        snprintf(descriptorStr, sizeof(descriptorStr), "{%s a}", descriptor);
+        rc = dynType_parseWithStr(descriptorStr, nullptr, nullptr, &type);
+        ASSERT_EQ(0, rc);
+        inputStr = R"({"a":"not_an_integer"})";
+        rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+        ASSERT_EQ(1, rc);
+        char expectedErr[64];
+        snprintf(expectedErr, sizeof(expectedErr), "Expected json integer type but got %i", JSON_STRING);
+        EXPECT_STREQ("Error cannot deserialize json. Input is '{\"a\":\"not_an_integer\"}'", celix_err_popLastError());
+        EXPECT_STREQ(expectedErr, celix_err_popLastError());
+        dynType_destroy(type);
+    }
 
     // extra member ("b") is allowed
     rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);

@@ -417,6 +417,40 @@ extern "C" {
         dynInterface_destroy(intf);
     }
 
+    void handleTestInvalidReplyError(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        dyn_function_type *func = dynInterface_findMethod(intf, "add(DD)D")->dynFunc;
+        assert(func != nullptr);
+
+        const char *reply = R"({"e":"not_an_error_code"})";
+
+        void *args[4];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
+        args[3] = nullptr;
+
+        double result = 0;
+        void *out = &result;
+        args[3] = &out;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_NE(0, rc);
+        ASSERT_EQ(0, rsErrno);
+        char expectedErr[64];
+        snprintf(expectedErr, sizeof(expectedErr), "Expected json integer for error code but got %i", JSON_STRING);
+        EXPECT_STREQ(expectedErr, celix_err_popLastError());
+
+        dynInterface_destroy(intf);
+    }
+
     void callTestUnknownRequest(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
@@ -1117,6 +1151,10 @@ TEST_F(JsonRpcTests, handleInvalidOutChar) {
 
 TEST_F(JsonRpcTests, handleReplyError) {
     handleTestReplyError();
+}
+
+TEST_F(JsonRpcTests, handleInvalidReplyError) {
+    handleTestInvalidReplyError();
 }
 
 TEST_F(JsonRpcTests, handleTestOutWithEmptyReply) {
