@@ -17,6 +17,7 @@
 
 add_executable(test_celix_pushstreams
         src/PushStreamTestSuite.cc
+        src/PushStreamConcurrencyTest.cc
 )
 target_compile_options(test_celix_pushstreams PRIVATE -std=c++17)
 target_link_libraries(test_celix_pushstreams PRIVATE GTest::gtest GTest::gtest_main Celix::PushStreams)

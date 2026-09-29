@@ -100,7 +100,7 @@ void celix::BufferedPushStream<T>::startWorker() {
         if (lk) {
             std::unique_ptr<celix::PushEvent<T>> event = popQueue();
             while (event != nullptr) {
-                this->nextEvent.accept(*event);
+                this->acceptNextEvent(*event);
                 event = popQueue();
             }
             cv.notify_all();
