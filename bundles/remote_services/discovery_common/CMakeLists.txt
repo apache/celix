@@ -29,6 +29,7 @@ if (RSA_DISCOVERY_COMMON)
             src/endpoint_discovery_poller.c
             src/endpoint_discovery_server.c
             )
+    set_target_properties(rsa_discovery_common PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_include_directories(rsa_discovery_common PUBLIC include
             PRIVATE src ${LIBXML2_INCLUDE_DIR})
     celix_target_hide_symbols(rsa_discovery_common)

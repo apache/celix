@@ -6,7 +6,7 @@ on:
 
 jobs:
   container-conan-build-ubuntu:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - name: Checkout source code
@@ -52,7 +52,7 @@ jobs:
           "cd /home/celixdev/workspace && \
           ctest --preset conan-debug --output-on-failure -j1"
   build-dev-container-images:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - name: Checkout source code

@@ -27,11 +27,26 @@ if (NOT civetweb_FOUND)
 
     set(CIVETWEB_ENABLE_WEBSOCKETS TRUE CACHE BOOL "" FORCE)
     set(CIVETWEB_BUILD_TESTING FALSE CACHE BOOL "" FORCE)
+    set(CIVETWEB_ENABLE_ASAN FALSE CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS TRUE CACHE BOOL "" FORCE)
-    set(CMAKE_C_FLAGS "-Wno-error")
 
     FetchContent_MakeAvailable(civetweb)
     if (NOT TARGET civetweb::civetweb)
         add_library(civetweb::civetweb ALIAS civetweb-c-library)
     endif ()
+    #CivetWeb inherits the top-level -Werror/-Wall flags via CMAKE_C_FLAGS,
+    #which newer compilers (GCC 15+/Clang 20+) turn into hard errors.
+    #CivetWeb is a third-party dependency: build it without -Werror.
+    foreach(_civetweb_tgt civetweb-c-library civetweb-c-executable civetweb-cpp-library)
+        if (TARGET ${_civetweb_tgt})
+            get_target_property(_civetweb_cflags ${_civetweb_tgt} COMPILE_OPTIONS)
+            if (_civetweb_cflags)
+                list(REMOVE_ITEM _civetweb_cflags "-Werror" "-Wfatal-errors")
+                set_target_properties(${_civetweb_tgt} PROPERTIES COMPILE_OPTIONS "${_civetweb_cflags}")
+            endif ()
+            target_compile_options(${_civetweb_tgt} PRIVATE -Wno-error)
+        endif ()
+    endforeach()
+    unset(_civetweb_tgt)
+    unset(_civetweb_cflags)
 endif()

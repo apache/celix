@@ -222,7 +222,7 @@ class CelixConan(ConanFile):
         if self.options.enable_testing:
             self.test_requires("gtest/1.17.0")
         if self.options.enable_ccache:
-            self.build_requires("ccache/4.7.4")
+            self.build_requires("ccache/[>=4.8 <=4.10.2]")
         if self.options.enable_benchmarking:
             self.test_requires("benchmark/[>=1.6.2]")
 
@@ -382,7 +382,7 @@ class CelixConan(ConanFile):
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
-            self.requires("rapidjson/[>=1.1.0 <2.0.0]")
+            self.requires("rapidjson/[>1.1.0 <2.0.0 || >=cci.20200410]")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.requires("civetweb/1.16")

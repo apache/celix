@@ -290,9 +290,10 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
         EXPECT_STREQ("test::Log1", logServiceName);
     }
 
-    vfprintf(stdout, format, formatArgs);
-
-    fprintf(stdout, "\n");
+    if (format) {
+        vfprintf(stdout, format, formatArgs);
+        fprintf(stdout, "\n");
+    }
 }
 
 TEST_F(LogBundleTestSuite, LogServiceAndSink) {
