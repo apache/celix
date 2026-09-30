@@ -29,6 +29,8 @@ extern "C" {
 #include <dlfcn.h>
 #include <stddef.h>
 
+//NOLINTBEGIN
+
 /**
  * @brief This macro find the address of target function's caller, or caller's caller.
  * The level argument is number of frames to scan up the call stack: 0 means caller, 1 means caller's caller.
@@ -105,6 +107,7 @@ do {                                                                            
     }                                                                                                    \
 } while(0)
 
+//NOLINTEND
 
 #ifdef __cplusplus
 }
