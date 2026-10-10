@@ -528,41 +528,54 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
         if (export != NULL) {
             uint64_t datalength = request_info->content_length;
             char* data = malloc(datalength + 1);
-            mg_read(conn, data, datalength);
-            data[datalength] = '\0';
-
-            char *response = NULL;
-            int responceLength = 0;
-            int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
-            if (rc != CELIX_SUCCESS) {
-                RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+            size_t readLen = 0;
+            while (readLen < datalength) {
+                int this_read = mg_read(conn, data + readLen, (size_t)(datalength - readLen));
+                if (this_read <= 0) {
+                    break;
+                }
+                readLen += (size_t)this_read;
             }
+            data[readLen] = '\0';
 
-            if (rc == CELIX_SUCCESS && response != NULL) {
-                mg_write(conn, data_response_headers, strlen(data_response_headers));
-
-                char *bufLoc = response;
-                size_t bytesLeft = strlen(response);
-                if (bytesLeft > INT_MAX) {
-                    //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
-                    RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
-                }
-                while (bytesLeft > 0) {
-                    int send = mg_write(conn, bufLoc, strlen(bufLoc));
-                    if (send > 0) {
-                        bytesLeft -= send;
-                        bufLoc += send;
-                    } else {
-                        RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
-                        break;
-                    }
-                }
-
-                free(response);
+            if (readLen < datalength) {
+                RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu of %llu bytes", readLen, (unsigned long long)datalength);
+                mg_send_http_error(conn, 400, "%s", "Bad request");
+                result = 400;
             } else {
-                mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+                char *response = NULL;
+                int responceLength = 0;
+                int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
+                if (rc != CELIX_SUCCESS) {
+                    RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+                }
+
+                if (rc == CELIX_SUCCESS && response != NULL) {
+                    mg_write(conn, data_response_headers, strlen(data_response_headers));
+
+                    char *bufLoc = response;
+                    size_t bytesLeft = strlen(response);
+                    if (bytesLeft > INT_MAX) {
+                        //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
+                        RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
+                    }
+                    while (bytesLeft > 0) {
+                        int send = mg_write(conn, bufLoc, strlen(bufLoc));
+                        if (send > 0) {
+                            bytesLeft -= send;
+                            bufLoc += send;
+                        } else {
+                            RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+                            break;
+                        }
+                    }
+
+                    free(response);
+                } else {
+                    mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+                }
+                result = 1;
             }
-            result = 1;
 
             free(data);
             exportRegistration_decreaseUsage(export);

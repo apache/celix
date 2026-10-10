@@ -56,6 +56,7 @@ typedef struct http_alias {
 
 //Local function prototypes
 static int http_request_handle(struct mg_connection *connection);
+static bool httpAdmin_readRequestBody(struct mg_connection *connection, long long content_length, char **bufferOut, size_t *bytesReadOut);
 static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin);
 static void createAliasesSymlink(const char *aliases, const char *admin_root, const char *bundle_root, long bundle_id, celix_array_list_t *alias_list);
 static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *alias);
@@ -173,6 +174,34 @@ void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const ce
     }
 }
 
+static bool httpAdmin_readRequestBody(struct mg_connection* connection, long long contentLength, char** bufferOut, size_t* bytesReadOut) {
+    char* buffer = NULL;
+    size_t totalBytesRead = 0;
+    bool success = true;
+    if (contentLength > 0) {
+        size_t length = (contentLength > INT_MAX) ? INT_MAX : (size_t)contentLength;
+        buffer = malloc(length + 1);
+        if (buffer == NULL) {
+            success = false;
+        } else {
+            while (totalBytesRead < length) {
+                int read = mg_read(connection, buffer + totalBytesRead, length - totalBytesRead);
+                if (read <= 0) {
+                    success = false;
+                    break;
+                }
+                totalBytesRead += (size_t)read;
+            }
+            if (success) {
+                buffer[totalBytesRead] = '\0';
+            }
+        }
+    }
+    *bufferOut = buffer;
+    *bytesReadOut = totalBytesRead;
+    return success;
+}
+
 int http_request_handle(struct mg_connection *connection) {
     int ret_status = 400; //Default bad request
 
@@ -208,59 +237,32 @@ int http_request_handle(struct mg_connection *connection) {
                     }
                 } else if (strcmp("POST", ri->request_method) == 0) {
                     if (httpSvc->doPost != NULL) {
-                        int bytes_read = 0;
-                        bool no_data = false;
                         char *rcv_buf = NULL;
-
-                        if (ri->content_length > 0) {
-                            int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size + 1);
-                            rcv_buf[content_size] = '\0';
-                            bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
-                        } else {
-                            no_data = true;
-                        }
-
-                        if (bytes_read > 0 || no_data) {
-                            ret_status = httpSvc->doPost(httpSvc->handle, connection, rcv_buf, (size_t) bytes_read);
+                        size_t bytesRead = 0;
+                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
+                        if (success) {
+                            ret_status = httpSvc->doPost(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
                             mg_send_http_error(connection, 400, "%s", "Bad request");
                             ret_status = 400; //Bad Request, failed to read data
                         }
-
-                        if (rcv_buf != NULL) {
-                            free(rcv_buf);
-                        }
+                        free(rcv_buf);
                     } else {
                         ret_status = 0; //Let civetweb handle the request
                     }
 
                 } else if (strcmp("PUT", ri->request_method) == 0) {
                     if (httpSvc->doPut != NULL) {
-                        int bytes_read = 0;
-                        bool no_data = false;
                         char *rcv_buf = NULL;
-
-                        if (ri->content_length > 0) {
-                            int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size + 1);
-                            rcv_buf[content_size] = '\0';
-                            bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
-                        } else {
-                            no_data = true;
-                        }
-
-                        if (bytes_read > 0 || no_data) {
-                            ret_status = httpSvc->doPut(httpSvc->handle, connection, req_uri, rcv_buf,
-                                                        (size_t) bytes_read);
+                        size_t bytesRead = 0;
+                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
+                        if (success) {
+                            ret_status = httpSvc->doPut(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
                             mg_send_http_error(connection, 400, "%s", "Bad request");
                             ret_status = 400; //Bad Request, failed to read data
                         }
-
-                        if (rcv_buf != NULL) {
-                            free(rcv_buf);
-                        }
+                        free(rcv_buf);
                     } else {
                         ret_status = 0; //Let civetweb handle the request
                     }
@@ -272,29 +274,16 @@ int http_request_handle(struct mg_connection *connection) {
                     }
                 } else if (strcmp("TRACE", ri->request_method) == 0) {
                     if (httpSvc->doTrace != NULL) {
-                        int bytes_read = 0;
-                        bool no_data = false;
                         char *rcv_buf = NULL;
-
-                        if (ri->content_length > 0) {
-                            int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size + 1);
-                            rcv_buf[content_size] = '\0';
-                            bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
-                        } else {
-                            no_data = true;
-                        }
-
-                        if (bytes_read > 0 || no_data) {
-                            ret_status = httpSvc->doTrace(httpSvc->handle, connection, rcv_buf, (size_t) bytes_read);
+                        size_t bytesRead = 0;
+                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
+                        if (success) {
+                            ret_status = httpSvc->doTrace(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
                             mg_send_http_error(connection, 400, "%s", "Bad request");
                             ret_status = 400; //Bad Request, failed to read data
                         }
-
-                        if (rcv_buf != NULL) {
-                            free(rcv_buf);
-                        }
+                        free(rcv_buf);
                     } else {
                         ret_status = 0; //Let civetweb handle the request
                     }
@@ -306,30 +295,16 @@ int http_request_handle(struct mg_connection *connection) {
                     }
                 } else if (strcmp("PATCH", ri->request_method) == 0) {
                     if (httpSvc->doPatch != NULL) {
-                        int bytes_read = 0;
-                        bool no_data = false;
                         char *rcv_buf = NULL;
-
-                        if (ri->content_length > 0) {
-                            int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size + 1);
-                            rcv_buf[content_size] = '\0';
-                            bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
-                        } else {
-                            no_data = true;
-                        }
-
-                        if (bytes_read > 0 || no_data) {
-                            ret_status = httpSvc->doPatch(httpSvc->handle, connection, req_uri, rcv_buf,
-                                                          (size_t) bytes_read);
+                        size_t bytesRead = 0;
+                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
+                        if (success) {
+                            ret_status = httpSvc->doPatch(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
                             mg_send_http_error(connection, 400, "%s", "Bad request");
                             ret_status = 400; //Bad Request, failed to read data
                         }
-
-                        if (rcv_buf != NULL) {
-                            free(rcv_buf);
-                        }
+                        free(rcv_buf);
                     } else {
                         ret_status = 0; //Let civetweb handle the request
                     }

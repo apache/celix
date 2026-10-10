@@ -151,9 +151,12 @@ celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 void *remoteShell_connection_run(void *data) {
 	celix_status_t status = CELIX_SUCCESS;
 	connection_pt connection = data;
-	size_t len;
+	ssize_t len;
 	int result;
 	struct timeval timeout; /* Timeout for select */
+
+	char buff[COMMAND_BUFF_SIZE];
+	size_t used = 0;
 
 	int fd = fileno(connection->socketStream);
 
@@ -172,28 +175,35 @@ void *remoteShell_connection_run(void *data) {
 
 		/* The socket_fd has data available to be read */
 		if (result > 0 && FD_ISSET(fd, &connection->pollset)) {
-			char buff[COMMAND_BUFF_SIZE];
-
-			len = recv(fd, buff, COMMAND_BUFF_SIZE - 1, 0);
+			len = recv(fd, buff + used, COMMAND_BUFF_SIZE - 1 - used, 0);
 			if (len > 0) {
-				if (len < COMMAND_BUFF_SIZE) {
-					celix_status_t commandStatus = CELIX_SUCCESS;
-					buff[len] = '\0';
+				used += (size_t)len;
+				char *newline = NULL;
+				while (status == CELIX_SUCCESS && (newline = memchr(buff, '\n', used)) != NULL) {
+					size_t consumed = (size_t)(newline - buff) + 1;
+					*newline = '\0';
 
-					commandStatus = remoteShell_connection_execute(connection, buff);
+					celix_status_t commandStatus = remoteShell_connection_execute(connection, buff);
 
 					if (commandStatus == CELIX_SUCCESS) {
 						remoteShell_connection_print(connection, RS_PROMPT);
 					} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
 						//exit command
+						status = CELIX_FILE_IO_EXCEPTION;
 						break;
 					} else { //error
 						remoteShell_connection_print(connection, RS_ERROR);
 						remoteShell_connection_print(connection, RS_PROMPT);
 					}
 
-				} else {
-					celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Error while retrieving data");
+					memmove(buff, buff + consumed, used - consumed);
+					used -= consumed;
+				}
+
+				if (status == CELIX_SUCCESS && used >= COMMAND_BUFF_SIZE - 1) {
+					//Buffer is full without a newline, so no complete command could be read.
+					celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Received data without a newline, dropping data");
+					used = 0;
 				}
 			} else if (len == 0) {
 				celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Connection closed by peer");

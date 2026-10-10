@@ -123,6 +123,7 @@ limitations under the License.
 - Improved `INSTALL_RPATH` to use `$ORIGIN` during installation.
 - Corrected bundle update behavior when updating bundles from different sources.
 - Enhanced `libcurl` initialization procedures and made `libcurl` optional.
+- HTTP Admin, Remote Service Admin (DFI) and Remote Shell now keep reading until the full request body / command is received.
 
 ## Fixes
 
