@@ -31,6 +31,11 @@
 
 #include "celix_compiler.h"
 #include "celix_threads.h"
+#include "celix_stdlib_cleanup.h"
+
+#define CELIX_HTTP_ADMIN_READ_ERROR_MSG "Bad Request: Read error"
+#define CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG "Bad Request: Incomplete Body"
+#define CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG "Server Error: Insufficient memory"
 
 
 struct http_admin_manager {
@@ -56,7 +61,11 @@ typedef struct http_alias {
 
 //Local function prototypes
 static int http_request_handle(struct mg_connection *connection);
-static bool httpAdmin_readRequestBody(struct mg_connection *connection, long long content_length, char **bufferOut, size_t *bytesReadOut);
+/**
+ * @brief read the request body.
+ * @return 0 if succesfull, > 0 and a error code (4xx or 5xx) if not sucessfull. 
+ */
+static int httpAdmin_readRequestBody(struct mg_connection *connection, long long content_length, char **bufferOut, size_t *bytesReadOut, const char** errorMsgOut);
 static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin);
 static void createAliasesSymlink(const char *aliases, const char *admin_root, const char *bundle_root, long bundle_id, celix_array_list_t *alias_list);
 static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *alias);
@@ -174,32 +183,37 @@ void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const ce
     }
 }
 
-static bool httpAdmin_readRequestBody(struct mg_connection* connection, long long contentLength, char** bufferOut, size_t* bytesReadOut) {
-    char* buffer = NULL;
+static int httpAdmin_readRequestBody(struct mg_connection* connection, long long contentLength, char** bufferOut, size_t* bytesReadOut, const char** errorMsgOut) {
+    celix_autofree char* buffer = NULL;
     size_t totalBytesRead = 0;
-    bool success = true;
+    *errorMsgOut = NULL;
     if (contentLength > 0) {
         size_t length = (contentLength > INT_MAX) ? INT_MAX : (size_t)contentLength;
         buffer = malloc(length + 1);
         if (buffer == NULL) {
-            success = false;
-        } else {
-            while (totalBytesRead < length) {
-                int read = mg_read(connection, buffer + totalBytesRead, length - totalBytesRead);
-                if (read <= 0) {
-                    success = false;
-                    break;
-                }
-                totalBytesRead += (size_t)read;
-            }
-            if (success) {
-                buffer[totalBytesRead] = '\0';
-            }
+            *errorMsgOut = CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG;
+            return 500;
         }
+
+        while (totalBytesRead < length) {
+            int read = mg_read(connection, buffer + totalBytesRead, length - totalBytesRead);
+            if (read == 0) {
+                break; //EOF
+            } else if (read < 0) {
+                *errorMsgOut = CELIX_HTTP_ADMIN_READ_ERROR_MSG;
+                return 400;
+            }
+            totalBytesRead += (size_t)read;
+        }
+        if (totalBytesRead < length) {
+            *errorMsgOut = CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG;
+            return 400;
+        }
+        buffer[totalBytesRead] = '\0';
     }
-    *bufferOut = buffer;
+    *bufferOut = celix_steal_ptr(buffer);
     *bytesReadOut = totalBytesRead;
-    return success;
+    return 0;
 }
 
 int http_request_handle(struct mg_connection *connection) {
@@ -239,12 +253,13 @@ int http_request_handle(struct mg_connection *connection) {
                     if (httpSvc->doPost != NULL) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
-                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
-                        if (success) {
+                        const char* errMsg;
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        if (errCode == 0) {
                             ret_status = httpSvc->doPost(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
-                            mg_send_http_error(connection, 400, "%s", "Bad request");
-                            ret_status = 400; //Bad Request, failed to read data
+                            mg_send_http_error(connection, errCode, "%s", errMsg);
+                            ret_status = errCode; //set status to the error code, so the request is not passed to civetweb
                         }
                         free(rcv_buf);
                     } else {
@@ -255,12 +270,13 @@ int http_request_handle(struct mg_connection *connection) {
                     if (httpSvc->doPut != NULL) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
-                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
-                        if (success) {
+                        const char* errMsg;
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        if (errCode == 0) {
                             ret_status = httpSvc->doPut(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
-                            mg_send_http_error(connection, 400, "%s", "Bad request");
-                            ret_status = 400; //Bad Request, failed to read data
+                            mg_send_http_error(connection, errCode, "%s", errMsg);
+                            ret_status = errCode; //set status to the error code, so the request is not passed to civetweb
                         }
                         free(rcv_buf);
                     } else {
@@ -276,12 +292,13 @@ int http_request_handle(struct mg_connection *connection) {
                     if (httpSvc->doTrace != NULL) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
-                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
-                        if (success) {
+                        const char* errMsg = NULL;
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        if (errCode == 0) {
                             ret_status = httpSvc->doTrace(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
-                            mg_send_http_error(connection, 400, "%s", "Bad request");
-                            ret_status = 400; //Bad Request, failed to read data
+                            mg_send_http_error(connection, errCode, "%s", errMsg);
+                            ret_status = errCode; //set status to the error code, so the request is not passed to civetweb
                         }
                         free(rcv_buf);
                     } else {
@@ -297,12 +314,13 @@ int http_request_handle(struct mg_connection *connection) {
                     if (httpSvc->doPatch != NULL) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
-                        bool success = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead);
-                        if (success) {
+                        const char* errMsg;
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        if (errCode == 0) {
                             ret_status = httpSvc->doPatch(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
-                            mg_send_http_error(connection, 400, "%s", "Bad request");
-                            ret_status = 400; //Bad Request, failed to read data
+                            mg_send_http_error(connection, errCode, "%s", errMsg);
+                            ret_status = errCode; //set status to the error code, so the request is not passed to civetweb
                         }
                         free(rcv_buf);
                     } else {

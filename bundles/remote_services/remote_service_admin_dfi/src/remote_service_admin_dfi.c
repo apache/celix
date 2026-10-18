@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -103,6 +104,8 @@ struct remote_service_admin {
     char *discoveryInterface;
     bool dynamicIpSupport;
 
+    size_t maxRequestBodySize;
+
     struct mg_context *ctx;
 
     FILE *logFile;
@@ -136,7 +139,7 @@ static const char *data_response_headers =
                 "\r\n";
 
 static const char *no_content_response_headers =
-        "HTTP/1.1 204 OK\r\n";
+        "HTTP/1.1 204 OK\r\n\r\n";
 
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
@@ -216,6 +219,12 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
 
         (*admin)->dynamicIpSupport = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
+
+        long maxRequestBodySizeInMb = celix_bundleContext_getPropertyAsLong(context, CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB, CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB_DEFAULT);
+        if (maxRequestBodySizeInMb <= 0) {
+            maxRequestBodySizeInMb = CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB_DEFAULT;
+        }
+        (*admin)->maxRequestBodySize = (size_t)maxRequestBodySizeInMb * 1024ul * 1024ul;
 
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
@@ -458,40 +467,42 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 celix_status_t importRegistration_getFactory(import_registration_t *import, service_factory_pt *factory);
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn) {
-    int result = 1; // zero means: let civetweb handle it further, any non-zero value means it is handled by us...
     export_registration_t *export = NULL;
-    celix_properties_t *metadata = NULL;
+    celix_autoptr(celix_properties_t) metadata = NULL;
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
-    if (request_info->request_uri != NULL) {
-        remote_service_admin_t *rsa = request_info->user_data;
+    if (request_info->request_uri == NULL) {
+        return 0;
+    }
+    
+    remote_service_admin_t *rsa = request_info->user_data;
+    if (strncmp(request_info->request_uri, "/service/", 9) == 0 && strcmp("POST", request_info->request_method) == 0) {
 
+        // uri = /services/myservice/call
+        const char *uri = request_info->request_uri;
+        // rest = myservice/call
 
-        if (strncmp(request_info->request_uri, "/service/", 9) == 0 && strcmp("POST", request_info->request_method) == 0) {
+        const char *rest = uri+9;
+        const char *interfaceStart = strchr(rest, '/');
+        int pos = interfaceStart - rest;
+        char service[pos+1];
+        strncpy(service, rest, pos);
+        service[pos] = '\0';
+        unsigned long serviceId = strtoul(service,NULL,10);
 
-            // uri = /services/myservice/call
-            const char *uri = request_info->request_uri;
-            // rest = myservice/call
-
-            const char *rest = uri+9;
-            char *interfaceStart = strchr(rest, '/');
-            int pos = interfaceStart - rest;
-            char service[pos+1];
-            strncpy(service, rest, pos);
-            service[pos] = '\0';
-            unsigned long serviceId = strtoul(service,NULL,10);
-
-            for (int i = 0; i < request_info->num_headers; i++) {
-                struct mg_header header = request_info->http_headers[i];
-                if (strncmp(header.name, "X-RSA-Metadata-", 15) == 0) {
-                    if (metadata == NULL) {
-                        metadata = celix_properties_create();
-                    }
-                    celix_properties_set(metadata, header.name + 15, header.value);
+        for (int i = 0; i < request_info->num_headers; i++) {
+            struct mg_header header = request_info->http_headers[i];
+            if (strncmp(header.name, "X-RSA-Metadata-", 15) == 0) {
+                if (metadata == NULL) {
+                    metadata = celix_properties_create();
                 }
+                celix_properties_set(metadata, header.name + 15, header.value);
             }
+        }
 
-            celixThreadRwlock_readLock(&rsa->exportedServicesLock);
+
+        {
+            celix_auto(celix_rwlock_rlock_guard_t) rLockGuard = celixRwlockRlockGuard_init(&rsa->exportedServicesLock);
 
             //find endpoint
             hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
@@ -518,76 +529,100 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             if (export != NULL) {
                 exportRegistration_increaseUsage(export);
             } else {
-                result = 0;
                 RSA_LOG_WARNING(rsa, "No export registration found for service id %lu", serviceId);
+                return 0;
             }
-            celixThreadRwlock_unlock(&rsa->exportedServicesLock);
         }
+    } else {
+        //no rsa call, let civetweb handle.
+        return 0;
+    }
+    assert(export != NULL);
 
+    long long contentLength = request_info->content_length; //-1 if no content length was provided
+    size_t maxRequestBodySize = rsa->maxRequestBodySize;
+    size_t readLen = 0;
 
-        if (export != NULL) {
-            uint64_t datalength = request_info->content_length;
-            char* data = malloc(datalength + 1);
-            size_t readLen = 0;
-            while (readLen < datalength) {
-                int this_read = mg_read(conn, data + readLen, (size_t)(datalength - readLen));
-                if (this_read <= 0) {
-                    break;
-                }
-                readLen += (size_t)this_read;
-            }
-            data[readLen] = '\0';
+    if (contentLength > 0 && (unsigned long long)contentLength > maxRequestBodySize) {
+        RSA_LOG_ERROR(rsa, "Error while reading request body, the body is larger than the maximum of %zu bytes", maxRequestBodySize);
+        mg_send_http_error(conn, 413, "%s", "Request body too large");
+        exportRegistration_decreaseUsage(export);
+        return 1;
+    }
+     
+    size_t length = (contentLength > 0) ? (size_t)contentLength : (maxRequestBodySize+1) /*note +1 byte, to check if too body size goes over the limit*/;
+    celix_autofree char* data = malloc(length + 1);
+    if (data == NULL) {
+        RSA_LOG_ERROR(rsa, "Error while allocating a buffer of %zu bytes for the request body", (contentLength > 0) ? (size_t)contentLength : maxRequestBodySize);
+        mg_send_http_error(conn, 500, "%s", "Internal server error");
+        exportRegistration_decreaseUsage(export);
+        return 1;
+    }
 
-            if (readLen < datalength) {
-                RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu of %llu bytes", readLen, (unsigned long long)datalength);
-                mg_send_http_error(conn, 400, "%s", "Bad request");
-                result = 400;
-            } else {
-                char *response = NULL;
-                int responceLength = 0;
-                int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
-                if (rc != CELIX_SUCCESS) {
-                    RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
-                }
-
-                if (rc == CELIX_SUCCESS && response != NULL) {
-                    mg_write(conn, data_response_headers, strlen(data_response_headers));
-
-                    char *bufLoc = response;
-                    size_t bytesLeft = strlen(response);
-                    if (bytesLeft > INT_MAX) {
-                        //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
-                        RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
-                    }
-                    while (bytesLeft > 0) {
-                        int send = mg_write(conn, bufLoc, strlen(bufLoc));
-                        if (send > 0) {
-                            bytesLeft -= send;
-                            bufLoc += send;
-                        } else {
-                            RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
-                            break;
-                        }
-                    }
-
-                    free(response);
-                } else {
-                    mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
-                }
-                result = 1;
-            }
-
-            free(data);
+    while (readLen < length) {
+        int this_read = mg_read(conn, data + readLen, length - readLen);
+        if (this_read == 0) {
+            break; //EOF
+        } else if (this_read < 0) {
+            RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu bytes", readLen);
+            mg_send_http_error(conn, 400, "%s", "Bad request");
             exportRegistration_decreaseUsage(export);
+            return 1;
         }
+        readLen += (size_t)this_read;
     }
 
-    //free metadata
-    if(metadata != NULL) {
-        celix_properties_destroy(metadata);
+    if (contentLength <= 0 && readLen > maxRequestBodySize) {
+        RSA_LOG_ERROR(rsa, "Error while reading request body, the body is larger than the maximum of %zu bytes", maxRequestBodySize);
+        mg_send_http_error(conn, 413, "%s", "Request body too large");
+        exportRegistration_decreaseUsage(export);
+        return 1;
     }
 
-    return result;
+    if (contentLength > 0 && readLen < (size_t)contentLength) {
+        RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu of %llu bytes", readLen, (unsigned long long)contentLength);
+        mg_send_http_error(conn, 400, "%s", "Bad request");
+        exportRegistration_decreaseUsage(export);
+        return 1;
+    }
+    data[readLen] = '\0';
+
+    char *response = NULL;
+    int responceLength = 0;
+    int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
+    if (rc == CELIX_ILLEGAL_ARGUMENT) {
+        RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+        mg_send_http_error(conn, 400, "%s", "Bad request");
+    } else if (rc != CELIX_SUCCESS) {
+        RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+        mg_send_http_error(conn, 500, "%s", "Internal server error");
+    } else if (response != NULL) {
+        mg_write(conn, data_response_headers, strlen(data_response_headers));
+
+        char *bufLoc = response;
+        size_t bytesLeft = strlen(response);
+        if (bytesLeft > INT_MAX) {
+            //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
+            RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
+        }
+        while (bytesLeft > 0) {
+            int send = mg_write(conn, bufLoc, strlen(bufLoc));
+            if (send > 0) {
+                bytesLeft -= send;
+                bufLoc += send;
+            } else {
+                RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+                break;
+            }
+        }
+
+        free(response);
+    } else {
+        mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+    }
+
+    exportRegistration_decreaseUsage(export);
+    return 1; //DFI has handled the request. 
 }
 
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, celix_array_list_t** registrationsOut) {

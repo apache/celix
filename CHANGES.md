@@ -124,6 +124,7 @@ limitations under the License.
 - Corrected bundle update behavior when updating bundles from different sources.
 - Enhanced `libcurl` initialization procedures and made `libcurl` optional.
 - HTTP Admin, Remote Service Admin (DFI) and Remote Shell now keep reading until the full request body / command is received.
+- RSA DFI now limits the accepted request body size (configurable via `CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB`, default 10 (MB)).
 
 ## Fixes
 
