@@ -41,5 +41,8 @@ Libffi is configured using descriptor files in the bundles.
 
     CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT    If set to true the RSA will support dynamic IP address fill-in for service exports. Default is false.
 
+    CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB The maximum size of the accepted request body in megabytes. Requests with a body larger
+                                        than this limit are rejected with an HTTP 413 response. Default is 10 MB.
+
 ###### CMake option
     RSA_REMOTE_SERVICE_ADMIN_DFI=ON
