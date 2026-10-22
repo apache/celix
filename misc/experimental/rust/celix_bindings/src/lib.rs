@@ -17,25 +17,13 @@
  * under the License.
  */
 
-#[allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code)]
- mod bindings {
-      include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
- }
-pub use bindings::*;
-
-//Note C #defines (compile-time constants) are not all generated in the bindings.
-pub const CELIX_SUCCESS: celix_status_t = 0;
-pub const CELIX_BUNDLE_EXCEPTION: celix_status_t = 70001;
-
-// Move to celix_api lib
-pub mod celix {
-
-    #[warn(unused_imports)]
-    pub enum LogLevel {
-        Trace = ::bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as isize,
-        Debug = ::bindings::celix_log_level_CELIX_LOG_LEVEL_DEBUG as isize,
-        Info = ::bindings::celix_log_level_CELIX_LOG_LEVEL_INFO as isize,
-        Warn = ::bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING as isize,
-        Error = ::bindings::celix_log_level_CELIX_LOG_LEVEL_ERROR as isize,
-    }
+#[allow(
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    dead_code
+)]
+mod bindings {
+    include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
 }
+pub use bindings::*;
