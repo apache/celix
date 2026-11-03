@@ -50,6 +50,7 @@ celix_bundle_add_dir(<TARGET> <Document root of bundle> DESTINATION ".")
     CELIX_HTTP_ADMIN_USE_WEBSOCKETS                  default = true
     CELIX_HTTP_ADMIN_WEBSOCKET_TIMEOUT_MS            default = 3600000
     CELIX_HTTP_ADMIN_NUM_THREADS                     default = 1
+    CELIX_HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB     default = 10, the maximum size of an accepted request body in MB.
 
 ## CMake option
     BUILD_HTTP_ADMIN=ON

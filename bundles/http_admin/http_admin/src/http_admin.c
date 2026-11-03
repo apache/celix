@@ -25,6 +25,7 @@
 
 #include "http_admin.h"
 #include "http_admin/api.h"
+#include "http_admin_constants.h"
 #include "service_tree.h"
 
 #include "civetweb.h"
@@ -37,6 +38,7 @@
 #define CELIX_HTTP_ADMIN_READ_ERROR_MSG "Read error"
 #define CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG "Incomplete Body"
 #define CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG "Insufficient memory"
+#define CELIX_HTTP_ADMIN_BODY_TOO_LARGE_MSG "Body too large"
 #define CELIX_HTTP_ADMIN_READ_CHUNK_SIZE 1024
 
 
@@ -51,6 +53,7 @@ struct http_admin_manager {
     long infoSvcId;
     celix_array_list_t *aliasList;      //Array list of http_alias_t
     service_tree_t http_svc_tree;
+    size_t maxRequestBodySize;
 };
 
 
@@ -67,7 +70,7 @@ static int http_request_handle(struct mg_connection *connection);
  * @brief read the request body.
  * @return 0 if succesfull, > 0 and a error code (4xx or 5xx) if not sucessfull. 
  */
-static int httpAdmin_readRequestBody(struct mg_connection *connection, long long content_length, char **bufferOut, size_t *bytesReadOut, const char** errorMsgOut);
+static int httpAdmin_readRequestBody(struct mg_connection *connection, long long content_length, size_t maxRequestBodySize, char **bufferOut, size_t *bytesReadOut, const char** errorMsgOut);
 static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin);
 static void createAliasesSymlink(const char *aliases, const char *admin_root, const char *bundle_root, long bundle_id, celix_array_list_t *alias_list);
 static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *alias);
@@ -82,6 +85,12 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
     admin->context = context;
     admin->root = root;
     admin->infoSvcId = -1L;
+
+    long maxRequestBodySizeInMb = celix_bundleContext_getPropertyAsLong(context, HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB_KEY, HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB_DFT);
+    if (maxRequestBodySizeInMb <= 0) {
+        maxRequestBodySizeInMb = HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB_DFT;
+    }
+    admin->maxRequestBodySize = (size_t)maxRequestBodySizeInMb * 1024UL * 1024UL;
 
     status = celixThreadRwlock_create(&admin->admin_lock, NULL);
     admin->aliasList = celix_arrayList_create();
@@ -185,10 +194,14 @@ void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const ce
     }
 }
 
-static int httpAdmin_readRequestBody(struct mg_connection* connection, long long contentLength, char** bufferOut, size_t* bytesReadOut, const char** errorMsgOut) {
+static int httpAdmin_readRequestBody(struct mg_connection* connection, long long contentLength, size_t maxRequestBodySize, char** bufferOut, size_t* bytesReadOut, const char** errorMsgOut) {
     celix_autofree char* buffer = NULL;
     size_t totalBytesRead = 0;
     *errorMsgOut = NULL;
+    if (contentLength > 0 && (size_t)contentLength > maxRequestBodySize) {
+        *errorMsgOut = CELIX_HTTP_ADMIN_BODY_TOO_LARGE_MSG;
+        return 413;
+    }
     if (contentLength != 0) {
         size_t memSize = 0;
         celix_autoptr(FILE) stream = open_memstream(&buffer, &memSize);
@@ -205,6 +218,10 @@ static int httpAdmin_readRequestBody(struct mg_connection* connection, long long
             } else if (read < 0) {
                 *errorMsgOut = CELIX_HTTP_ADMIN_READ_ERROR_MSG;
                 return 400;
+            }
+            if (totalBytesRead + (size_t)read > maxRequestBodySize) {
+                *errorMsgOut = CELIX_HTTP_ADMIN_BODY_TOO_LARGE_MSG;
+                return 413;
             }
             if (fwrite(chunk, 1, (size_t)read, stream) != (size_t)read) {
                 *errorMsgOut = CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG;
@@ -260,7 +277,7 @@ int http_request_handle(struct mg_connection *connection) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
                         const char* errMsg;
-                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, admin->maxRequestBodySize, &rcv_buf, &bytesRead, &errMsg);
                         if (errCode == 0) {
                             ret_status = httpSvc->doPost(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
@@ -277,7 +294,7 @@ int http_request_handle(struct mg_connection *connection) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
                         const char* errMsg;
-                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, admin->maxRequestBodySize, &rcv_buf, &bytesRead, &errMsg);
                         if (errCode == 0) {
                             ret_status = httpSvc->doPut(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
@@ -299,7 +316,7 @@ int http_request_handle(struct mg_connection *connection) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
                         const char* errMsg = NULL;
-                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, admin->maxRequestBodySize, &rcv_buf, &bytesRead, &errMsg);
                         if (errCode == 0) {
                             ret_status = httpSvc->doTrace(httpSvc->handle, connection, rcv_buf, bytesRead);
                         } else {
@@ -321,7 +338,7 @@ int http_request_handle(struct mg_connection *connection) {
                         char *rcv_buf = NULL;
                         size_t bytesRead = 0;
                         const char* errMsg;
-                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, &rcv_buf, &bytesRead, &errMsg);
+                        int errCode = httpAdmin_readRequestBody(connection, ri->content_length, admin->maxRequestBodySize, &rcv_buf, &bytesRead, &errMsg);
                         if (errCode == 0) {
                             ret_status = httpSvc->doPatch(httpSvc->handle, connection, req_uri, rcv_buf, bytesRead);
                         } else {
