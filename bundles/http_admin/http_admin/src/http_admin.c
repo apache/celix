@@ -32,10 +32,12 @@
 #include "celix_compiler.h"
 #include "celix_threads.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_stdio_cleanup.h"
 
-#define CELIX_HTTP_ADMIN_READ_ERROR_MSG "Bad Request: Read error"
-#define CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG "Bad Request: Incomplete Body"
-#define CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG "Server Error: Insufficient memory"
+#define CELIX_HTTP_ADMIN_READ_ERROR_MSG "Read error"
+#define CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG "Incomplete Body"
+#define CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG "Insufficient memory"
+#define CELIX_HTTP_ADMIN_READ_CHUNK_SIZE 1024
 
 
 struct http_admin_manager {
@@ -187,29 +189,33 @@ static int httpAdmin_readRequestBody(struct mg_connection* connection, long long
     celix_autofree char* buffer = NULL;
     size_t totalBytesRead = 0;
     *errorMsgOut = NULL;
-    if (contentLength > 0) {
-        size_t length = (contentLength > INT_MAX) ? INT_MAX : (size_t)contentLength;
-        buffer = malloc(length + 1);
-        if (buffer == NULL) {
+    if (contentLength != 0) {
+        size_t memSize = 0;
+        celix_autoptr(FILE) stream = open_memstream(&buffer, &memSize);
+        if (stream == NULL) {
             *errorMsgOut = CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG;
             return 500;
         }
 
-        while (totalBytesRead < length) {
-            int read = mg_read(connection, buffer + totalBytesRead, length - totalBytesRead);
+        char chunk[CELIX_HTTP_ADMIN_READ_CHUNK_SIZE];
+        while (contentLength < 0 || totalBytesRead < (size_t)contentLength) {
+            int read = mg_read(connection, chunk, sizeof(chunk));
             if (read == 0) {
                 break; //EOF
             } else if (read < 0) {
                 *errorMsgOut = CELIX_HTTP_ADMIN_READ_ERROR_MSG;
                 return 400;
             }
+            if (fwrite(chunk, 1, (size_t)read, stream) != (size_t)read) {
+                *errorMsgOut = CELIX_HTTP_ADMIN_INSUFFICIENT_MEM_MSG;
+                return 500;
+            }
             totalBytesRead += (size_t)read;
         }
-        if (totalBytesRead < length) {
+        if (contentLength > 0 && totalBytesRead < (size_t)contentLength) {
             *errorMsgOut = CELIX_HTTP_ADMIN_INCOMPLETE_BODY_MSG;
             return 400;
         }
-        buffer[totalBytesRead] = '\0';
     }
     *bufferOut = celix_steal_ptr(buffer);
     *bytesReadOut = totalBytesRead;
