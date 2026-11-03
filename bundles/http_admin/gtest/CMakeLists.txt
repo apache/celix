@@ -32,6 +32,7 @@ celix_bundle_headers(http_admin_sut
 add_executable(http_websocket_tests
         src/http_admin_info_tests.cc
         src/http_websocket_tests.cc
+        src/http_request_body_size_tests.cc
 )
 
 celix_get_bundle_file(Celix::http_admin HTTP_ADMIN_BUNDLE)
