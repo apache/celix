@@ -132,15 +132,6 @@ struct celix_get_data_reply {
 #define CELIX_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
 #define CELIX_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
-static const char *data_response_headers =
-        "HTTP/1.1 200 OK\r\n"
-                "Cache: no-cache\r\n"
-                "Content-Type: application/json\r\n"
-                "\r\n";
-
-static const char *no_content_response_headers =
-        "HTTP/1.1 204 OK\r\n\r\n";
-
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
@@ -543,9 +534,17 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     size_t maxRequestBodySize = rsa->maxRequestBodySize;
     size_t readLen = 0;
 
+    if (contentLength == 0) {
+        //A Content-Length of 0 is valid HTTP (empty body), but invalid for a remote service call.
+        RSA_LOG_ERROR(rsa, "Error while reading request body, the request body is empty (Content-Length: 0)");
+        mg_send_http_error(conn, 400, "%s", "Empty request body");
+        exportRegistration_decreaseUsage(export);
+        return 1;
+    }
+
     if (contentLength > 0 && (unsigned long long)contentLength > maxRequestBodySize) {
         RSA_LOG_ERROR(rsa, "Error while reading request body, the body is larger than the maximum of %zu bytes", maxRequestBodySize);
-        mg_send_http_error(conn, 413, "%s", "Request body too large");
+        mg_send_http_error(conn, 413, "%s", "Request body exceeds the configured maximum size");
         exportRegistration_decreaseUsage(export);
         return 1;
     }
@@ -554,7 +553,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     celix_autofree char* data = malloc(length + 1);
     if (data == NULL) {
         RSA_LOG_ERROR(rsa, "Error while allocating a buffer of %zu bytes for the request body", (contentLength > 0) ? (size_t)contentLength : maxRequestBodySize);
-        mg_send_http_error(conn, 500, "%s", "Internal server error");
+        mg_send_http_error(conn, 500, "%s", "Failed to allocate buffer for request body");
         exportRegistration_decreaseUsage(export);
         return 1;
     }
@@ -565,7 +564,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             break; //EOF
         } else if (this_read < 0) {
             RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu bytes", readLen);
-            mg_send_http_error(conn, 400, "%s", "Bad request");
+            mg_send_http_error(conn, 400, "%s", "Error reading request body");
             exportRegistration_decreaseUsage(export);
             return 1;
         }
@@ -574,14 +573,14 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
     if (contentLength <= 0 && readLen > maxRequestBodySize) {
         RSA_LOG_ERROR(rsa, "Error while reading request body, the body is larger than the maximum of %zu bytes", maxRequestBodySize);
-        mg_send_http_error(conn, 413, "%s", "Request body too large");
+        mg_send_http_error(conn, 413, "%s", "Request body exceeds the configured maximum size");
         exportRegistration_decreaseUsage(export);
         return 1;
     }
 
     if (contentLength > 0 && readLen < (size_t)contentLength) {
         RSA_LOG_ERROR(rsa, "Error while reading request body, received %zu of %llu bytes", readLen, (unsigned long long)contentLength);
-        mg_send_http_error(conn, 400, "%s", "Bad request");
+        mg_send_http_error(conn, 400, "%s", "Incomplete request body");
         exportRegistration_decreaseUsage(export);
         return 1;
     }
@@ -592,33 +591,33 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
     if (rc == CELIX_ILLEGAL_ARGUMENT) {
         RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
-        mg_send_http_error(conn, 400, "%s", "Bad request");
+        mg_send_http_error(conn, 400, "%s", "Error invoking remote service");
     } else if (rc != CELIX_SUCCESS) {
         RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
-        mg_send_http_error(conn, 500, "%s", "Internal server error");
+        mg_send_http_error(conn, 500, "%s", "Error invoking remote service");
     } else if (response != NULL) {
-        mg_write(conn, data_response_headers, strlen(data_response_headers));
-
-        char *bufLoc = response;
-        size_t bytesLeft = strlen(response);
-        if (bytesLeft > INT_MAX) {
-            //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
-            RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
-        }
-        while (bytesLeft > 0) {
-            int send = mg_write(conn, bufLoc, strlen(bufLoc));
-            if (send > 0) {
-                bytesLeft -= send;
+        size_t responseLen = strlen(response);
+        if (mg_send_http_ok(conn, "application/json", (long long)responseLen) < 0) {
+            RSA_LOG_ERROR(rsa, "Error sending response headers");
+        } else {
+            const char *bufLoc = response;
+            size_t bytesLeft = responseLen;
+            while (bytesLeft > 0) {
+                size_t toSend = bytesLeft > INT_MAX ? INT_MAX : bytesLeft;
+                int send = mg_write(conn, bufLoc, toSend);
+                if (send <= 0) {
+                    RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+                    break;
+                }
+                bytesLeft -= (size_t)send;
                 bufLoc += send;
-            } else {
-                RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
-                break;
             }
         }
 
         free(response);
     } else {
-        mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+        mg_response_header_start(conn, 204);
+        mg_response_header_send(conn);
     }
 
     exportRegistration_decreaseUsage(export);
