@@ -40,6 +40,7 @@ target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 add_executable(test_rsa_dfi
     src/rsa_tests.cc
     src/rsa_client_server_tests.cc
+    src/rsa_request_size_tests.cc
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
 celix_deprecated_utils_headers(test_rsa_dfi)
@@ -83,4 +84,29 @@ add_celix_bundle_dependencies(test_rsa_dfi
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)
 setup_target_for_coverage(test_rsa_dfi SCAN_DIR ..)
+
+if (EI_TESTS)
+    add_executable(test_rsa_dfi_error_injection
+        src/rsa_dfi_error_injection_tests.cc
+    )
+    target_include_directories(test_rsa_dfi_error_injection PRIVATE src)
+    celix_deprecated_utils_headers(test_rsa_dfi_error_injection)
+    celix_deprecated_framework_headers(test_rsa_dfi_error_injection)
+
+    target_link_libraries(test_rsa_dfi_error_injection PRIVATE
+            rsa_dfi_cut
+            Celix::framework
+            Celix::malloc_ei
+            calculator_api
+            GTest::gtest
+            GTest::gtest_main
+    )
+
+    target_compile_options(test_rsa_dfi_error_injection PRIVATE -DCALC_BUNDLE_FILE="${calc_bundle_file}")
+
+    add_celix_bundle_dependencies(test_rsa_dfi_error_injection calculator)
+
+    add_test(NAME run_test_rsa_dfi_error_injection COMMAND test_rsa_dfi_error_injection)
+    setup_target_for_coverage(test_rsa_dfi_error_injection SCAN_DIR ..)
+endif ()
 
