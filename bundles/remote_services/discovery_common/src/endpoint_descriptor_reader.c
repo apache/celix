@@ -71,23 +71,49 @@ void endpointDescriptorReader_addSingleValuedProperty(celix_properties_t *proper
     celix_properties_set(properties, (char *) name, (char*) value);
 }
 
-void endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *properties, const xmlChar* name, celix_array_list_t* values) {
-    char *value = calloc(256, sizeof(*value));
-    if (value) {
-        unsigned int size = celix_arrayList_size(values);
-        unsigned int i;
-        for (i = 0; i < size; i++) {
-            char* item = (char*) celix_arrayList_get(values, i);
-            if (i > 0) {
-                value = strcat(value, ",");
-            }
-            value = strcat(value, item);
-        }
-
-        celix_properties_set(properties, (char *) name, value);
-
-        free(value);
+celix_status_t endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *properties, const xmlChar* name, celix_array_list_t* values) {
+    size_t capacity = 256;
+    size_t length = 0;
+    char *value = malloc(capacity);
+    if (value == NULL) {
+        return CELIX_ENOMEM;
     }
+    value[0] = '\0';
+
+    unsigned int size = celix_arrayList_size(values);
+    unsigned int i;
+    for (i = 0; i < size; i++) {
+        const char *item = (const char*) celix_arrayList_get(values, i);
+        if (item == NULL) {
+            continue;
+        }
+        size_t itemLen = strlen(item);
+        size_t required = length + (i > 0 ? 1 : 0) + itemLen + 1;
+        if (required > capacity) {
+            size_t newCapacity = capacity * 2;
+            while (newCapacity < required) {
+                newCapacity *= 2;
+            }
+            char *newValue = realloc(value, newCapacity);
+            if (newValue == NULL) {
+                free(value);
+                return CELIX_ENOMEM;
+            }
+            value = newValue;
+            capacity = newCapacity;
+        }
+        if (i > 0) {
+            value[length++] = ',';
+        }
+        memcpy(value + length, item, itemLen);
+        length += itemLen;
+        value[length] = '\0';
+    }
+
+    celix_status_t status = celix_properties_set(properties, (char *) name, value);
+
+    free(value);
+    return status;
 }
 
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_t *reader, char *document, celix_array_list_t** endpoints) {
@@ -208,7 +234,13 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     inProperty = false;
 
                     if (inArray || inList || inSet) {
-                        endpointDescriptorReader_addMultiValuedProperty(endpointProperties, propertyName, propertyValues);
+                        status = endpointDescriptorReader_addMultiValuedProperty(endpointProperties, propertyName, propertyValues);
+                        if (status != CELIX_SUCCESS) {
+                            celix_logHelper_logTssErrors(*reader->loghelper, CELIX_LOG_LEVEL_ERROR);
+                            celix_logHelper_error(*reader->loghelper, "ENDPOINT_DESCRIPTOR_READER: Error adding multi valued property %s\n", (const char*) propertyName);
+                            xmlFree((void *) propertyName);
+                            break;
+                        }
                     }
                     else if (propertyValue != NULL) {
                         if (propertyType != VALUE_TYPE_STRING) {
