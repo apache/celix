@@ -23,6 +23,7 @@
 #include "celix_threads_ei.h"
 #include <gtest/gtest.h>
 #include <string.h>
+#include <sys/shm.h>
 
 class ShmCacheTestSuite : public ::testing::Test {
 public:
@@ -188,6 +189,34 @@ TEST_F(ShmCacheTestSuite, GetMemoryPtrFailedDueToInvalidArgument) {
 
     shmPool_free(shmPool, mem);
     shmCache_destroy(shmCache);
+}
+
+TEST_F(ShmCacheTestSuite, GetShmSize) {
+    size_t shmSize = 0;
+    celix_status_t status = shmCache_getShmSize(shmId, &shmSize);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_GE(shmSize, (size_t)8192);
+
+    status = shmCache_getShmSize(shmId, nullptr);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    status = shmCache_getShmSize(-1, &shmSize);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+}
+
+TEST_F(ShmCacheTestSuite, GetShmSizeOfDestroyedShm) {
+    int tmpShmId = shmget(IPC_PRIVATE, 4096, SHM_R | SHM_W);
+    ASSERT_NE(-1, tmpShmId);
+    void *tmpAddr = shmat(tmpShmId, nullptr, 0);
+    ASSERT_NE((void*)-1, tmpAddr);
+
+    size_t shmSize = 0;
+    EXPECT_EQ(CELIX_SUCCESS, shmCache_getShmSize(tmpShmId, &shmSize));
+    EXPECT_GE(shmSize, (size_t)4096);
+
+    shmdt(tmpAddr);
+    EXPECT_EQ(0, shmctl(tmpShmId, IPC_RMID, nullptr));
+    EXPECT_NE(CELIX_SUCCESS, shmCache_getShmSize(tmpShmId, &shmSize));
 }
 
 TEST_F(ShmCacheTestSuite, EvictInactiveShmCacheBlock) {
