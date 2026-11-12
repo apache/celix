@@ -79,5 +79,19 @@
  */
 #define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT false
 
+/**
+ * @brief Remote Service Admin DFI environment property (named "CELIX_RSA_DFI_MAX_REQUEST_SIZE") which specifies
+ * the maximum accepted HTTP request body size in bytes. Requests with a larger body are rejected with a
+ * "413 Payload Too Large" response.
+ *
+ * The property is of the type long and the default is 16 MiB.
+ */
+#define CELIX_RSA_DFI_MAX_REQUEST_SIZE "CELIX_RSA_DFI_MAX_REQUEST_SIZE"
+
+/**
+ * @brief Default value for the property CELIX_RSA_DFI_MAX_REQUEST_SIZE
+ */
+#define CELIX_RSA_DFI_MAX_REQUEST_SIZE_DEFAULT (16 * 1024 * 1024)
+
 
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

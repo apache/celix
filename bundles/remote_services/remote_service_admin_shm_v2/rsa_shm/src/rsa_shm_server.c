@@ -255,6 +255,14 @@ call_receive_cb_failed:
     return;
 }
 
+static bool rsaShmServer_memoryRangeInvalid(size_t shmSize, ssize_t offset, size_t size) {
+    if (offset <= 0) {
+        return true;
+    }
+    size_t memOffset = (size_t)offset;
+    return memOffset >= shmSize || size > shmSize - memOffset;
+}
+
 static bool rsaShmServer_msgInvalid(rsa_shm_server_t *server, const rsa_shm_msg_t *msgInfo) {
     assert(msgInfo != NULL);
     assert(server != NULL);
@@ -264,6 +272,28 @@ static bool rsaShmServer_msgInvalid(rsa_shm_server_t *server, const rsa_shm_msg_
             || msgInfo->ctrlDataSize != sizeof(rsa_shm_msg_control_t)) {
         celix_logHelper_error(server->loghelper, "RsaShmServer: Shm msg info invalid. Msg info:%d, %zd, %zd, %zu.",
                 msgInfo->shmId, msgInfo->ctrlDataOffset, msgInfo->msgBodyOffset, msgInfo->ctrlDataSize);
+        return true;
+    }
+    if (msgInfo->metadataSize > msgInfo->msgBodyTotalSize
+            || msgInfo->requestSize > msgInfo->msgBodyTotalSize - msgInfo->metadataSize) {
+        celix_logHelper_error(server->loghelper,
+                "RsaShmServer: Shm msg body size invalid. Total:%zu, metadata:%zu, request:%zu.",
+                msgInfo->msgBodyTotalSize, msgInfo->metadataSize, msgInfo->requestSize);
+        return true;
+    }
+
+    size_t shmSize = 0;
+    if (shmCache_getShmSize(msgInfo->shmId, &shmSize) != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(server->loghelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(server->loghelper, "RsaShmServer: Error getting shm size for shmid %d.", msgInfo->shmId);
+        return true;
+    }
+    if (rsaShmServer_memoryRangeInvalid(shmSize, msgInfo->ctrlDataOffset, msgInfo->ctrlDataSize)
+            || rsaShmServer_memoryRangeInvalid(shmSize, msgInfo->msgBodyOffset, msgInfo->msgBodyTotalSize)) {
+        celix_logHelper_error(server->loghelper,
+                "RsaShmServer: Shm msg memory range invalid. Shm size:%zu, ctrl offset/size:%zd/%zu, body offset/size:%zd/%zu.",
+                shmSize, msgInfo->ctrlDataOffset, msgInfo->ctrlDataSize,
+                msgInfo->msgBodyOffset, msgInfo->msgBodyTotalSize);
         return true;
     }
     return false;
