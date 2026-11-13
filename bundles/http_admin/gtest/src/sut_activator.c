@@ -39,12 +39,14 @@ struct activator {
 
 //Local function prototypes
 int alias_test_put(void *handle, struct mg_connection *connection, const char *path, const char *data, size_t length);
+int alias_test_post(void *handle, struct mg_connection *connection, const char *data, size_t length);
 int websocket_data_echo(struct mg_connection *connection, int op_code, char *data, size_t length, void *handle);
 
 celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, HTTP_ADMIN_URI, "/alias");
     act->httpSvc.handle = act;
+    act->httpSvc.doPost = alias_test_post;
     act->httpSvc.doPut = alias_test_put;
     act->httpSvcId = celix_bundleContext_registerService(ctx, &act->httpSvc, HTTP_ADMIN_SERVICE_NAME, props);
 
@@ -82,9 +84,19 @@ int alias_test_put(void *handle CELIX_UNUSED, struct mg_connection *connection, 
     //If data received, echo the data for the test case
     if(length > 0 && data != NULL) {
         const char *mime_type = mg_get_header(connection, "Content-Type");
-        mg_printf(connection,
-                  "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nConnection: close\r\n\r\n%s", mime_type, data);
+        mg_send_http_ok(connection, mime_type, (long long) length);
+        mg_write(connection, data, length);
+    }
 
+    return 200;
+}
+
+int alias_test_post(void *handle CELIX_UNUSED, struct mg_connection *connection, const char *data, size_t length) {
+    //Echo the received data for the test case
+    const char *mime_type = mg_get_header(connection, "Content-Type");
+    mg_send_http_ok(connection, mime_type, (long long) length);
+    if (length > 0 && data != NULL) {
+        mg_write(connection, data, length);
     }
 
     return 200;

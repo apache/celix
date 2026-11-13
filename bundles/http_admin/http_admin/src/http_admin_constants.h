@@ -39,5 +39,19 @@
 #define HTTP_ADMIN_NUM_THREADS_KEY              "CELIX_HTTP_ADMIN_NUM_THREADS"
 #define HTTP_ADMIN_NUM_THREADS_DFT              1L
 
+/**
+ * @brief HTTP Admin environment property (named "CELIX_HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB")
+ * which specifies the maximum size of a request body the HTTP Admin will accept, in MB.
+ *
+ * Requests with a body larger than this limit are rejected with an HTTP 413 response.
+ * The property is of the type long.
+ */
+#define HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB_KEY "CELIX_HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB"
+
+/**
+ * @brief Default value for the property HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB (in MB)
+ */
+#define HTTP_ADMIN_MAX_REQUEST_BODY_SIZE_IN_MB_DFT 10L
+
 
 #endif //CELIX_HTTP_ADMIN_CONSTANTS_H

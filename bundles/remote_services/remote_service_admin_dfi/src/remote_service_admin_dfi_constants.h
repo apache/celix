@@ -79,5 +79,18 @@
  */
 #define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT false
 
+/**
+ * @brief Remote Service Admin DFI environment property (named "CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB") which
+ * specifies the maximum size of the request body the RSA server will accept, in megabytes.
+ *
+ * The property is of the type long.
+ */
+#define CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB "CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB"
+
+/**
+ * @brief Default value for the property CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB (in MB)
+ */
+#define CELIX_RSA_DFI_MAX_REQUEST_BODY_SIZE_IN_MB_DEFAULT 10L
+
 
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

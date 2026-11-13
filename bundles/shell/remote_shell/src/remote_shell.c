@@ -40,17 +40,44 @@
 
 
 
-struct connection {
+struct celix_remote_shell_connection {
 	remote_shell_pt parent;
 	FILE *socketStream;
 	fd_set pollset;
 	bool threadRunning;
+	celix_thread_t thread;
 };
 
-typedef struct connection *connection_pt;
+typedef struct celix_remote_shell_connection celix_remote_shell_connection_t;
 
-static celix_status_t remoteShell_connection_print(connection_pt connection, char * text);
-static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command);
+static inline bool connection_isThreadRunning(celix_remote_shell_connection_t* connection) {
+    return __atomic_load_n(&connection->threadRunning, __ATOMIC_RELAXED);
+}
+
+static inline void connection_setThreadRunning(celix_remote_shell_connection_t* connection, bool value) {
+    __atomic_store_n(&connection->threadRunning, value, __ATOMIC_RELAXED);
+}
+
+static void connection_destroy(celix_remote_shell_connection_t* connection) {
+	if (connection->socketStream) {
+		fclose(connection->socketStream);
+	}
+	free(connection);
+}
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_remote_shell_connection_t, connection_destroy)
+
+/**
+ * @brief Check whether errno indicates a transient receive condition (currently no data available).
+ */
+static bool connection_isTransientRecvError(void) {
+    //Note EAGAIN and EWOULDBLOCK may be the same value on some platforms (e.g. Linux) and differ on
+    //others (e.g. some BSDs). This function can be made platform-dependent.
+    return errno == EAGAIN || errno == EWOULDBLOCK;
+}
+
+static celix_status_t remoteShell_connection_print(celix_remote_shell_connection_t* connection, const char * text);
+static celix_status_t remoteShell_connection_execute(celix_remote_shell_connection_t* connection, const char *command);
 static void* remoteShell_connection_run(void *data);
 
 celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt* instance) {
@@ -91,43 +118,33 @@ celix_status_t remoteShell_destroy(remote_shell_pt instance) {
 }
 
 celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
-	celix_status_t status = CELIX_SUCCESS;
-	connection_pt connection = calloc(1, sizeof(struct connection));
-
-	if (connection != NULL) {
-		connection->parent = instance;
-		connection->threadRunning = false;
-		connection->socketStream = fdopen(socket, "w");
-
-		if (connection->socketStream != NULL) {
-
-			celixThreadMutex_lock(&instance->mutex);
-
-			if (celix_arrayList_size(instance->connections) < instance->maximumConnections) {
-				celix_thread_t connectionRunThread = celix_thread_default;
-                                celix_arrayList_add(instance->connections, connection);
-				status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
-			} else {
-				status = CELIX_BUNDLE_EXCEPTION;
-				remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
-			}
-			celixThreadMutex_unlock(&instance->mutex);
-
-		} else {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	} else {
-		status = CELIX_ENOMEM;
+	celix_autoptr(celix_remote_shell_connection_t) connection = calloc(1, sizeof(*connection));
+	if (!connection) {
+		return CELIX_ENOMEM;
+	}
+	
+	connection->parent = instance;
+	connection_setThreadRunning(connection, false);
+	connection->socketStream = fdopen(socket, "w");
+	if (!connection->socketStream) {
+		celix_logHelper_error(*instance->loghelper, "Error opening socket");
+		return CELIX_FILE_IO_EXCEPTION;
 	}
 
-	if (status != CELIX_SUCCESS && connection != NULL) {
-		if (connection->socketStream != NULL) {
-			fclose(connection->socketStream);
-		}
-		free(connection);
+	celix_auto(celix_mutex_lock_guard_t) _guard = celixMutexLockGuard_init(&instance->mutex);
+	if (celix_arrayList_size(instance->connections) >= instance->maximumConnections) {
+		remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
+		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	return status;
+	celix_status_t status = celixThread_create(&connection->thread, NULL, &remoteShell_connection_run, connection);
+	if (status != CELIX_SUCCESS) {
+		celix_logHelper_error(*connection->parent->loghelper, "Cannot create thread for remote connection: %s", celix_strerror(status));
+		return CELIX_BUNDLE_EXCEPTION;
+	}
+	
+	celix_arrayList_add(instance->connections, celix_steal_ptr(connection));
+	return CELIX_SUCCESS;
 }
 
 celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
@@ -137,30 +154,39 @@ celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 
 	celixThreadMutex_lock(&instance->mutex);
 	length = celix_arrayList_size(instance->connections);
+	celix_thread_t threads[length];
 
 	for (i = 0; i < length; i += 1) {
-		connection_pt connection = celix_arrayList_get(instance->connections, i);
-		connection->threadRunning = false;
+		celix_remote_shell_connection_t* connection = celix_arrayList_get(instance->connections, i);
+		connection_setThreadRunning(connection, false);
+		threads[i] = connection->thread;
 	}
 
 	celixThreadMutex_unlock(&instance->mutex);
+
+	for (i = 0; i < length; i += 1) {
+		celixThread_join(threads[i], NULL);
+	}
 
 	return status;
 }
 
 void *remoteShell_connection_run(void *data) {
 	celix_status_t status = CELIX_SUCCESS;
-	connection_pt connection = data;
-	size_t len;
+	celix_remote_shell_connection_t* connection = data;
+	ssize_t len;
 	int result;
 	struct timeval timeout; /* Timeout for select */
 
+	char buff[COMMAND_BUFF_SIZE];
+	size_t used = 0;
+
 	int fd = fileno(connection->socketStream);
 
-	connection->threadRunning = true;
+	connection_setThreadRunning(connection, true);
 	status = remoteShell_connection_print(connection, RS_WELCOME);
 
-	while (status == CELIX_SUCCESS && connection->threadRunning == true) {
+	while (status == CELIX_SUCCESS && connection_isThreadRunning(connection)) {
 		do {
 			timeout.tv_sec = CONNECTION_LISTENER_TIMEOUT_SEC;
 			timeout.tv_usec = 0;
@@ -168,31 +194,48 @@ void *remoteShell_connection_run(void *data) {
 			FD_ZERO(&connection->pollset);
 			FD_SET(fd, &connection->pollset);
 			result = select(fd + 1, &connection->pollset, NULL, NULL, &timeout);
-		} while (result == -1 && errno == EINTR && connection->threadRunning == true);
+		} while (result == -1 && errno == EINTR && connection_isThreadRunning(connection));
 
 		/* The socket_fd has data available to be read */
-		if (result > 0 && FD_ISSET(fd, &connection->pollset)) {
-			char buff[COMMAND_BUFF_SIZE];
+		if (result < 0) {
+			celix_logHelper_error(*connection->parent->loghelper, "REMOTE_SHELL: select() failed: %s", strerror(errno));
+			break;
+		} else if (result > 0 && FD_ISSET(fd, &connection->pollset)) {
+			do {
+				len = recv(fd, buff + used, COMMAND_BUFF_SIZE - 1 - used, 0);
+			} while (len < 0 && errno == EINTR && connection_isThreadRunning(connection));
 
-			len = recv(fd, buff, COMMAND_BUFF_SIZE - 1, 0);
-			if (len < COMMAND_BUFF_SIZE) {
-				celix_status_t commandStatus = CELIX_SUCCESS;
-				buff[len] = '\0';
+			if (len > 0) {
+				used += (size_t)len;
+				char *newline = NULL;
+				while (status == CELIX_SUCCESS && (newline = memchr(buff, '\n', used)) != NULL) {
+					size_t consumed = (size_t)(newline - buff) + 1;
+					*newline = '\0';
 
-				commandStatus = remoteShell_connection_execute(connection, buff);
+					celix_status_t commandStatus = remoteShell_connection_execute(connection, buff);
 
-				if (commandStatus == CELIX_SUCCESS) {
-					remoteShell_connection_print(connection, RS_PROMPT);
-				} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
-					//exit command
-					break;
-				} else { //error
-					remoteShell_connection_print(connection, RS_ERROR);
-					remoteShell_connection_print(connection, RS_PROMPT);
+					if (commandStatus == CELIX_SUCCESS) {
+						remoteShell_connection_print(connection, RS_PROMPT);
+					} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
+						//exit command
+						status = CELIX_FILE_IO_EXCEPTION;
+						break;
+					} else { //error
+						remoteShell_connection_print(connection, RS_ERROR);
+						remoteShell_connection_print(connection, RS_PROMPT);
+					}
+
+					memmove(buff, buff + consumed, used - consumed);
+					used -= consumed;
 				}
-
+			} else if (len == 0) {
+				celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Connection closed by peer");
+				break;
+			} else if (connection_isTransientRecvError()) {
+				//No data currently available, loop back to select() instead of disconnecting.
 			} else {
-                celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Error while retrieving data");
+				celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: recv() failed: %s", strerror(errno));
+				break;
 			}
 		}
 	}
@@ -201,15 +244,16 @@ void *remoteShell_connection_run(void *data) {
 
     celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Closing socket");
 	celixThreadMutex_lock(&connection->parent->mutex);
-        celix_arrayList_remove(connection->parent->connections, connection);
+	celix_arrayList_remove(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);
 
 	fclose(connection->socketStream);
+	free(connection);
 
 	return NULL;
 }
 
-static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command) {
+static celix_status_t remoteShell_connection_execute(celix_remote_shell_connection_t* connection, const char *command) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (status == CELIX_SUCCESS) {
@@ -231,7 +275,7 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
 	return status;
 }
 
-celix_status_t remoteShell_connection_print(connection_pt connection, char *text) {
+celix_status_t remoteShell_connection_print(celix_remote_shell_connection_t* connection, const char *text) {
 	size_t len = strlen(text);
     int fd = fileno(connection->socketStream);
 	return (send(fd, text, len, 0) > 0) ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
