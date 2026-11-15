@@ -16,18 +16,22 @@ env:
 jobs:
 
   macos-build-conan:
-    runs-on: macOS-11
+    runs-on: macOS-15
     timeout-minutes: 120
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
-      - name: Install conan
-        run: |
-          brew install python ninja
-          pip3 install -U conan
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install Conan
+        run: pip install conan
       - name: Setup Conan Profile
         run: |
           conan profile detect -f
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@v3
@@ -54,58 +58,14 @@ jobs:
             -o celix/*:enable_testing=True
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:build_all=True
+            -o celix/*:enable_testing_for_cxx14=True
+            -o celix/*:enable_testing_dependency_manager_for_cxx11=True
             -o celix/*:enable_cmake_warning_tests=True
             -o celix/*:enable_testing_on_ci=True
             -o celix/*:framework_curlinit=False
             -o celix/*:enable_ccache=True
-            -o celix/*:enable_testing_for_cxx14=True
-            -o celix/*:enable_testing_dependency_manager_for_cxx11=True
         run: |
-          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest
+          conan build . -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test
-        run: |
-          cd build
-          source conanrun.sh
-          ctest --output-on-failure
-          source deactivate_conanrun.sh
+        run: ctest --preset conan-release --output-on-failure -j1
 
-  macos-build-brew:
-    runs-on: macOS-latest
-    timeout-minutes: 120
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v3.3.0
-      - name: Install dependencies
-        run: |
-          brew install lcov zeromq czmq cpputest jansson rapidjson libzip ccache
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
-      - name: ccache Cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-brew-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
-          restore-keys: |
-            ${{ runner.os }}-brew-test-ccache-Release-
-      - name: Build
-        env:
-          BUILD_OPTIONS: |
-            -DENABLE_TESTING=ON
-            -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
-            -DENABLE_TESTING_FOR_CXX14=ON
-            -DENABLE_ADDRESS_SANITIZER=ON
-            -DENABLE_TESTING_ON_CI=ON
-            -DCMAKE_BUILD_TYPE=Release
-            -DENABLE_CCACHE=ON
-        run: |
-          mkdir build install
-          cd build
-          cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-          make -j && make install
-      - name: Test
-        run: |
-          cd $GITHUB_WORKSPACE/build
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
-          ctest --output-on-failure
