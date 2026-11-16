@@ -89,7 +89,7 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_C_FLAGS "-Wno-nullability-completeness -Wno-expansion-to-defined ${CMAKE_C_FLAGS}")
     set(CMAKE_C_FLAGS "-Wno-deprecated-non-prototype -Wno-bitwise-instead-of-logical -Wno-strlcpy-strlcat-size ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wno-unused-but-set-variable -Wno-bitwise-instead-of-logical ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-unused-but-set-variable -Wno-bitwise-instead-of-logical -Wno-vla-cxx-extension -Wno-missing-template-arg-list-after-template-kw ${CMAKE_CXX_FLAGS}")
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

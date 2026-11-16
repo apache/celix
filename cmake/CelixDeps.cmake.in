@@ -10,7 +10,6 @@ $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::launcher>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::etcdlib>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::deployment_admin>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_dfi>>:find_dependency(CURL)>
-$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::RsaConfiguredDiscovery>>:find_dependency(RapidJSON)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_discovery>>:find_dependency(LibXml2)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::bonjour_shell>>:find_dependency(LibXml2)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::celix_pubsub_admin_zmq>>:find_dependency(ZeroMQ)>
