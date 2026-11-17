@@ -1,0 +1,146 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+---
+Checks: >
+  clang-analyzer-*,
+  cert-*,
+  cppcoreguidelines-*,
+  hicpp-*
+  bugprone-*,
+  performance-*,
+  readability-*,
+  -clang-diagnostic-unknown-warning-option,
+  -clang-analyzer-security.ArrayBound,
+  -clang-analyzer-unix.Stream,
+  -clang-analyzer-cplusplus.StringChecker,
+  -clang-analyzer-optin.portability.UnixAPI,
+  -clang-analyzer-security.insecureAPI.rand,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  -clang-analyzer-core.UndefinedBinaryOperatorResult,
+  -clang-analyzer-core.NonNullParamChecker,
+  -clang-analyzer-unix.StdCLibraryFunctions,
+  -readability-identifier-naming,
+  -readability-magic-numbers,
+  -readability-else-after-return,
+  -readability-non-const-parameter,
+  -readability-identifier-length,
+  -readability-uppercase-literal-suffix,
+  -readability-redundant-declaration,
+  -readability-function-cognitive-complexity,
+  -readability-avoid-const-params-in-decls,
+  -readability-inconsistent-declaration-parameter-name,
+  -readability-avoid-unconditional-preprocessor-if,
+  -readability-named-parameter,
+  -readability-function-size,
+  -readability-avoid-nested-conditional-operator,
+  -readability-braces-around-statements,
+  -readability-implicit-bool-conversion,
+  -readability-redundant-member-init,
+  -readability-convert-member-functions-to-static,
+  -readability-isolate-declaration,
+  -readability-container-data-pointer,
+  -readability-redundant-inline-specifier,
+  -readability-suspicious-call-argument,
+  -readability-use-concise-preprocessor-directives,
+  -readability-make-member-function-const,
+  -readability-static-definition-in-anonymous-namespace,
+  -readability-qualified-auto,
+  -readability-qualified-auto,
+  -readability-duplicate-include,
+  -readability-redundant-casting,
+  -readability-simplify-boolean-expr,
+  -readability-redundant-control-flow,
+  -readability-misleading-indentation,
+  -readability-math-missing-parentheses,
+  -bugprone-narrowing-conversions,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-macro-parentheses,
+  -bugprone-branch-clone,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-macro-to-enum,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-no-malloc,
+  -cppcoreguidelines-prefer-member-initializer,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-type-cstyle-cast,
+  -cppcoreguidelines-special-member-functions,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-do-while,
+  -cppcoreguidelines-avoid-goto,
+  -cppcoreguidelines-use-enum-class,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-interfaces-global-init,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-type-member-init,
+  -cppcoreguidelines-rvalue-reference-param-not-moved,
+  -cppcoreguidelines-missing-std-forward,
+  -cppcoreguidelines-use-default-member-init,
+  -cppcoreguidelines-virtual-class-destructor,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-pro-type-const-cast,
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-explicit-virtual-functions,
+  -performance-type-promotion-in-math-fn,
+  -performance-unnecessary-value-param,
+  -performance-noexcept-move-constructor,
+  -performance-unnecessary-copy-initialization,
+  -performance-for-range-copy,
+  -performance-enum-size,
+  -performance-avoid-endl,
+  -performance-move-const-arg,
+  -performance-noexcept-move-constructor,
+  -performance-inefficient-vector-operation,
+  -performance-no-int-to-ptr,
+  -clang-analyzer-unix.Malloc,
+  -clang-analyzer-core.NullDereference,
+  -clang-analyzer-security.insecureAPI.strcpy,
+  -clang-analyzer-core.CallAndMessage,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -clang-analyzer-deadcode.DeadStores,
+  -cert-dcl37-c,
+  -cert-dcl16-c,
+  -cert-err33-c,
+  -cert-err34-c,
+  -cert-exp42-c,
+  -cert-flp37-c,
+  -cert-msc24-c,
+  -cert-msc30-c,
+  -cert-msc32-c,
+  -cert-msc33-c,
+  -cert-env33-c,
+  -cert-str34-c,
+  -cert-dcl51-cpp,
+  -cert-dcl50-cpp,
+  -cert-msc50-cpp,
+  -cert-msc51-cpp
+# TODO re-enable check suppression (disabled to trigger check results in the GitHub Sarif report)
+#  -cert-dcl59-cpp
+WarningsAsErrors: "*"
+FormatStyle: file
+#Note SystemHeaders not supported on ubuntu 22.04 ci (clang-tidy version 14.0), using header filter regex instead
+#HeaderFilterRegex: ".*"
+#SystemHeaders: false
+HeaderFilterRegex: "(bundles|libs|misc).*"
+...
