@@ -720,8 +720,10 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
             output = stderr;
         }
         fprintf(output, "%s: ", celix_logLevel_toString(level));
-        vfprintf(output, format, args);
-        fprintf(output, "\n");
+        if (format) {
+            vfprintf(output, format, args);
+            fprintf(output, "\n");
+        }
     };
     celix_framework_setLogCallback(fw->getCFramework(), &logCount, logCallback);
 
