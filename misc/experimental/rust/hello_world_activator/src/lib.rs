@@ -17,91 +17,37 @@
  * under the License.
  */
 
-extern crate celix_bindings;
+use std::sync::Arc;
 
-use std::error::Error;
-use std::os::raw::c_void;
-use std::ffi::CString;
-use std::ffi::NulError;
-use celix_bindings::*; //Add all Apache Celix C bindings to the namespace (i.e. celix_bundleContext_log, etc.)
+use celix::BundleActivator;
+use celix::BundleContext;
+use celix::Error;
 
-struct RustBundle {
-    name: String,
-    ctx: *mut celix_bundle_context_t,
+struct HelloWorldBundle {
+    ctx: Arc<BundleContext>,
 }
 
-impl RustBundle {
-
-    unsafe fn new(name: String, ctx: *mut celix_bundle_context_t) -> Result<RustBundle, NulError> {
-        let result = RustBundle {
-            name,
-            ctx,
-        };
-        result.log_lifecycle("created")?;
-        Ok(result)
+impl BundleActivator for HelloWorldBundle {
+    fn new(ctx: Arc<BundleContext>) -> Self {
+        ctx.log_info("Hello World Bundle Activator created");
+        HelloWorldBundle { ctx }
     }
 
-    unsafe fn log_lifecycle(&self, event: &str) -> Result<(), NulError> {
-        let id = celix_bundleContext_getBundleId(self.ctx);
-        let c_string = CString::new(format!("Rust Bundle '{}' with id {} {}!", self.name, id, event))?;
-        celix_bundleContext_log(self.ctx, celix_log_level_CELIX_LOG_LEVEL_INFO, c_string.as_ptr());
+    fn start(&mut self) -> Result<(), Error> {
+        self.ctx.log_info("Hello World Bundle Activator started");
         Ok(())
     }
 
-    unsafe fn start(&self) -> Result<(), NulError> {
-        self.log_lifecycle("started")
-    }
-
-    unsafe fn stop(&self) -> Result<(), NulError> {
-        self.log_lifecycle("stopped")
+    fn stop(&mut self) -> Result<(), Error> {
+        self.ctx.log_info("Hello World Bundle Activator stopped");
+        Ok(())
     }
 }
 
-impl Drop for RustBundle {
+impl Drop for HelloWorldBundle {
     fn drop(&mut self) {
-        unsafe {
-            let result = self.log_lifecycle("destroyed");
-            match result {
-                Ok(()) => (),
-                Err(e) => println!("Error while logging: {}", e),
-            }
-        }
+        self.ctx.log_info("Hello World Bundle Activator destroyed");
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn celix_bundleActivator_create(ctx: *mut celix_bundle_context_t, data: *mut *mut c_void) -> celix_status_t {
-    let rust_bundle = RustBundle::new("Hello World".to_string(), ctx);
-    if rust_bundle.is_err() {
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-    *data = Box::into_raw(Box::new(rust_bundle.unwrap())) as *mut c_void;
-    CELIX_SUCCESS
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn celix_bundleActivator_start(data: *mut c_void, _ctx: *mut celix_bundle_context_t) -> celix_status_t {
-    let rust_bundle = &*(data as *mut RustBundle);
-    let result = rust_bundle.start();
-    match result {
-        Ok(()) => CELIX_SUCCESS,
-        Err(_) => CELIX_BUNDLE_EXCEPTION,
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn celix_bundleActivator_stop(data: *mut c_void, _ctx: *mut celix_bundle_context_t) -> celix_status_t {
-    let rust_bundle = &*(data as *mut RustBundle);
-    let result = rust_bundle.stop();
-    match result {
-        Ok(()) => CELIX_SUCCESS,
-        Err(_) => CELIX_BUNDLE_EXCEPTION,
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn celix_bundleActivator_destroy(data: *mut c_void, _ctx: *mut celix_bundle_context_t) -> celix_status_t {
-    let rust_bundle = Box::from_raw(data as *mut RustBundle);
-    drop(rust_bundle);
-    CELIX_SUCCESS
-}
+celix::generate_bundle_activator!(HelloWorldBundle);
