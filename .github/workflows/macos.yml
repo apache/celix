@@ -56,7 +56,6 @@ jobs:
         env:
           CONAN_BUILD_OPTIONS: |
             -o celix/*:enable_testing=True
-            -o celix/*:enable_address_sanitizer=True
             -o celix/*:build_all=True
             -o celix/*:enable_testing_for_cxx14=True
             -o celix/*:enable_testing_dependency_manager_for_cxx11=True
