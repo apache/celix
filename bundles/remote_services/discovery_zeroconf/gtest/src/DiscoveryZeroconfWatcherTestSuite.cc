@@ -72,11 +72,11 @@ static  celix_status_t discoveryZeroconfWatcherTest_endpointRemoved(void *handle
 class DiscoveryZeroconfWatcherTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
     }
 
     static void TearDownTestCase() {
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
 
     DiscoveryZeroconfWatcherTestSuite() {

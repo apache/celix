@@ -1,0 +1,72 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+FROM docker.io/library/ubuntu:24.04@sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30 as base
+
+# Install dependencies
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        build-essential \
+        ccache \
+        cmake \
+        gcc \
+        g++ \
+        make \
+        zip \
+        ninja-build \
+        clang-tidy \
+        lcov \
+        sudo \
+        python3 \
+        pipx && \
+    apt-get clean
+
+# Build image using conan & cmake
+FROM base as conan-build
+
+ARG USERNAME=celixdev
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+RUN userdel -r ubuntu && \
+    groupadd --gid ${USER_GID} ${USERNAME} && \
+    useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} && \
+    usermod -aG sudo ${USERNAME} && \
+    echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+
+ENV PATH="${PATH}:/home/${USERNAME}/.local/bin"
+RUN pipx install conan && \
+    conan profile detect --force && \
+    cp /home/${USERNAME}/.conan2/profiles/default /home/${USERNAME}/.conan2/profiles/release && \
+    cp /home/${USERNAME}/.conan2/profiles/default /home/${USERNAME}/.conan2/profiles/debug && \
+    sed -i 's/^build_type=.*/build_type=Release/' /home/${USERNAME}/.conan2/profiles/release && \
+    sed -i 's/^build_type=.*/build_type=Debug/' /home/${USERNAME}/.conan2/profiles/debug
+
+FROM conan-build as conan-dev
+
+USER root
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    gnupg2 dos2unix locales-all ssh rsync tar tzdata sudo vim cmake-curses-gui gdb \
+    wget curl && \
+    apt-get clean
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}

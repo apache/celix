@@ -17,7 +17,7 @@
 
 from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
-from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.scm import Version
 from conan.tools.files import copy
 import os
@@ -382,12 +382,12 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            self.requires("util-linux-libuuid/2.39.2")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib or self.options.build_deployment_admin
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
-            self.requires("libcurl/[>=8.4.0 <9.0.0]")
+            self.requires("libcurl/8.4.0")
         if self.options.build_deployment_admin:
             self.requires("zlib/[>=1.2.13 <2.0.0]")
         if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
@@ -412,6 +412,9 @@ class CelixConan(ConanFile):
         # the latest civetweb (1.16) is not ready for openssl3
         self.requires("openssl/1.1.1t", override=True)
         self.validate()
+
+    def layout(self):
+        cmake_layout(self)
 
     def generate(self):
         tc = CMakeToolchain(self)
