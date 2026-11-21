@@ -70,6 +70,18 @@ typedef void (*shmCache_shmPeerClosedCB)(void *handle, shm_cache_t *shmCache, in
 void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB shmPeerClosedCB, void *closedCBHandle);
 
 /**
+ * @brief Get the size of a shared memory segment.
+ *
+ * The segment is identified by its System V shared memory id and does not need to be cached.
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] shmId Shared memory id
+ * @param[out] size The size of the shared memory segment
+ * @return @see celix_errno.h
+ */
+celix_status_t shmCache_getShmSize(int shmId, size_t *size);
+
+/**
  * @brief Get shared memory address from shared memory cache.
  *
  * In case of an error, an error message is added to celix_err.

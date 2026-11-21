@@ -27,6 +27,7 @@
 #include "celix_stdlib_cleanup.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 #include <sys/shm.h>
 
 typedef struct shm_cache_block {
@@ -134,6 +135,19 @@ static void shmCache_destroyBlock(shm_cache_t *shmCache, shm_cache_block_t *shmB
     shmdt(shmBlock->shmStartAddr);
     free(shmBlock);
     return ;
+}
+
+celix_status_t shmCache_getShmSize(int shmId, size_t *size) {
+    if (shmId < 0 || size == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    struct shmid_ds shmInfo = {{0}};
+    if (shmctl(shmId, IPC_STAT, &shmInfo) == -1) {
+        celix_err_pushf("Shm cache: Error getting shared memory info for shmid %d. %d.\n", shmId, errno);
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
+    }
+    *size = shmInfo.shm_segsz;
+    return CELIX_SUCCESS;
 }
 
 void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOffset) {

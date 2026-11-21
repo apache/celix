@@ -53,6 +53,26 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     add_library(Celix::rsa_dfi ALIAS rsa_dfi)
 
     if (ENABLE_TESTING)
+        # The cut is linked statically into the error injection test, otherwise malloc can not be wrapped
+        add_library(rsa_dfi_cut STATIC
+                src/remote_service_admin_dfi.c
+                src/export_registration_dfi.c
+                src/import_registration_dfi.c
+                )
+        target_include_directories(rsa_dfi_cut PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
+        celix_deprecated_utils_headers(rsa_dfi_cut)
+        celix_deprecated_framework_headers(rsa_dfi_cut)
+        target_link_libraries(rsa_dfi_cut PUBLIC
+                Celix::rsa_utils
+                Celix::rsa_dfi_utils
+                Celix::dfi
+                Celix::log_helper
+                Celix::rsa_common
+                CURL::libcurl
+                civetweb::civetweb
+                jansson::jansson
+                libuuid::libuuid
+                )
         add_subdirectory(gtest)
     endif()
 endif()
