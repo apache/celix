@@ -40,4 +40,21 @@ if (RSA_DISCOVERY_COMMON)
 
     #Setup target aliases to match external usage
     add_library(Celix::rsa_discovery_common ALIAS rsa_discovery_common)
+
+    if (ENABLE_TESTING)
+        add_library(rsa_discovery_common_cut STATIC
+                src/endpoint_descriptor_reader.c
+                )
+        target_include_directories(rsa_discovery_common_cut PUBLIC include PRIVATE src ${LIBXML2_INCLUDE_DIR})
+        target_link_libraries(rsa_discovery_common_cut PUBLIC
+                Celix::framework
+                Celix::utils
+                Celix::log_helper
+                Celix::rsa_common
+                ${LIBXML2_LIBRARIES}
+                )
+        celix_deprecated_utils_headers(rsa_discovery_common_cut)
+        celix_deprecated_framework_headers(rsa_discovery_common_cut)
+        add_subdirectory(gtest)
+    endif ()
 endif ()

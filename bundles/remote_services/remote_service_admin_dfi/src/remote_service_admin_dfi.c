@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <stdint.h>
 #include <string.h>
 #include <uuid/uuid.h>
 #include <curl/curl.h>
@@ -107,6 +108,8 @@ struct remote_service_admin {
 
     FILE *logFile;
 
+    size_t maxRequestSize;
+
     bool curlShareEnabled;
     void *curlShare;
     pthread_mutex_t curlMutexConnect;
@@ -139,6 +142,7 @@ static const char *no_content_response_headers =
         "HTTP/1.1 204 OK\r\n";
 
 static const unsigned int DEFAULT_TIMEOUT = 0;
+
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **description);
@@ -214,6 +218,12 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
+
+        long maxRequestSizeKb = celix_bundleContext_getPropertyAsLong(context, CELIX_RSA_DFI_MAX_REQUEST_SIZE_IN_KB, CELIX_RSA_DFI_MAX_REQUEST_SIZE_IN_KB_DEFAULT);
+        if (maxRequestSizeKb <= 0 || (uint64_t)maxRequestSizeKb > SIZE_MAX / 1024) {
+            maxRequestSizeKb = CELIX_RSA_DFI_MAX_REQUEST_SIZE_IN_KB_DEFAULT;
+        }
+        (*admin)->maxRequestSize = (size_t)maxRequestSizeKb * 1024;
 
         (*admin)->dynamicIpSupport = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
 
@@ -526,41 +536,67 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
 
         if (export != NULL) {
-            uint64_t datalength = request_info->content_length;
-            char* data = malloc(datalength + 1);
-            mg_read(conn, data, datalength);
-            data[datalength] = '\0';
+            int64_t contentLength = request_info->content_length;
+            bool bodyRead = false;
+            char *data = NULL;
 
-            char *response = NULL;
-            int responceLength = 0;
-            int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
-            if (rc != CELIX_SUCCESS) {
-                RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
-            }
-
-            if (rc == CELIX_SUCCESS && response != NULL) {
-                mg_write(conn, data_response_headers, strlen(data_response_headers));
-
-                char *bufLoc = response;
-                size_t bytesLeft = strlen(response);
-                if (bytesLeft > INT_MAX) {
-                    //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
-                    RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
-                }
-                while (bytesLeft > 0) {
-                    int send = mg_write(conn, bufLoc, strlen(bufLoc));
-                    if (send > 0) {
-                        bytesLeft -= send;
-                        bufLoc += send;
-                    } else {
-                        RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+            if (contentLength < 0 || (uint64_t)contentLength > rsa->maxRequestSize) {
+                RSA_LOG_WARNING(rsa, "Rejecting request with invalid or too large body (content length %lld, max %zu)", (long long)contentLength, rsa->maxRequestSize);
+                mg_send_http_error(conn, 413, "Rejecting request with invalid or too large body (content length %lld)", (long long)contentLength);
+            } else if ((data = malloc((size_t)contentLength + 1)) == NULL) {
+                RSA_LOG_ERROR(rsa, "Error allocating memory for request body of %zu bytes", (size_t)contentLength);
+                mg_send_http_error(conn, 500, "Error allocating memory for request body of %zu bytes", (size_t)contentLength);
+            } else {
+                size_t totalRead = 0;
+                while (totalRead < (size_t)contentLength) {
+                    int nrOfBytesRead = mg_read(conn, data + totalRead, (size_t)contentLength - totalRead);
+                    if (nrOfBytesRead <= 0) {
+                        //no more data could be read before the announced body was fully received
                         break;
                     }
+                    totalRead += (size_t)nrOfBytesRead;
+                }
+                if (totalRead == (size_t)contentLength) {
+                    data[totalRead] = '\0';
+                    bodyRead = true;
+                } else {
+                    RSA_LOG_WARNING(rsa, "Incomplete request body, expected %zu bytes but received %zu", (size_t)contentLength, totalRead);
+                    mg_send_http_error(conn, 400, "Incomplete request body (expected %zu bytes)", (size_t)contentLength);
+                }
+            }
+
+            if (bodyRead) {
+                char *response = NULL;
+                int responceLength = 0;
+                int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
+                if (rc != CELIX_SUCCESS) {
+                    RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
                 }
 
-                free(response);
-            } else {
-                mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+                if (rc == CELIX_SUCCESS && response != NULL) {
+                    mg_write(conn, data_response_headers, strlen(data_response_headers));
+
+                    char *bufLoc = response;
+                    size_t bytesLeft = strlen(response);
+                    if (bytesLeft > INT_MAX) {
+                        //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
+                        RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
+                    }
+                    while (bytesLeft > 0) {
+                        int send = mg_write(conn, bufLoc, strlen(bufLoc));
+                        if (send > 0) {
+                            bytesLeft -= send;
+                            bufLoc += send;
+                        } else {
+                            RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+                            break;
+                        }
+                    }
+
+                    free(response);
+                } else {
+                    mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+                }
             }
             result = 1;
 
