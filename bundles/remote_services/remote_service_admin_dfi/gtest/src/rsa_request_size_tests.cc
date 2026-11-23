@@ -42,7 +42,7 @@ extern "C" {
 }
 
 #define RSA_DFI_REQUEST_SIZE_TEST_PORT "50886"
-#define RSA_DFI_REQUEST_SIZE_TEST_MAX "256"
+#define RSA_DFI_REQUEST_SIZE_TEST_MAX_KB "1"
 #define RSA_DFI_ENDPOINT_URL_KEY "org.amdatu.remote.admin.http.url"
 
 class RsaDfiRequestSizeTestSuite : public ::testing::Test {
@@ -52,7 +52,7 @@ protected:
         ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &fwProps));
         ASSERT_NE(nullptr, fwProps);
         celix_properties_set(fwProps, "RSA_PORT", RSA_DFI_REQUEST_SIZE_TEST_PORT);
-        celix_properties_set(fwProps, "CELIX_RSA_DFI_MAX_REQUEST_SIZE", RSA_DFI_REQUEST_SIZE_TEST_MAX);
+        celix_properties_set(fwProps, "CELIX_RSA_DFI_MAX_REQUEST_SIZE_IN_KB", RSA_DFI_REQUEST_SIZE_TEST_MAX_KB);
         celix_properties_set(fwProps, "CELIX_FRAMEWORK_CACHE_DIR", ".cacheRsaDfiRequestSizeTest");
         celix_framework_t* frameworkPtr = celix_frameworkFactory_createFramework(fwProps);
         ASSERT_NE(nullptr, frameworkPtr);
@@ -107,9 +107,11 @@ protected:
         framework.reset();
     }
 
-    // Sends a POST with the given extra headers (e.g. a Content-Length header) to the exported service
-    // and returns the raw response written by the server.
-    std::string sendRawPost(const std::string& extraHeaders) {
+    // Sends a POST with the given extra headers (e.g. a Content-Length header) and body to the exported
+    // service and returns the raw response written by the server. When halfCloseAfterSend is true, the
+    // write side of the connection is shut down after sending the request, so that the server observes
+    // an incomplete request body.
+    std::string sendRawPost(const std::string& extraHeaders, const std::string& body = "", bool halfCloseAfterSend = false) {
         char host[64] = {0};
         int port = 0;
         char path[1024] = {0};
@@ -119,7 +121,8 @@ protected:
                 + "Host: " + host + "\r\n"
                 + "Connection: close\r\n"
                 + extraHeaders
-                + "\r\n";
+                + "\r\n"
+                + body;
 
         std::string response;
         int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -135,6 +138,9 @@ protected:
         inet_pton(AF_INET, host, &addr.sin_addr);
         if (connect(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == 0
                 && send(fd, request.data(), request.size(), 0) == static_cast<ssize_t>(request.size())) {
+            if (halfCloseAfterSend) {
+                shutdown(fd, SHUT_WR);
+            }
             char buf[1024];
             ssize_t n;
             while ((n = recv(fd, buf, sizeof(buf), 0)) > 0) {
@@ -154,11 +160,16 @@ protected:
 };
 
 TEST_F(RsaDfiRequestSizeTestSuite, RejectRequestBodyLargerThanMaxSize) {
-    std::string response = sendRawPost("Content-Length: 1024\r\n");
-    EXPECT_NE(std::string::npos, response.find("413 Payload Too Large")) << response;
+    std::string response = sendRawPost("Content-Length: 2048\r\n");
+    EXPECT_NE(std::string::npos, response.find("HTTP/1.1 413")) << response;
 }
 
 TEST_F(RsaDfiRequestSizeTestSuite, RejectRequestWithoutContentLength) {
     std::string response = sendRawPost("");
-    EXPECT_NE(std::string::npos, response.find("413 Payload Too Large")) << response;
+    EXPECT_NE(std::string::npos, response.find("HTTP/1.1 413")) << response;
+}
+
+TEST_F(RsaDfiRequestSizeTestSuite, RejectIncompleteRequestBody) {
+    std::string response = sendRawPost("Content-Length: 10\r\n", "abcd", true);
+    EXPECT_NE(std::string::npos, response.find("HTTP/1.1 400")) << response;
 }
