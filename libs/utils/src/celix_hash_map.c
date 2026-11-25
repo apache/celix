@@ -171,7 +171,7 @@ celix_status_t celix_hashMap_resize(celix_hash_map_t *map) {
         return CELIX_SUCCESS;
     }
 
-    size_t newCapacity = (size_t)floor((double)map->bucketsSize * CELIX_HASHMAP_CAPACITY_INCREASE_FACTOR);
+    size_t newCapacity = map->bucketsSize * CELIX_HASHMAP_CAPACITY_INCREASE_FACTOR;
     if (map->bucketsSize > CELIX_HASHMAP_MAXIMUM_INCREASE_VALUE) {
         //after a certain point, only increase with CELIX_HASHMAP_MAXIMUM_INCREASE_VALUE instead of a factor
         newCapacity = map->bucketsSize + CELIX_HASHMAP_MAXIMUM_INCREASE_VALUE;

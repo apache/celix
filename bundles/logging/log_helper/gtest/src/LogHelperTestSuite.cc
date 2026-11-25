@@ -69,8 +69,10 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     logSvc.vlogDetails= [](void *handle, celix_log_level_e, const char*, const char*, int, const char *format, va_list formatArgs) {
         auto* c = static_cast<std::atomic<size_t>*>(handle);
         c->fetch_add(1);
-        vfprintf(stderr, format, formatArgs);
-        fprintf(stderr, "\n");
+        if (format) {
+            vfprintf(stderr, format, formatArgs);
+            fprintf(stderr, "\n");
+        }
     };
 
     auto* props = celix_properties_create();

@@ -16,7 +16,7 @@ env:
 jobs:
 
   linux-build-conan:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -39,14 +39,14 @@ jobs:
           conan profile detect -f --name release
           sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path release`
           echo "[tool_requires]" >> `conan profile path release`
-          echo "cmake/3.26.4" >> `conan profile path release`
+          echo "cmake/4.4.3" >> `conan profile path release`
           
           # host profile
           conan profile detect -f 
           sed -i 's/build_type=Release/build_type=${{ matrix.type }}/g' `conan profile path default`
           sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
           echo "[tool_requires]" >> `conan profile path default`
-          echo "cmake/3.26.4" >> `conan profile path default`
+          echo "cmake/4.4.3" >> `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
@@ -92,7 +92,7 @@ jobs:
 
 
   linux-build-apt:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
