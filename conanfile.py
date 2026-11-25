@@ -382,12 +382,14 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/2.39.2")
+            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            if self.settings.os == "Macos":
+                self.requires("gettext/0.21") #needed on MacOS 15 by libuuid
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib or self.options.build_deployment_admin
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
-            self.requires("libcurl/8.4.0")
+            self.requires("libcurl/[>=8.4.0 <9.0.0]")
         if self.options.build_deployment_admin:
             self.requires("zlib/[>=1.2.13 <2.0.0]")
         if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
