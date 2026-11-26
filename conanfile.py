@@ -382,7 +382,10 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            # Pinned: czmq/4.2.0 (build_pubsub_psa_zmq) requires util-linux-libuuid/2.39.2
+            # exactly. A version range resolves to newer CCI versions (e.g. 2.41.2) when
+            # the Conan cache is cold, which conflicts with czmq's requirement.
+            self.requires("util-linux-libuuid/2.39.2")
             if self.settings.os == "Macos":
                 self.requires("gettext/0.21") #needed on MacOS 15 by libuuid
         if ((self.options.build_framework and self.options.framework_curlinit)
