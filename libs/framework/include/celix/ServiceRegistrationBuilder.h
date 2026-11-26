@@ -77,7 +77,7 @@ namespace celix {
          */
 #if __cplusplus >= 201703L //C++17 or higher
         template<typename T>
-        ServiceRegistrationBuilder& addProperty(std::string_view key, T&& value) { properties.template set(key, std::forward<T>(value)); return *this; }
+        ServiceRegistrationBuilder& addProperty(std::string_view key, T&& value) { properties.set(key, std::forward<T>(value)); return *this; }
 #else
         template<typename T>
         ServiceRegistrationBuilder& addProperty(const std::string& key, T&& value) { properties.set(key, std::forward<T>(value)); return *this; }

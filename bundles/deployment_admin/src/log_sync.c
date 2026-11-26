@@ -172,11 +172,11 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 	chunk.memory = calloc(1, sizeof(char));
 	chunk.size = 0;
 	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_URL, query);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, logSync_readQuery);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
-		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+		curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
 		res = curl_easy_perform(curl);
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;

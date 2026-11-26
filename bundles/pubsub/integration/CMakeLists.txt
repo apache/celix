@@ -328,7 +328,8 @@ if (PUBSUB_INTEGRATION)
         endif()
     endif()
 
-    if (BUILD_PUBSUB_PSA_WS)
+    if (BUILD_PUBSUB_PSA_WS AND NOT APPLE)
+        #note ws integration tests are not stable/crash on macOS (arm64), see #855
         find_package(civetweb REQUIRED)
         add_celix_container(pubsub_websocket_v2_tests
                 USE_CONFIG
@@ -541,7 +542,7 @@ if (PUBSUB_INTEGRATION)
     endfunction()
 
 
-    if (BUILD_PUBSUB_PSA_WS)
+    if (BUILD_PUBSUB_PSA_WS AND NOT APPLE)
         add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket Celix::celix_pubsub_protocol_wire_v1 true)
         add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket Celix::celix_pubsub_protocol_wire_v2 true)
     endif ()

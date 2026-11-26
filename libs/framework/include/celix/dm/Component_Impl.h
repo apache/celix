@@ -385,7 +385,7 @@ Component<T>& Component<T>::removeCallbacks() {
 template<class T>
 Component<T>& Component<T>::addContext(std::shared_ptr<void> context) {
     std::lock_guard<std::mutex> lock{mutex};
-    componentContexts.template emplace_back(std::move(context));
+    componentContexts.emplace_back(std::move(context));
     return *this;
 }
 

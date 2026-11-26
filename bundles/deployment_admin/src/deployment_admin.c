@@ -187,7 +187,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
     if (status == CELIX_SUCCESS) {
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
             res = curl_easy_perform(curl);
@@ -398,11 +398,11 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 	chunk.memory = calloc(1, sizeof(char));
 	chunk.size = 0;
 	if (curl) {
-	    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+	    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 		curl_easy_setopt(curl, CURLOPT_URL, admin->pollUrl);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_parseVersions);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
-		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+		curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
 		res = curl_easy_perform(curl);
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;
@@ -446,11 +446,11 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
             if(fp!=NULL){
-            	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+            	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
             	curl_easy_setopt(curl, CURLOPT_URL, url);
             	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
             	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            	curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+            	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
             	//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
             	//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
             	res = curl_easy_perform(curl);

@@ -17,7 +17,7 @@
 
 from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
-from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.scm import Version
 from conan.tools.files import copy
 import os
@@ -382,7 +382,12 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            # Pinned: czmq/4.2.0 (build_pubsub_psa_zmq) requires util-linux-libuuid/2.39.2
+            # exactly. A version range resolves to newer CCI versions (e.g. 2.41.2) when
+            # the Conan cache is cold, which conflicts with czmq's requirement.
+            self.requires("util-linux-libuuid/2.39.2")
+            if self.settings.os == "Macos":
+                self.requires("gettext/0.21") #needed on MacOS 15 by libuuid
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib or self.options.build_deployment_admin
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
@@ -409,9 +414,13 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        # the latest civetweb (1.16) is not ready for openssl3
-        self.requires("openssl/1.1.1t", override=True)
+        # OpenSSL 4.x is a breaking API change (like 3.0 was); civetweb/1.16 does not support it yet.
+        # Keep the range below 4 until civetweb and other consumers support the OpenSSL 4 API.
+        self.requires("openssl/[>=3.2.0 <4]", override=True)
         self.validate()
+
+    def layout(self):
+        cmake_layout(self)
 
     def generate(self):
         tc = CMakeToolchain(self)
